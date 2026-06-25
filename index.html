@@ -680,6 +680,7 @@ function nav(page){
   window.location.hash='#/'+page;
   if(page==='dashboard') refreshDashboard();
   if(page==='goals') renderGoals();
+  if(page==='sim'&&state.sim) drawSimResults(state.sim.rows,state.sim.p,state.sim.metrics);
   if(page==='coach'&&state.sim) coachAutoAnalysis();
   if(page==='settings') renderSettings();
 }
@@ -1416,7 +1417,15 @@ document.addEventListener('DOMContentLoaded',()=>{
   loadState();
   document.getElementById('f_year').value=new Date().getFullYear();
   updateXPDisplay();renderCustomEventsList();renderGoals();live();
-  if(state.sim){currentP=state.sim.p;drawSimResults(state.sim.rows,state.sim.p,state.sim.metrics);}
+  if(state.sim){
+    currentP=state.sim.p;drawSimResults(state.sim.rows,state.sim.p,state.sim.metrics);
+  } else {
+    currentP=getP();
+    const _rows=calculate(currentP);
+    const _metrics=getMetrics(_rows,currentP);
+    state.sim={rows:_rows,p:currentP,metrics:_metrics};
+    saveState();
+  }
   refreshDashboard();
   const hash=window.location.hash.replace('#/','');
   const valid=['dashboard','goals','sim','coach','settings'];
