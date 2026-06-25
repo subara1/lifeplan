@@ -22,6 +22,7 @@
         header { text-align: center; padding: 18px 0 10px; }
         header h1 { font-size: 1.55rem; color: var(--blue-d); }
         header p  { color: var(--gray-5); font-size: 0.82rem; margin-top: 3px; }
+        .header-status { display:inline-block; background:var(--blue-l); color:var(--blue-d); padding:3px 12px; border-radius:20px; font-size:.78rem; font-weight:600; margin-top:6px; }
 
         /* Card */
         .card { background: #fff; border-radius: 12px; box-shadow: 0 1px 4px rgba(0,0,0,.1); padding: 16px 18px; margin-bottom: 16px; }
@@ -103,7 +104,8 @@
 <div class="wrap">
     <header>
         <h1>ライフプランシミュレーター</h1>
-        <p>作成日：2026年6月 ／ ご本人33歳・奥様30歳・長女0歳（2人目：2028年予定）</p>
+        <p>開くたびに現在年齢を自動計算します</p>
+        <div class="header-status" id="header-status">読み込み中...</div>
     </header>
 
     <!-- ===== 設定パネル ===== -->
@@ -111,15 +113,36 @@
         <h2>⚙️ 設定パネル — 項目を編集して「再計算」を押してください</h2>
 
         <div class="tab-nav">
-            <button class="tab-btn on" onclick="showTab('inc',this)">💴 収入</button>
+            <button class="tab-btn on" onclick="showTab('fam',this)">👨‍👩‍👧 家族情報</button>
+            <button class="tab-btn" onclick="showTab('inc',this)">💴 収入</button>
             <button class="tab-btn" onclick="showTab('var',this)">🛒 変動費</button>
             <button class="tab-btn" onclick="showTab('fix',this)">🔒 固定費</button>
             <button class="tab-btn" onclick="showTab('house',this)">🏠 住宅</button>
             <button class="tab-btn" onclick="showTab('future',this)">📚 将来設計</button>
         </div>
 
+        <!-- 家族情報 -->
+        <div id="tc-fam" class="tab-pane on">
+            <div class="section-label">現在年（自動取得・変更可）</div>
+            <div class="fg2">
+                <div class="field"><label>現在年（西暦）</label><input type="number" id="f_year" oninput="live()"><div class="unit">毎回自動で今年の年が入ります</div></div>
+            </div>
+            <div class="section-label">家族の生年（西暦）— 毎年自動で年齢が更新されます</div>
+            <div class="fg2">
+                <div class="field"><label>本人 生年</label><input type="number" id="f_uby" value="1993" oninput="live()"><div class="unit">例：1993年生まれ → 今年34歳</div></div>
+                <div class="field"><label>妻 生年</label><input type="number" id="f_wby" value="1996" oninput="live()"></div>
+                <div class="field"><label>長女 生年</label><input type="number" id="f_c1by" value="2026" oninput="live()"></div>
+                <div class="field"><label>次子 生年（予定含む）</label><input type="number" id="f_c2by" value="2028" oninput="live()"><div class="unit">まだ生まれていなければ予定年を入力</div></div>
+            </div>
+            <div class="section-label">定年・退職年齢</div>
+            <div class="fg2">
+                <div class="field"><label>本人 定年年齢</label><input type="number" id="f_retage" value="65" min="50" max="75" oninput="live()"></div>
+                <div class="field"><label>妻 退職年齢</label><input type="number" id="f_wretage" value="62" min="40" max="75" oninput="live()"></div>
+            </div>
+        </div>
+
         <!-- 収入 -->
-        <div id="tc-inc" class="tab-pane on">
+        <div id="tc-inc" class="tab-pane">
             <div class="section-label">本人（公務員）</div>
             <div class="fg">
                 <div class="field"><label>月収・手取り（円）</label><input type="number" id="u_mon" value="320000" oninput="live()"><div class="unit">例：月給の手取り額</div></div>
@@ -289,13 +312,8 @@
 </div>
 
 <script>
-// ─── 定数 ────────────────────────────────────────────────
-const Y0   = 2026;
-const UA0  = 33, WA0 = 30;
-const C1B  = 2026, C2B = 2028;
-const RET  = 2058;   // 本人定年 65歳
-const WRET = 2058;   // 妻退職  62歳
-const YEND = 2083;   // 計画終了 本人90歳
+// ─── 定数（生年ベースで動的計算のため最小限）────────────
+const LIFE_END_AGE = 90;  // 計画終了年齢
 
 const EDU = {
     public:  { kg:2.2,  el:32,  mid:48,  hi:51,  uni:54,  uni0:28 },
@@ -345,7 +363,7 @@ function stageLabel(age) {
 function events(yr, ua, c1a, c2a, p) {
     const ev = [];
     const a = (c,t) => ev.push([c,t]);
-    if (yr === Y0)              a('',  'プラン開始');
+    if (yr === p.Y0)            a('',  'プラン開始');
     if (c1a === 0)              a('g', '長女・誕生');
     if (c2a === 0)              a('g', '次子・誕生');
     if (yr === p.wret)          a('',  '妻・職場復帰');
@@ -363,12 +381,11 @@ function events(yr, ua, c1a, c2a, p) {
     if (c2a === 22)             a('g', '次子・独立');
     if (yr === p.hyr)           a('a', `マンション購入（${fmt(p.hprc)}万円）`);
     if (yr === p.hyr+p.hper)    a('g', '住宅ローン完済');
-    if (yr === RET)             a('g', '本人・定年退職 ／ 年金受給開始');
+    if (yr === p.RET)           a('g', '本人・定年退職 ／ 年金受給開始');
     if (ua === 75)              a('a', '後期高齢者医療へ');
-    if (ua === 90)              a('r', 'プラン終了');
+    if (ua === LIFE_END_AGE)    a('r', 'プラン終了');
     // 車買い替え（ローン完済の2年後 + 10年おき）
-    const cd = yr - Y0;
-    const carDoneY = Y0 + p.carLoanYears + 2;
+    const carDoneY = p.Y0 + p.carLoanYears + 2;
     if ([carDoneY, carDoneY+10, carDoneY+20].includes(yr) && ua < 75) a('a','車の買い替え');
     return ev;
 }
@@ -378,7 +395,24 @@ function getP() {
     const carAnn = g('f_carloan_m') * 12 + g('f_carloan_b');
     const carLoanYears = carAnn > 0 ? Math.ceil(g('f_carloan') * 10000 / carAnn) : 0;
 
+    // 家族情報（生年ベース）
+    const Y0      = g('f_year');
+    const uBY     = g('f_uby');
+    const wBY     = g('f_wby');
+    const c1BY    = g('f_c1by');
+    const c2BY    = g('f_c2by');
+    const retAge  = g('f_retage');
+    const wRetAge = g('f_wretage');
+
     return {
+        // 家族情報（導出値も含む）
+        Y0,   uBY,   wBY,   c1BY,  c2BY,
+        UA0:  Y0 - uBY,           // 今年の本人年齢
+        WA0:  Y0 - wBY,           // 今年の妻年齢
+        RET:  uBY + retAge,       // 本人定年年
+        WRET: wBY + wRetAge,      // 妻退職年
+        YEND: uBY + LIFE_END_AGE, // 計画終了年
+
         sav:      g('s_sav') * 10000,
         uMon:     g('u_mon'),
         uBon:     g('u_bon'),
@@ -427,6 +461,13 @@ function live() {
     const balEl = document.getElementById('lb-bal');
     balEl.textContent = (bal >= 0 ? '+' : '') + mw(bal) + '万円';
     balEl.className = 'lv ' + (bal >= 0 ? 'pos' : 'neg');
+
+    // ヘッダーステータス更新
+    const c1a = p.Y0 - p.c1BY;
+    const c2a = p.Y0 - p.c2BY;
+    const c2txt = c2a >= 0 ? `次子${c2a}歳` : `次子${p.c2BY}年予定`;
+    document.getElementById('header-status').textContent =
+        `${p.Y0}年 ／ 本人${p.UA0}歳・妻${p.WA0}歳・長女${c1a}歳・${c2txt}`;
 }
 
 // ─── タブ切替 ────────────────────────────────────────────
@@ -444,31 +485,31 @@ function run() {
     const mgage = annualMortgage(loan, p.hrate, p.hper);
 
     // 車買い替え年（完済2年後、その後10年おき）
-    const carDoneY  = Y0 + p.carLoanYears + 2;
+    const carDoneY  = p.Y0 + p.carLoanYears + 2;
     const carRepYrs = [carDoneY, carDoneY+10, carDoneY+20];
 
     const rows = [];
     let sav = p.sav;
 
-    for (let yr = Y0; yr <= YEND; yr++) {
-        const ua  = UA0 + (yr - Y0);
-        const wa  = WA0 + (yr - Y0);
-        const c1a = yr - C1B;
-        const c2a = yr - C2B;
-        const dy  = yr - Y0;
+    for (let yr = p.Y0; yr <= p.YEND; yr++) {
+        const ua  = p.UA0 + (yr - p.Y0);
+        const wa  = p.WA0 + (yr - p.Y0);
+        const c1a = yr - p.c1BY;
+        const c2a = yr - p.c2BY;
+        const dy  = yr - p.Y0;
         const inf = Math.pow(1.01, dy);
 
         // ── 収入 ──────────────────────────────────────
         let uInc = 0, wInc = 0, pen = 0, sev = 0;
-        if (yr < RET) {
+        if (yr < p.RET) {
             uInc = (p.uMon * 12 + p.uBon) * Math.pow(1 + p.uGrow, dy);
         }
-        if (yr >= p.wret && yr < WRET) {
+        if (yr >= p.wret && yr < p.WRET) {
             const wy = yr - p.wret;
             wInc = (p.wMon * 12 + p.wBon) * Math.pow(1 + p.uGrow * 0.5, wy);
         }
-        if (yr >= RET) pen = p.pen;
-        if (yr === RET) sev = p.sev;
+        if (yr >= p.RET) pen = p.pen;
+        if (yr === p.RET) sev = p.sev;
         const totalInc = uInc + wInc + pen + sev;
 
         // ── 支出：変動費 ──────────────────────────────
@@ -655,7 +696,8 @@ function drawChart(rows) {
     });
 }
 
-// 初回実行
+// 初回実行：現在年を自動セット
+document.getElementById('f_year').value = new Date().getFullYear();
 live();
 run();
 </script>
