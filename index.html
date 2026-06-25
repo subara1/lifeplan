@@ -1,846 +1,1338 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ライフプランシミュレーター</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <style>
-        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-        :root {
-            --blue:   #3b82f6; --blue-d: #1d4ed8; --blue-l: #dbeafe;
-            --green:  #16a34a; --green-l: #dcfce7;
-            --red:    #dc2626; --red-l: #fee2e2;
-            --amber:  #d97706; --amber-l: #fef3c7;
-            --gray-0: #f9fafb; --gray-1: #f3f4f6; --gray-2: #e5e7eb;
-            --gray-5: #6b7280; --gray-7: #374151; --gray-9: #111827;
-        }
-        body { font-family: 'Hiragino Sans','Yu Gothic UI','Meiryo',sans-serif; background: var(--gray-0); color: var(--gray-9); font-size: 13px; line-height: 1.5; }
-        .wrap { max-width: 1480px; margin: 0 auto; padding: 14px 18px; }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ライフプランシミュレーター</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --blue:#3b82f6;--blue-d:#1d4ed8;--blue-l:#dbeafe;
+  --green:#16a34a;--green-l:#dcfce7;
+  --red:#dc2626;--red-l:#fee2e2;
+  --amber:#d97706;--amber-l:#fef3c7;
+  --purple:#7c3aed;--purple-l:#ede9fe;
+  --gray-0:#f9fafb;--gray-1:#f3f4f6;--gray-2:#e5e7eb;
+  --gray-5:#6b7280;--gray-7:#374151;--gray-9:#111827;
+}
+body{font-family:'Hiragino Sans','Yu Gothic UI','Meiryo',sans-serif;background:var(--gray-0);color:var(--gray-9);font-size:13px;line-height:1.5}
+.wrap{max-width:1500px;margin:0 auto;padding:12px 16px}
 
-        /* Header */
-        header { text-align: center; padding: 18px 0 10px; }
-        header h1 { font-size: 1.55rem; color: var(--blue-d); }
-        header p  { color: var(--gray-5); font-size: 0.82rem; margin-top: 3px; }
-        .header-status { display:inline-block; background:var(--blue-l); color:var(--blue-d); padding:3px 12px; border-radius:20px; font-size:.78rem; font-weight:600; margin-top:6px; }
+/* Header */
+header{text-align:center;padding:16px 0 10px}
+header h1{font-size:1.5rem;color:var(--blue-d)}
+header p{color:var(--gray-5);font-size:.8rem;margin-top:2px}
+.h-badge{display:inline-block;background:var(--blue-l);color:var(--blue-d);padding:3px 14px;border-radius:20px;font-size:.78rem;font-weight:700;margin-top:6px}
 
-        /* Card */
-        .card { background: #fff; border-radius: 12px; box-shadow: 0 1px 4px rgba(0,0,0,.1); padding: 16px 18px; margin-bottom: 16px; }
-        .card h2 { font-size: .95rem; color: var(--blue-d); border-bottom: 2px solid var(--blue-l); padding-bottom: 7px; margin-bottom: 12px; }
+/* Card */
+.card{background:#fff;border-radius:12px;box-shadow:0 1px 4px rgba(0,0,0,.1);padding:15px 18px;margin-bottom:14px}
+.card h2{font-size:.95rem;color:var(--blue-d);border-bottom:2px solid var(--blue-l);padding-bottom:7px;margin-bottom:12px;display:flex;align-items:center;gap:6px}
+.collapsible h2{cursor:pointer;user-select:none}
+.collapsible h2::after{content:'▲';margin-left:auto;font-size:.7rem;color:var(--gray-5);transition:transform .2s}
+.collapsible.closed h2::after{transform:rotate(180deg)}
+.collapsible.closed .c-body{display:none}
 
-        /* Tabs */
-        .tab-nav { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 14px; }
-        .tab-btn {
-            padding: 7px 14px; border: 2px solid var(--gray-2); border-radius: 8px;
-            background: #fff; cursor: pointer; font-size: .82rem; font-weight: 600;
-            font-family: inherit; color: var(--gray-5); transition: all .15s;
-        }
-        .tab-btn:hover { border-color: var(--blue); color: var(--blue); }
-        .tab-btn.on { background: var(--blue); color: #fff; border-color: var(--blue); }
-        .tab-pane { display: none; }
-        .tab-pane.on { display: block; }
+/* Tabs */
+.tab-nav{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:12px}
+.tb{padding:6px 13px;border:2px solid var(--gray-2);border-radius:8px;background:#fff;cursor:pointer;font-size:.8rem;font-weight:600;font-family:inherit;color:var(--gray-5);transition:all .15s}
+.tb:hover{border-color:var(--blue);color:var(--blue)}
+.tb.on{background:var(--blue);color:#fff;border-color:var(--blue)}
+.tp{display:none}.tp.on{display:block}
 
-        /* Fields grid */
-        .fg { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 9px; }
-        .fg2 { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 9px; }
-        .field { display: flex; flex-direction: column; gap: 3px; }
-        .field label { font-size: .72rem; color: var(--gray-5); font-weight: 600; }
-        .field input, .field select {
-            padding: 6px 9px; border: 1.5px solid var(--gray-2); border-radius: 7px;
-            font-size: .88rem; font-family: inherit; background: #fff; transition: border-color .2s;
-        }
-        .field input:focus, .field select:focus { outline: none; border-color: var(--blue); }
-        .field .unit { font-size: .7rem; color: var(--gray-5); margin-top: 1px; }
-        .section-label { font-size: .75rem; font-weight: 700; color: var(--blue-d); margin: 12px 0 7px; padding-bottom: 4px; border-bottom: 1px solid var(--blue-l); }
+/* Chart tabs */
+.chart-tabs{display:flex;gap:4px;margin-bottom:10px}
+.ctb{padding:5px 12px;border:1.5px solid var(--gray-2);border-radius:6px;background:#fff;cursor:pointer;font-size:.78rem;font-weight:600;font-family:inherit;color:var(--gray-5);transition:all .15s}
+.ctb.on{background:var(--blue-d);color:#fff;border-color:var(--blue-d)}
+.cp{display:none}.cp.on{display:block}
+.chart-wrap{position:relative;height:340px}
 
-        /* Live balance bar */
-        .live-bar {
-            display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
-            background: var(--gray-1); border-radius: 9px; padding: 10px 14px;
-            margin: 14px 0 12px; font-size: .82rem;
-        }
-        .live-bar .lb-title { font-weight: 700; color: var(--gray-7); margin-right: 4px; }
-        .live-item { display: flex; align-items: center; gap: 4px; }
-        .live-item .lk { color: var(--gray-5); }
-        .live-item .lv { font-weight: 700; }
-        .lv.pos { color: var(--green); } .lv.neg { color: var(--red); }
-        .sep { color: var(--gray-2); }
+/* Fields */
+.fg{display:grid;grid-template-columns:repeat(auto-fill,minmax(185px,1fr));gap:8px}
+.fg2{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px}
+.fg3{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:8px}
+.field{display:flex;flex-direction:column;gap:3px}
+.field label{font-size:.71rem;color:var(--gray-5);font-weight:600}
+.field input,.field select{padding:6px 8px;border:1.5px solid var(--gray-2);border-radius:7px;font-size:.87rem;font-family:inherit;background:#fff;transition:border-color .2s}
+.field input:focus,.field select:focus{outline:none;border-color:var(--blue)}
+.field .hint{font-size:.68rem;color:var(--gray-5);margin-top:1px}
+.sl{font-size:.73rem;font-weight:700;color:var(--blue-d);margin:11px 0 6px;padding-bottom:3px;border-bottom:1px solid var(--blue-l)}
 
-        /* Recalc button */
-        .btn { background: var(--blue); color: #fff; border: none; padding: 9px 22px; border-radius: 8px; cursor: pointer; font-size: .9rem; font-weight: 700; font-family: inherit; transition: background .2s; }
-        .btn:hover { background: var(--blue-d); }
+/* Buttons */
+.btn-row{display:flex;gap:7px;flex-wrap:wrap;align-items:center;margin-top:10px}
+.btn{background:var(--blue);color:#fff;border:none;padding:8px 20px;border-radius:8px;cursor:pointer;font-size:.88rem;font-weight:700;font-family:inherit;transition:background .2s}
+.btn:hover{background:var(--blue-d)}
+.btn-o{background:#fff;color:var(--blue);border:2px solid var(--blue);padding:7px 16px;border-radius:8px;cursor:pointer;font-size:.82rem;font-weight:700;font-family:inherit;transition:all .15s}
+.btn-o:hover{background:var(--blue);color:#fff}
+.btn-o.g{color:var(--green);border-color:var(--green)}.btn-o.g:hover{background:var(--green);color:#fff}
+.btn-o.r{color:var(--red);border-color:var(--red)}.btn-o.r:hover{background:var(--red);color:#fff}
+.btn-o.p{color:var(--purple);border-color:var(--purple)}.btn-o.p:hover{background:var(--purple);color:#fff}
+.btn-sm{padding:4px 10px;font-size:.75rem;border-radius:6px}
 
-        /* Summary cards */
-        .sc-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(165px,1fr)); gap: 10px; margin-bottom: 16px; }
-        .sc { background: var(--blue); color: #fff; border-radius: 10px; padding: 11px 13px; }
-        .sc.g { background: var(--green); } .sc.a { background: var(--amber); } .sc.r { background: var(--red); }
-        .sc-l { font-size: .69rem; opacity: .9; } .sc-v { font-size: 1.25rem; font-weight: 700; margin: 2px 0; } .sc-s { font-size: .67rem; opacity: .85; }
+/* Live bar */
+.live-bar{display:flex;align-items:center;gap:7px;flex-wrap:wrap;background:var(--gray-1);border-radius:9px;padding:9px 13px;margin:12px 0 10px;font-size:.81rem}
+.lb-t{font-weight:700;color:var(--gray-7);margin-right:3px}
+.li{display:flex;align-items:center;gap:3px}
+.lk{color:var(--gray-5)}.lv{font-weight:700}
+.lv.pos{color:var(--green)}.lv.neg{color:var(--red)}
+.sep{color:var(--gray-2)}
 
-        /* Tables */
-        .tbl-wrap { overflow-x: auto; }
-        table { width: 100%; border-collapse: collapse; font-size: .79rem; }
-        thead th { background: var(--blue-d); color: #fff; padding: 7px 6px; text-align: center; white-space: nowrap; font-weight: 600; }
-        tbody td { padding: 5px 6px; text-align: right; border-bottom: 1px solid var(--gray-2); white-space: nowrap; }
-        tbody td.c { text-align: center; } tbody td.l { text-align: left; }
-        tbody tr:hover { background: #eff6ff; }
-        tbody tr.ev td:first-child { font-weight: 700; color: var(--blue-d); }
-        tbody tr.ret td { background: #f0fdf4; } tbody tr.def td { background: #fff1f2; }
-        .pos { color: var(--green); font-weight: 700; } .neg { color: var(--red); font-weight: 700; } .wrn { color: var(--amber); font-weight: 700; }
+/* Summary cards */
+.sc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:9px;margin-bottom:13px}
+.sc{background:var(--blue);color:#fff;border-radius:10px;padding:11px 13px}
+.sc.g{background:var(--green)}.sc.a{background:var(--amber)}.sc.r{background:var(--red)}.sc.p{background:var(--purple)}
+.sc-l{font-size:.68rem;opacity:.9}.sc-v{font-size:1.2rem;font-weight:700;margin:2px 0}.sc-s{font-size:.66rem;opacity:.85}
 
-        /* Tags */
-        .tag { display: inline-block; padding: 2px 7px; border-radius: 10px; font-size: .67rem; margin: 1px; white-space: nowrap; background: var(--blue-l); color: var(--blue-d); }
-        .tag.g { background: var(--green-l); color: #166534; } .tag.r { background: var(--red-l); color: #991b1b; } .tag.a { background: var(--amber-l); color: #92400e; }
+/* Asset life */
+.asset-life-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:var(--blue-l);border-radius:10px;padding:10px 16px;margin-bottom:13px}
+.al-label{font-size:.8rem;color:var(--blue-d);font-weight:600}
+.al-value{font-size:1.3rem;font-weight:700;color:var(--blue-d)}
+.al-detail{font-size:.75rem;color:var(--blue-d);opacity:.8}
 
-        /* Chart */
-        .chart-wrap { position: relative; height: 360px; }
+/* Risk banner */
+#risk-banner{display:none;padding:8px 14px;border-radius:9px;margin-bottom:13px;font-size:.8rem;font-weight:600;display:flex;align-items:center;gap:8px}
+#risk-banner.safe{background:var(--green-l);color:var(--green)}
+#risk-banner.caution{background:var(--amber-l);color:var(--amber)}
+#risk-banner.danger{background:var(--red-l);color:var(--red)}
 
-        /* Note */
-        .note { font-size: .72rem; color: var(--gray-5); background: var(--gray-0); border-left: 3px solid var(--blue); padding: 7px 10px; border-radius: 0 6px 6px 0; margin-top: 9px; line-height: 1.65; }
+/* Tables */
+.tbl-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:.78rem}
+thead th{background:var(--blue-d);color:#fff;padding:7px 5px;text-align:center;white-space:nowrap;font-weight:600}
+tbody td{padding:5px 5px;text-align:right;border-bottom:1px solid var(--gray-2);white-space:nowrap}
+tbody td.c{text-align:center}tbody td.l{text-align:left}
+tbody tr:hover{background:#eff6ff}
+tbody tr.ev td:first-child{font-weight:700;color:var(--blue-d)}
+tbody tr.ret td{background:#f0fdf4}
+.pos{color:var(--green);font-weight:700}.neg{color:var(--red);font-weight:700}.wrn{color:var(--amber);font-weight:700}
 
-        .btn-row { display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-top:10px; }
-        .btn-outline { background:#fff; color:var(--blue); border:2px solid var(--blue); padding:8px 18px; border-radius:8px; cursor:pointer; font-size:.88rem; font-weight:700; font-family:inherit; transition:all .15s; }
-        .btn-outline:hover { background:var(--blue); color:#fff; }
-        .btn-outline.green { color:var(--green); border-color:var(--green); }
-        .btn-outline.green:hover { background:var(--green); color:#fff; }
-        @media print { .card:first-of-type, .btn, .btn-row { display: none; } body { background: #fff; } }
-    </style>
+/* Risk icons */
+.ri{font-size:.9rem}
+
+/* Tags */
+.tag{display:inline-block;padding:2px 6px;border-radius:10px;font-size:.66rem;margin:1px;white-space:nowrap;background:var(--blue-l);color:var(--blue-d)}
+.tag.g{background:var(--green-l);color:#166534}.tag.r{background:var(--red-l);color:#991b1b}.tag.a{background:var(--amber-l);color:#92400e}
+
+/* Scenario comparison */
+.cmp-table-wrap{overflow-x:auto;margin-top:10px}
+.cmp-table{width:100%;border-collapse:collapse;font-size:.8rem}
+.cmp-table th{background:var(--gray-1);padding:7px 10px;text-align:left;font-weight:700;border-bottom:2px solid var(--gray-2);white-space:nowrap}
+.cmp-table td{padding:7px 10px;border-bottom:1px solid var(--gray-2);white-space:nowrap}
+.cmp-table tr:hover td{background:var(--blue-l)}
+.cmp-table .metric{color:var(--gray-5);font-size:.75rem}
+
+/* Custom events list */
+.ev-list{margin-top:10px;display:flex;flex-direction:column;gap:6px}
+.ev-item{display:flex;align-items:center;gap:8px;background:var(--gray-0);padding:8px 12px;border-radius:8px;border:1px solid var(--gray-2);font-size:.8rem;flex-wrap:wrap}
+.ev-item .ev-info{flex:1}
+.ev-item .ev-badge{background:var(--blue-l);color:var(--blue-d);padding:2px 8px;border-radius:6px;font-size:.7rem;font-weight:600}
+.ev-item .ev-badge.inc{background:var(--green-l);color:var(--green)}
+
+/* Note */
+.note{font-size:.71rem;color:var(--gray-5);background:var(--gray-0);border-left:3px solid var(--blue);padding:6px 10px;border-radius:0 6px 6px 0;margin-top:8px;line-height:1.65}
+
+/* Import area */
+.import-area{border:2px dashed var(--gray-2);border-radius:8px;padding:12px;text-align:center;color:var(--gray-5);font-size:.8rem;cursor:pointer;transition:border-color .2s}
+.import-area:hover{border-color:var(--blue);color:var(--blue)}
+
+@media(max-width:640px){
+  .wrap{padding:8px 10px}
+  .sc-grid{grid-template-columns:repeat(2,1fr)}
+  .fg,.fg2,.fg3{grid-template-columns:repeat(2,1fr)}
+  header h1{font-size:1.2rem}
+}
+@media print{.card:first-of-type,.btn-row,#actions{display:none}body{background:#fff}}
+</style>
 </head>
 <body>
 <div class="wrap">
-    <header>
-        <h1>ライフプランシミュレーター</h1>
-        <p>開くたびに現在年齢を自動計算します</p>
-        <div class="header-status" id="header-status">読み込み中...</div>
-    </header>
 
-    <!-- ===== 設定パネル ===== -->
-    <div class="card">
-        <h2>⚙️ 設定パネル — 項目を編集して「再計算」を押してください</h2>
+<header>
+  <h1>ライフプランシミュレーター</h1>
+  <p>複数シナリオ比較 ／ 資産寿命表示 ／ 危険度判定 ／ カスタムイベント対応</p>
+  <div class="h-badge" id="h-status">読み込み中...</div>
+</header>
 
-        <div class="tab-nav">
-            <button class="tab-btn on" onclick="showTab('fam',this)">👨‍👩‍👧 家族情報</button>
-            <button class="tab-btn" onclick="showTab('inc',this)">💴 収入</button>
-            <button class="tab-btn" onclick="showTab('var',this)">🛒 変動費</button>
-            <button class="tab-btn" onclick="showTab('fix',this)">🔒 固定費</button>
-            <button class="tab-btn" onclick="showTab('house',this)">🏠 住宅</button>
-            <button class="tab-btn" onclick="showTab('future',this)">📚 将来設計</button>
-        </div>
+<!-- ===== 設定パネル ===== -->
+<div class="card">
+  <h2>⚙️ 設定パネル</h2>
+  <div class="tab-nav">
+    <button class="tb on" onclick="showTab('fam',this)">👨‍👩‍👧 家族情報</button>
+    <button class="tb" onclick="showTab('inc',this)">💴 収入</button>
+    <button class="tb" onclick="showTab('var',this)">🛒 生活費</button>
+    <button class="tb" onclick="showTab('fix',this)">🔒 固定費・住宅</button>
+    <button class="tb" onclick="showTab('edu',this)">📚 教育</button>
+    <button class="tb" onclick="showTab('cev',this)">📅 カスタムイベント</button>
+    <button class="tb" onclick="showTab('fut',this)">📊 将来・老後</button>
+  </div>
 
-        <!-- 家族情報 -->
-        <div id="tc-fam" class="tab-pane on">
-            <div class="section-label">現在年（自動取得・変更可）</div>
-            <div class="fg2">
-                <div class="field"><label>現在年（西暦）</label><input type="number" id="f_year" oninput="live()"><div class="unit">毎回自動で今年の年が入ります</div></div>
-            </div>
-            <div class="section-label">家族の生年（西暦）— 毎年自動で年齢が更新されます</div>
-            <div class="fg2">
-                <div class="field"><label>本人 生年</label><input type="number" id="f_uby" value="1993" oninput="live()"><div class="unit">例：1993年生まれ → 今年34歳</div></div>
-                <div class="field"><label>妻 生年</label><input type="number" id="f_wby" value="1996" oninput="live()"></div>
-                <div class="field"><label>長女 生年</label><input type="number" id="f_c1by" value="2026" oninput="live()"></div>
-                <div class="field"><label>次子 生年（予定含む）</label><input type="number" id="f_c2by" value="2028" oninput="live()"><div class="unit">まだ生まれていなければ予定年を入力</div></div>
-            </div>
-            <div class="section-label">定年・退職年齢</div>
-            <div class="fg2">
-                <div class="field"><label>本人 定年年齢</label><input type="number" id="f_retage" value="65" min="50" max="75" oninput="live()"></div>
-                <div class="field"><label>妻 退職年齢</label><input type="number" id="f_wretage" value="62" min="40" max="75" oninput="live()"></div>
-            </div>
-        </div>
-
-        <!-- 収入 -->
-        <div id="tc-inc" class="tab-pane">
-            <div class="section-label">本人（公務員）</div>
-            <div class="fg">
-                <div class="field"><label>月収・手取り（円）</label><input type="number" id="u_mon" value="320000" oninput="live()"><div class="unit">例：月給の手取り額</div></div>
-                <div class="field"><label>ボーナス・年間合計 手取り（円）</label><input type="number" id="u_bon" value="1460000" oninput="live()"><div class="unit">夏冬合計の手取り額</div></div>
-                <div class="field"><label>年収上昇率（%/年）</label><input type="number" id="u_grow" value="1.0" step="0.1" min="0" max="5" oninput="live()"><div class="unit">公務員：0.5〜1.5%が目安</div></div>
-            </div>
-            <div class="section-label">妻</div>
-            <div class="fg">
-                <div class="field"><label>復職後 月収・手取り（円）</label><input type="number" id="w_mon" value="100000" oninput="live()"><div class="unit">パート・時短勤務の想定</div></div>
-                <div class="field"><label>復職後 ボーナス 年間合計 手取り（円）</label><input type="number" id="w_bon" value="300000" oninput="live()"></div>
-                <div class="field"><label>復職予定年（西暦）</label><input type="number" id="w_ret" value="2031" min="2026" max="2050" oninput="live()"><div class="unit">次子が3歳：2031年</div></div>
-            </div>
-        </div>
-
-        <!-- 変動費 -->
-        <div id="tc-var" class="tab-pane">
-            <div class="section-label">毎月の変動費（円/月）</div>
-            <div class="fg2">
-                <div class="field"><label>食費・日用品</label><input type="number" id="e_food" value="70000" oninput="live()"></div>
-                <div class="field"><label>光熱費（電気・ガス・水道）</label><input type="number" id="e_util" value="15000" oninput="live()"></div>
-                <div class="field"><label>交際費・外食・娯楽</label><input type="number" id="e_ent" value="20000" oninput="live()"></div>
-                <div class="field"><label>衣服・美容・理髪</label><input type="number" id="e_cloth" value="10000" oninput="live()"></div>
-                <div class="field"><label>小遣い（本人）</label><input type="number" id="e_aself" value="20000" oninput="live()"></div>
-                <div class="field"><label>小遣い（妻）</label><input type="number" id="e_awife" value="15000" oninput="live()"></div>
-                <div class="field"><label>子育て雑費・おもちゃ等</label><input type="number" id="e_kids" value="10000" oninput="live()"></div>
-                <div class="field"><label>雑費・その他</label><input type="number" id="e_misc" value="10000" oninput="live()"></div>
-            </div>
-        </div>
-
-        <!-- 固定費 -->
-        <div id="tc-fix" class="tab-pane">
-            <div class="section-label">毎月の固定費（円/月）</div>
-            <div class="fg2">
-                <div class="field"><label>生命・医療保険料</label><input type="number" id="f_ins" value="20000" oninput="live()"></div>
-                <div class="field"><label>通信費（スマホ・ネット）</label><input type="number" id="f_tel" value="10000" oninput="live()"></div>
-                <div class="field"><label>車維持費（ガソリン・駐車・任意保険）</label><input type="number" id="f_car" value="20000" oninput="live()"></div>
-                <div class="field"><label>習い事・サブスク</label><input type="number" id="f_sub" value="10000" oninput="live()"></div>
-                <div class="field"><label>その他固定費</label><input type="number" id="f_oth" value="6000" oninput="live()"></div>
-            </div>
-            <div class="section-label">現在の負債</div>
-            <div class="fg2">
-                <div class="field"><label>車ローン 残高（万円）</label><input type="number" id="f_carloan" value="250" oninput="live()"><div class="unit">月1.3万＋ボーナス払いで完済</div></div>
-                <div class="field"><label>車ローン 月額返済（円）</label><input type="number" id="f_carloan_m" value="13000" oninput="live()"></div>
-                <div class="field"><label>車ローン ボーナス払い 年間（円）</label><input type="number" id="f_carloan_b" value="260000" oninput="live()"></div>
-            </div>
-        </div>
-
-        <!-- 住宅 -->
-        <div id="tc-house" class="tab-pane">
-            <div class="section-label">現在の住居</div>
-            <div class="fg2">
-                <div class="field"><label>家賃（円/月）</label><input type="number" id="h_rent" value="84000" oninput="live()"></div>
-            </div>
-            <div class="section-label">住宅購入計画</div>
-            <div class="fg2">
-                <div class="field"><label>購入予定年（西暦）</label><input type="number" id="h_yr" value="2033" min="2026" max="2060"></div>
-                <div class="field"><label>住宅価格（万円）</label><input type="number" id="h_prc" value="5000" min="0"></div>
-                <div class="field"><label>頭金（万円）</label><input type="number" id="h_dp" value="500" min="0"></div>
-                <div class="field"><label>住宅ローン金利（%）</label><input type="number" id="h_rate" value="0.7" step="0.1" min="0" max="10"></div>
-                <div class="field"><label>ローン期間（年）</label><input type="number" id="h_per" value="35" min="5" max="50"></div>
-                <div class="field"><label>管理費・修繕積立金（円/月）</label><input type="number" id="h_mgmt" value="20000" oninput="live()"><div class="unit">購入後は毎月発生</div></div>
-            </div>
-        </div>
-
-        <!-- 将来設計 -->
-        <div id="tc-future" class="tab-pane">
-            <div class="section-label">現在の資産（実際の金額に変更してください）</div>
-            <div class="fg2">
-                <div class="field"><label>現金・預金（万円）</label><input type="number" id="a_cash" value="200" min="0"><div class="unit">普通・定期預金など</div></div>
-                <div class="field"><label>現金・預金 金利（%/年）</label><input type="number" id="a_cashrate" value="0.1" step="0.01" min="0"><div class="unit">例：定期預金 0.1〜0.3%</div></div>
-                <div class="field"><label>株式・投資信託など（万円）</label><input type="number" id="a_invest" value="100" min="0"><div class="unit">NISA・iDeCo・株式など</div></div>
-                <div class="field"><label>投資 期待利回り（%/年）</label><input type="number" id="a_investrate" value="5.0" step="0.1" min="0"><div class="unit">例：インデックス投資 4〜7%</div></div>
-            </div>
-            <div class="section-label">旅行・レジャー（万円/年）</div>
-            <div class="fg2">
-                <div class="field"><label>乳幼児期（子が6歳未満）</label><input type="number" id="t_baby" value="20"></div>
-                <div class="field"><label>学齢期（子が6〜17歳）</label><input type="number" id="t_school" value="30"></div>
-                <div class="field"><label>子独立後（子が22歳以降）</label><input type="number" id="t_empty" value="45"></div>
-                <div class="field"><label>老後（65歳以降）</label><input type="number" id="t_retire" value="35"></div>
-            </div>
-            <div class="section-label">老後・退職</div>
-            <div class="fg2">
-                <div class="field"><label>退職金（万円）</label><input type="number" id="r_sev" value="2000" min="0"></div>
-                <div class="field"><label>公的年金 夫婦合計（万円/年）</label><input type="number" id="r_pen" value="240" min="0"><div class="unit">共済+国民年金の受取見込み</div></div>
-            </div>
-            <div class="section-label">子どもの教育</div>
-            <div class="fg2">
-                <div class="field">
-                    <label>教育方針</label>
-                    <select id="s_edu">
-                        <option value="public" selected>公立中心</option>
-                        <option value="semi">高校から私立</option>
-                        <option value="private">私立中心</option>
-                    </select>
-                </div>
-            </div>
-        </div>
-
-        <!-- ライブ収支バー -->
-        <div class="live-bar">
-            <span class="lb-title">現在の月次収支（概算）</span>
-            <div class="live-item"><span class="lk">月収入</span><span class="lv" id="lb-inc">−</span></div>
-            <span class="sep">|</span>
-            <div class="live-item"><span class="lk">月支出（住居込）</span><span class="lv" id="lb-exp">−</span></div>
-            <span class="sep">|</span>
-            <div class="live-item"><span class="lk">月収支</span><span class="lv" id="lb-bal">−</span></div>
-        </div>
-
-        <div class="btn-row">
-            <button class="btn" onclick="run()">▶ 再計算・グラフ更新</button>
-            <button class="btn-outline" onclick="exportExcel()">📥 Excel (.xlsx) 出力</button>
-            <button class="btn-outline green" onclick="exportCSV()">📥 CSV 出力</button>
-        </div>
-        <div class="note">
-            ※ 月収支バーは入力に応じてリアルタイム更新。グラフ・表の更新は「再計算」ボタンを押してください。<br>
-            ※ 車ローンは残高・月額・ボーナス払いから完済年を自動計算。住宅購入年以降、家賃はローン返済に切り替わります。
-        </div>
+  <!-- 家族情報 -->
+  <div id="tc-fam" class="tp on">
+    <div class="sl">現在年（自動取得）</div>
+    <div class="fg2">
+      <div class="field"><label>現在年（西暦）</label><input type="number" id="f_year" oninput="live()"><div class="hint">毎回自動で今年の西暦が入ります</div></div>
     </div>
-
-    <!-- サマリー -->
-    <div class="sc-grid" id="summary"></div>
-
-    <!-- ライフイベント表 -->
-    <div class="card">
-        <h2>📅 ライフイベント表</h2>
-        <div class="tbl-wrap">
-            <table>
-                <thead>
-                    <tr>
-                        <th>西暦</th><th>本人</th><th>妻</th>
-                        <th>長女（子①）</th><th>次子（子②）</th>
-                        <th style="min-width:230px;text-align:left;padding-left:10px">ライフイベント</th>
-                    </tr>
-                </thead>
-                <tbody id="lt-body"></tbody>
-            </table>
-        </div>
+    <div class="sl">家族の生年 — 毎年開くと自動で年齢が更新されます</div>
+    <div class="fg2">
+      <div class="field"><label>本人 生年</label><input type="number" id="f_uby" value="1993" oninput="live()"><div class="hint">例：1993年生まれ → 今年の年齢が自動計算</div></div>
+      <div class="field"><label>妻 生年</label><input type="number" id="f_wby" value="1996" oninput="live()"></div>
+      <div class="field"><label>長女 生年</label><input type="number" id="f_c1by" value="2026" oninput="live()"></div>
+      <div class="field"><label>次子 生年（予定含む）</label><input type="number" id="f_c2by" value="2028" oninput="live()"><div class="hint">まだ生まれていなければ予定年を入力</div></div>
     </div>
-
-    <!-- キャッシュフロー表 -->
-    <div class="card">
-        <h2>💰 キャッシュフロー表（単位：万円）</h2>
-        <div class="tbl-wrap">
-            <table>
-                <thead>
-                    <tr>
-                        <th>西暦</th><th>本人</th>
-                        <th>収入<br>合計</th>
-                        <th>生活費<br>変動費</th>
-                        <th>生活費<br>固定費</th>
-                        <th>住居費</th>
-                        <th>保育費</th>
-                        <th>教育費</th>
-                        <th>旅行<br>特別費</th>
-                        <th>支出<br>合計</th>
-                        <th>年間<br>収支</th>
-                        <th>貯蓄<br>残高</th>
-                    </tr>
-                </thead>
-                <tbody id="cf-body"></tbody>
-            </table>
-        </div>
-        <div class="note">
-            ※ 金額は万円（四捨五入）。赤背景＝年間赤字、緑背景＝定年後。収入欄にカーソルを合わせると内訳が表示されます。<br>
-            ※「生活費 変動費」＝食費・娯楽・小遣い等、「生活費 固定費」＝保険・通信・車維持費等（住居・保育・教育を除く）
-        </div>
+    <div class="sl">定年・退職年齢</div>
+    <div class="fg2">
+      <div class="field"><label>本人 定年年齢</label><input type="number" id="f_retage" value="65" min="50" max="75" oninput="live()"></div>
+      <div class="field"><label>妻 退職年齢</label><input type="number" id="f_wretage" value="62" min="40" max="75" oninput="live()"></div>
     </div>
+  </div>
 
-    <!-- グラフ -->
-    <div class="card">
-        <h2>📈 貯蓄残高・収支の推移</h2>
-        <div class="chart-wrap"><canvas id="myChart"></canvas></div>
+  <!-- 収入 -->
+  <div id="tc-inc" class="tp">
+    <div class="sl">本人（公務員）</div>
+    <div class="fg">
+      <div class="field"><label>月収・手取り（円）</label><input type="number" id="u_mon" value="320000" oninput="live()"></div>
+      <div class="field"><label>ボーナス年間合計・手取り（円）</label><input type="number" id="u_bon" value="1460000" oninput="live()"></div>
+      <div class="field"><label>年収上昇率（%/年）</label><input type="number" id="u_grow" value="1.0" step="0.1" min="0" max="5" oninput="live()"></div>
     </div>
+    <div class="sl">各種手当（月額・円）</div>
+    <div class="fg2">
+      <div class="field"><label>住居手当</label><input type="number" id="u_house_allow" value="27000" oninput="live()"><div class="hint">賃貸の場合最大27,000円</div></div>
+      <div class="field"><label>扶養手当（子1人あたり）</label><input type="number" id="u_dep_allow" value="10000" oninput="live()"></div>
+      <div class="field"><label>その他手当</label><input type="number" id="u_other_allow" value="0" oninput="live()"></div>
+    </div>
+    <div class="sl">再任用設定（定年後）</div>
+    <div class="fg2">
+      <div class="field"><label>再任用 月収・手取り（円）</label><input type="number" id="u_reemploy_m" value="0"><div class="hint">0の場合は再任用なし</div></div>
+      <div class="field"><label>再任用 期間（年）</label><input type="number" id="u_reemploy_y" value="0" min="0" max="10"></div>
+    </div>
+    <div class="sl">妻</div>
+    <div class="fg">
+      <div class="field"><label>復職後 月収・手取り（円）</label><input type="number" id="w_mon" value="100000" oninput="live()"></div>
+      <div class="field"><label>復職後 ボーナス年間合計・手取り（円）</label><input type="number" id="w_bon" value="300000" oninput="live()"></div>
+      <div class="field"><label>妻 復職予定年（西暦）</label><input type="number" id="w_ret" value="2031" min="2026" max="2050" oninput="live()"><div class="hint">次子が3歳：2031年</div></div>
+    </div>
+  </div>
+
+  <!-- 生活費 -->
+  <div id="tc-var" class="tp">
+    <div class="sl">インフレ設定</div>
+    <div class="fg2">
+      <div class="field"><label>物価上昇率（%/年）</label><input type="number" id="infl" value="2.0" step="0.1" min="0" max="5" oninput="live()"><div class="hint">生活費・教育費・医療費などに反映。初期値2%</div></div>
+    </div>
+    <div class="sl">毎月の変動費（円/月）</div>
+    <div class="fg2">
+      <div class="field"><label>食費・日用品</label><input type="number" id="e_food" value="70000" oninput="live()"></div>
+      <div class="field"><label>光熱費（電気・ガス・水道）</label><input type="number" id="e_util" value="15000" oninput="live()"></div>
+      <div class="field"><label>交際費・外食・娯楽</label><input type="number" id="e_ent" value="20000" oninput="live()"></div>
+      <div class="field"><label>衣服・美容・理髪</label><input type="number" id="e_cloth" value="10000" oninput="live()"></div>
+      <div class="field"><label>小遣い（本人）</label><input type="number" id="e_aself" value="20000" oninput="live()"></div>
+      <div class="field"><label>小遣い（妻）</label><input type="number" id="e_awife" value="15000" oninput="live()"></div>
+      <div class="field"><label>子育て雑費・おもちゃ等</label><input type="number" id="e_kids" value="10000" oninput="live()"></div>
+      <div class="field"><label>雑費・その他</label><input type="number" id="e_misc" value="10000" oninput="live()"></div>
+    </div>
+    <div class="sl">旅行・レジャー（万円/年）</div>
+    <div class="fg2">
+      <div class="field"><label>乳幼児期（子が6歳未満）</label><input type="number" id="t_baby" value="20"></div>
+      <div class="field"><label>学齢期（子が6〜17歳）</label><input type="number" id="t_school" value="30"></div>
+      <div class="field"><label>子独立後（子が22歳以降）</label><input type="number" id="t_empty" value="45"></div>
+      <div class="field"><label>老後（65歳以降）</label><input type="number" id="t_retire" value="35"></div>
+    </div>
+  </div>
+
+  <!-- 固定費・住宅 -->
+  <div id="tc-fix" class="tp">
+    <div class="sl">毎月の固定費（円/月）</div>
+    <div class="fg2">
+      <div class="field"><label>生命・医療保険料</label><input type="number" id="f_ins" value="20000" oninput="live()"></div>
+      <div class="field"><label>通信費（スマホ・ネット）</label><input type="number" id="f_tel" value="10000" oninput="live()"></div>
+      <div class="field"><label>車維持費（ガソリン・駐車・任意保険）</label><input type="number" id="f_car" value="20000" oninput="live()"></div>
+      <div class="field"><label>習い事・サブスク</label><input type="number" id="f_sub" value="10000" oninput="live()"></div>
+      <div class="field"><label>その他固定費</label><input type="number" id="f_oth" value="6000" oninput="live()"></div>
+    </div>
+    <div class="sl">現在の負債</div>
+    <div class="fg2">
+      <div class="field"><label>車ローン 残高（万円）</label><input type="number" id="f_carloan" value="250"><div class="hint">月1.3万＋ボーナス払いで完済</div></div>
+      <div class="field"><label>車ローン 月額返済（円）</label><input type="number" id="f_carloan_m" value="13000"></div>
+      <div class="field"><label>車ローン ボーナス払い 年間（円）</label><input type="number" id="f_carloan_b" value="260000"></div>
+    </div>
+    <div class="sl">現在の住居</div>
+    <div class="fg2">
+      <div class="field"><label>家賃（円/月）</label><input type="number" id="h_rent" value="84000" oninput="live()"></div>
+    </div>
+    <div class="sl">住宅購入計画</div>
+    <div class="fg2">
+      <div class="field"><label>購入予定年（西暦）</label><input type="number" id="h_yr" value="2033" min="2026" max="2060"></div>
+      <div class="field"><label>住宅価格（万円）</label><input type="number" id="h_prc" value="5000" min="0"></div>
+      <div class="field"><label>頭金（万円）</label><input type="number" id="h_dp" value="500" min="0"></div>
+      <div class="field"><label>住宅ローン金利（%）</label><input type="number" id="h_rate" value="0.7" step="0.1" min="0" max="10"></div>
+      <div class="field"><label>ローン期間（年）</label><input type="number" id="h_per" value="35" min="5" max="50"></div>
+      <div class="field"><label>管理費・修繕積立金（円/月）</label><input type="number" id="h_mgmt" value="20000"><div class="hint">購入後毎月発生</div></div>
+    </div>
+  </div>
+
+  <!-- 教育（子どもごと） -->
+  <div id="tc-edu" class="tp">
+    <div class="sl">長女（子①）の教育方針</div>
+    <div class="fg2">
+      <div class="field"><label>小学校</label>
+        <select id="c1_el"><option value="32" selected>公立（32万円/年）</option><option value="168">私立（168万円/年）</option></select>
+      </div>
+      <div class="field"><label>中学校</label>
+        <select id="c1_mid"><option value="48" selected>公立（48万円/年）</option><option value="134">私立（134万円/年）</option></select>
+      </div>
+      <div class="field"><label>高校</label>
+        <select id="c1_hi"><option value="51" selected>公立（51万円/年）</option><option value="105">私立（105万円/年）</option></select>
+      </div>
+      <div class="field"><label>大学</label>
+        <select id="c1_uni">
+          <option value="54|28" selected>国公立（54万円/年）</option>
+          <option value="95|40">私立文系（95万円/年）</option>
+          <option value="130|40">私立理系（130万円/年）</option>
+        </select>
+      </div>
+      <div class="field"><label>大学 一人暮らし</label>
+        <select id="c1_dorm"><option value="0" selected>なし</option><option value="72">あり（+72万円/年）</option></select>
+      </div>
+      <div class="field"><label>留学費用（万円）</label><input type="number" id="c1_study" value="0"><div class="hint">大学期間中の合計金額</div></div>
+      <div class="field"><label>習い事・塾（円/月）</label><input type="number" id="c1_extra" value="0"><div class="hint">幼児〜高校生まで毎月加算</div></div>
+    </div>
+    <div class="sl">次子（子②）の教育方針</div>
+    <div class="fg2">
+      <div class="field"><label>小学校</label>
+        <select id="c2_el"><option value="32" selected>公立（32万円/年）</option><option value="168">私立（168万円/年）</option></select>
+      </div>
+      <div class="field"><label>中学校</label>
+        <select id="c2_mid"><option value="48" selected>公立（48万円/年）</option><option value="134">私立（134万円/年）</option></select>
+      </div>
+      <div class="field"><label>高校</label>
+        <select id="c2_hi"><option value="51" selected>公立（51万円/年）</option><option value="105">私立（105万円/年）</option></select>
+      </div>
+      <div class="field"><label>大学</label>
+        <select id="c2_uni">
+          <option value="54|28" selected>国公立（54万円/年）</option>
+          <option value="95|40">私立文系（95万円/年）</option>
+          <option value="130|40">私立理系（130万円/年）</option>
+        </select>
+      </div>
+      <div class="field"><label>大学 一人暮らし</label>
+        <select id="c2_dorm"><option value="0" selected>なし</option><option value="72">あり（+72万円/年）</option></select>
+      </div>
+      <div class="field"><label>留学費用（万円）</label><input type="number" id="c2_study" value="0"></div>
+      <div class="field"><label>習い事・塾（円/月）</label><input type="number" id="c2_extra" value="0"></div>
+    </div>
+  </div>
+
+  <!-- カスタムイベント -->
+  <div id="tc-cev" class="tp">
+    <div class="sl">任意イベントの追加（例：リフォーム・相続・副業収入・海外旅行など）</div>
+    <div class="fg3" id="new-ev-form">
+      <div class="field"><label>発生年（西暦）</label><input type="number" id="nev_yr" placeholder="2035"></div>
+      <div class="field"><label>イベント名</label><input type="text" id="nev_name" placeholder="例：車購入、相続、リフォーム"></div>
+      <div class="field"><label>金額（万円）</label><input type="number" id="nev_amt" placeholder="例：300"></div>
+      <div class="field"><label>種別</label>
+        <select id="nev_type"><option value="expense">支出</option><option value="income">収入</option></select>
+      </div>
+      <div class="field"><label>繰り返し</label>
+        <select id="nev_rec"><option value="0">一度だけ</option><option value="1">毎年発生</option></select>
+      </div>
+      <div class="field"><label>終了年（繰り返しの場合）</label><input type="number" id="nev_end" placeholder="例：2045（空白で終身）"></div>
+    </div>
+    <div class="btn-row" style="margin-top:8px">
+      <button class="btn" onclick="addCustomEvent()">＋ イベントを追加</button>
+    </div>
+    <div class="ev-list" id="ev-list"></div>
+    <div class="note">※ 追加したイベントは「再計算」ボタンを押すとキャッシュフローに反映されます。データはブラウザに自動保存されます。</div>
+  </div>
+
+  <!-- 将来・老後 -->
+  <div id="tc-fut" class="tp">
+    <div class="sl">現在の資産（実際の金額に変更してください）</div>
+    <div class="fg2">
+      <div class="field"><label>現金・預金（万円）</label><input type="number" id="a_cash" value="200" min="0"><div class="hint">普通・定期預金など</div></div>
+      <div class="field"><label>現金・預金 金利（%/年）</label><input type="number" id="a_cashrate" value="0.1" step="0.01" min="0"><div class="hint">例：定期預金 0.1〜0.3%</div></div>
+      <div class="field"><label>株式・投資信託など（万円）</label><input type="number" id="a_invest" value="100" min="0"><div class="hint">NISA・iDeCo・株式など</div></div>
+      <div class="field"><label>投資 期待利回り（%/年）</label><input type="number" id="a_investrate" value="5.0" step="0.1" min="0"><div class="hint">例：インデックス投資 4〜7%</div></div>
+    </div>
+    <div class="sl">老後・退職</div>
+    <div class="fg2">
+      <div class="field"><label>退職金（万円）</label><input type="number" id="r_sev" value="2000" min="0"></div>
+      <div class="field"><label>公的年金 夫婦合計（万円/年）</label><input type="number" id="r_pen" value="240" min="0"><div class="hint">共済+国民年金の受取見込み</div></div>
+    </div>
+  </div>
+
+  <!-- ライブ収支バー -->
+  <div class="live-bar">
+    <span class="lb-t">現在の月次概算</span>
+    <div class="li"><span class="lk">月収入</span><span class="lv" id="lb-inc">−</span></div>
+    <span class="sep">|</span>
+    <div class="li"><span class="lk">月支出（住居込）</span><span class="lv" id="lb-exp">−</span></div>
+    <span class="sep">|</span>
+    <div class="li"><span class="lk">月収支</span><span class="lv" id="lb-bal">−</span></div>
+  </div>
+
+  <div class="btn-row" id="actions">
+    <button class="btn" onclick="run()">▶ 再計算・更新</button>
+    <button class="btn-o p" onclick="openSaveScenario()">💾 シナリオ保存</button>
+    <button class="btn-o" onclick="exportExcel()">📥 Excel出力</button>
+    <button class="btn-o g" onclick="exportCSV()">📥 CSV出力</button>
+    <button class="btn-o" onclick="exportJSON()">📤 データ保存（JSON）</button>
+    <label class="btn-o" style="cursor:pointer">📁 データ読込（JSON）<input type="file" accept=".json" style="display:none" onchange="importJSON(this)"></label>
+  </div>
+
+  <div class="note" style="margin-top:8px">
+    ※ 「シナリオ保存」で現在の設定を名前付きで保存し、複数プランを比較できます。データ保存でJSON形式でエクスポート・別端末でインポート可能です。
+  </div>
+</div><!-- /settings -->
+
+<!-- サマリー -->
+<div class="sc-grid" id="summary"></div>
+
+<!-- 資産寿命バー -->
+<div class="asset-life-bar" id="asset-life-bar" style="display:none">
+  <span class="al-label">📊 資産寿命</span>
+  <span class="al-value" id="al-val">−</span>
+  <span class="al-detail" id="al-detail"></span>
 </div>
 
+<!-- 危険度バナー -->
+<div id="risk-banner"></div>
+
+<!-- ===== シナリオ比較 ===== -->
+<div class="card collapsible closed" id="scenario-card">
+  <h2 onclick="toggleCollapse('scenario-card')">📊 シナリオ比較</h2>
+  <div class="c-body">
+    <div id="scenario-list-area">
+      <p style="color:var(--gray-5);font-size:.82rem">「シナリオ保存」ボタンで現在の設定を保存すると比較表が表示されます。</p>
+    </div>
+    <div id="scenario-cmp-table"></div>
+  </div>
+</div>
+
+<!-- ===== 退職時期シミュレーション ===== -->
+<div class="card collapsible closed" id="retire-card">
+  <h2 onclick="toggleCollapse('retire-card')">🏃 退職時期シミュレーション</h2>
+  <div class="c-body">
+    <div class="fg2" style="margin-bottom:10px">
+      <div class="field"><label>比較する退職年齢①</label><input type="number" id="ret_a" value="60" min="50" max="75"></div>
+      <div class="field"><label>比較する退職年齢②</label><input type="number" id="ret_b" value="62" min="50" max="75"></div>
+      <div class="field"><label>比較する退職年齢③</label><input type="number" id="ret_c" value="65" min="50" max="75"></div>
+      <div class="field"><label>比較する退職年齢④</label><input type="number" id="ret_d" value="67" min="50" max="75"></div>
+    </div>
+    <button class="btn" onclick="runRetirementCmp()">退職時期を比較する</button>
+    <div id="retire-cmp-table" style="margin-top:10px"></div>
+  </div>
+</div>
+
+<!-- ===== ライフイベント表 ===== -->
+<div class="card">
+  <h2>📅 ライフイベント表</h2>
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr>
+        <th>西暦</th><th>本人</th><th>妻</th>
+        <th>長女（子①）</th><th>次子（子②）</th>
+        <th style="min-width:230px;text-align:left;padding-left:8px">ライフイベント</th>
+      </tr></thead>
+      <tbody id="lt-body"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ===== キャッシュフロー表 ===== -->
+<div class="card">
+  <h2>💰 キャッシュフロー表（単位：万円）</h2>
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr>
+        <th>危険度</th><th>西暦</th><th>本人</th>
+        <th>収入<br>合計</th><th>生活費<br>変動</th><th>生活費<br>固定</th>
+        <th>住居費</th><th>保育費</th><th>教育費</th>
+        <th>その他<br>特別費</th><th>支出<br>合計</th>
+        <th>年間<br>収支</th><th>現金<br>残高</th><th>投資<br>残高</th><th>総資産</th>
+      </tr></thead>
+      <tbody id="cf-body"></tbody>
+    </table>
+  </div>
+  <div class="note">
+    ※ 万円単位。危険度：🟢安全 / 🟡注意（赤字・資産減少傾向） / 🔴要対策（赤字かつ資産500万円未満）。収入欄にカーソルで内訳表示。
+  </div>
+</div>
+
+<!-- ===== グラフ ===== -->
+<div class="card">
+  <h2>📈 グラフ</h2>
+  <div class="chart-tabs">
+    <button class="ctb on" onclick="showChartTab('asset',this)">総資産推移</button>
+    <button class="ctb" onclick="showChartTab('balance',this)">年間収支</button>
+    <button class="ctb" onclick="showChartTab('breakdown',this)">資産内訳</button>
+    <button class="ctb" onclick="showChartTab('expense',this)">支出割合（現在）</button>
+  </div>
+  <div id="cp-asset"    class="cp on"><div class="chart-wrap"><canvas id="ch-asset"></canvas></div></div>
+  <div id="cp-balance"  class="cp">   <div class="chart-wrap"><canvas id="ch-balance"></canvas></div></div>
+  <div id="cp-breakdown"class="cp">   <div class="chart-wrap"><canvas id="ch-breakdown"></canvas></div></div>
+  <div id="cp-expense"  class="cp">   <div class="chart-wrap"><canvas id="ch-expense"></canvas></div></div>
+</div>
+
+<!-- シナリオ保存モーダル（簡易） -->
+<div id="modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:1000;align-items:center;justify-content:center">
+  <div style="background:#fff;border-radius:12px;padding:24px;min-width:300px;box-shadow:0 8px 32px rgba(0,0,0,.2)">
+    <h3 style="margin-bottom:12px;color:var(--blue-d)">💾 シナリオを保存</h3>
+    <div class="field"><label>シナリオ名</label><input type="text" id="modal-name" placeholder="例：標準プラン、住宅購入プラン"></div>
+    <div class="btn-row" style="margin-top:12px">
+      <button class="btn" onclick="saveScenario()">保存</button>
+      <button class="btn-o r" onclick="closeModal()">キャンセル</button>
+    </div>
+  </div>
+</div>
+
+</div><!-- /wrap -->
 <script>
-// ─── 定数（生年ベースで動的計算のため最小限）────────────
+// ══════════════════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════════════════
 const LIFE_END_AGE = 90;
-let currentRows = null;   // エクスポート用にrun()の結果を保持
+let currentRows   = null;
+let currentP      = null;
+let scenarios     = {};       // { name: { p, metrics } }
+let customEvents  = [];       // [{ id, year, name, amt, type, rec, endYear }]
+let chartObjs     = {};
 
-const EDU = {
-    public:  { kg:2.2,  el:32,  mid:48,  hi:51,  uni:54,  uni0:28 },
-    semi:    { kg:2.2,  el:32,  mid:48,  hi:105, uni:95,  uni0:40 },
-    private: { kg:2.2,  el:168, mid:134, hi:105, uni:95,  uni0:40 }
-};
-
-let chartObj = null;
-
-// ─── ユーティリティ ──────────────────────────────────────
+// ══════════════════════════════════════════════════════
+// UTILITIES
+// ══════════════════════════════════════════════════════
 const w   = v => Math.round(v / 10000);
-const g   = id => { const e = document.getElementById(id); return e.tagName==='SELECT' ? e.value : (parseFloat(e.value) || 0); };
+const mw  = v => Math.round(v / 1000) / 10;
 const fmt = v => Number(v).toLocaleString();
+function g(id){ const e=document.getElementById(id); return e ? (e.tagName==='SELECT'?e.value:(parseFloat(e.value)||0)) : 0; }
+function gs(id){ const e=document.getElementById(id); return e ? e.value : ''; }
 
-function mw(v) { return Math.round(v / 1000) / 10; }  // 円→万円（小数1桁）
-
-function annualMortgage(principal, rateP, years) {
-    if (principal <= 0 || years <= 0) return 0;
-    const r = (rateP / 100) / 12, n = years * 12;
-    if (r === 0) return principal / years;
-    return (principal * r * Math.pow(1+r,n) / (Math.pow(1+r,n)-1)) * 12;
+function annualMortgage(principal, rateP, years){
+  if(principal<=0||years<=0) return 0;
+  const r=(rateP/100)/12, n=years*12;
+  if(r===0) return principal/years;
+  return (principal*r*Math.pow(1+r,n)/(Math.pow(1+r,n)-1))*12;
 }
 
-function eduAnnual(age, type) {
-    const e = EDU[type] || EDU.public;
-    if (age >= 3  && age <= 5)  return e.kg   * 10000;
-    if (age >= 6  && age <= 11) return e.el   * 10000;
-    if (age >= 12 && age <= 14) return e.mid  * 10000;
-    if (age >= 15 && age <= 17) return e.hi   * 10000;
-    if (age === 18)              return (e.uni + e.uni0) * 10000;
-    if (age >= 19 && age <= 21) return e.uni  * 10000;
-    return 0;
+function eduChild(age, c){
+  const extraAnnual = (c.extra||0)*12;
+  const uni=c.uni||0, uni0=c.uni0||0, dorm=(c.dorm||0)*10000, study=(c.study||0)*10000;
+  if(age>=3  && age<=5 ) return 22000+extraAnnual;
+  if(age>=6  && age<=11) return c.el*10000+extraAnnual;
+  if(age>=12 && age<=14) return c.mid*10000+extraAnnual;
+  if(age>=15 && age<=17) return c.hi*10000+extraAnnual;
+  if(age===18)            return (uni+uni0)*10000+dorm+study;
+  if(age>=19 && age<=21) return uni*10000+dorm;
+  return 0;
 }
 
-function stageLabel(age) {
-    if (age < 0)   return '−';
-    if (age === 0) return '0歳（誕生）';
-    if (age <= 2)  return `${age}歳（乳幼児）`;
-    if (age <= 5)  return `${age}歳（保育園）`;
-    if (age <= 11) return `${age}歳（小学生）`;
-    if (age <= 14) return `${age}歳（中学生）`;
-    if (age <= 17) return `${age}歳（高校生）`;
-    if (age <= 21) return `${age}歳（大学生）`;
-    return `${age}歳（社会人）`;
+function stageLabel(age){
+  if(age<0) return '−';
+  if(age===0) return '0歳（誕生）';
+  if(age<=2)  return `${age}歳（乳幼児）`;
+  if(age<=5)  return `${age}歳（保育園）`;
+  if(age<=11) return `${age}歳（小学生）`;
+  if(age<=14) return `${age}歳（中学生）`;
+  if(age<=17) return `${age}歳（高校生）`;
+  if(age<=21) return `${age}歳（大学生）`;
+  return `${age}歳（社会人）`;
 }
 
-function events(yr, ua, c1a, c2a, p) {
-    const ev = [];
-    const a = (c,t) => ev.push([c,t]);
-    if (yr === p.Y0)            a('',  'プラン開始');
-    if (c1a === 0)              a('g', '長女・誕生');
-    if (c2a === 0)              a('g', '次子・誕生');
-    if (yr === p.wret)          a('',  '妻・職場復帰');
-    if (c1a === 3)              a('',  '長女・保育園入園');
-    if (c2a === 3)              a('',  '次子・保育園入園');
-    if (c1a === 6)              a('',  '長女・小学校入学');
-    if (c2a === 6)              a('',  '次子・小学校入学');
-    if (c1a === 12)             a('',  '長女・中学入学');
-    if (c2a === 12)             a('',  '次子・中学入学');
-    if (c1a === 15)             a('',  '長女・高校入学');
-    if (c2a === 15)             a('',  '次子・高校入学');
-    if (c1a === 18)             a('a', '長女・大学入学');
-    if (c2a === 18)             a('a', '次子・大学入学');
-    if (c1a === 22)             a('g', '長女・独立');
-    if (c2a === 22)             a('g', '次子・独立');
-    if (yr === p.hyr)           a('a', `マンション購入（${fmt(p.hprc)}万円）`);
-    if (yr === p.hyr+p.hper)    a('g', '住宅ローン完済');
-    if (yr === p.RET)           a('g', '本人・定年退職 ／ 年金受給開始');
-    if (ua === 75)              a('a', '後期高齢者医療へ');
-    if (ua === LIFE_END_AGE)    a('r', 'プラン終了');
-    // 車買い替え（ローン完済の2年後 + 10年おき）
-    const carDoneY = p.Y0 + p.carLoanYears + 2;
-    if ([carDoneY, carDoneY+10, carDoneY+20].includes(yr) && ua < 75) a('a','車の買い替え');
-    return ev;
+function lifeEvents(yr, ua, c1a, c2a, p){
+  const ev=[];
+  const a=(c,t)=>ev.push([c,t]);
+  if(yr===p.Y0)          a('', 'プラン開始');
+  if(c1a===0)            a('g','長女・誕生');
+  if(c2a===0)            a('g','次子・誕生');
+  if(yr===p.wret)        a('', '妻・職場復帰');
+  if(c1a===3)            a('', '長女・保育園入園');
+  if(c2a===3)            a('', '次子・保育園入園');
+  if(c1a===6)            a('', '長女・小学校入学');
+  if(c2a===6)            a('', '次子・小学校入学');
+  if(c1a===12)           a('', '長女・中学入学');
+  if(c2a===12)           a('', '次子・中学入学');
+  if(c1a===15)           a('', '長女・高校入学');
+  if(c2a===15)           a('', '次子・高校入学');
+  if(c1a===18)           a('a','長女・大学入学');
+  if(c2a===18)           a('a','次子・大学入学');
+  if(c1a===22)           a('g','長女・独立');
+  if(c2a===22)           a('g','次子・独立');
+  if(yr===p.hyr)         a('a',`マンション購入（${fmt(p.hprc)}万円）`);
+  if(yr===p.hyr+p.hper)  a('g','住宅ローン完済');
+  if(yr===p.RET)         a('g','本人・定年退職 ／ 年金受給開始');
+  if(p.reemployY>0 && yr===p.RET+p.reemployY) a('','再任用終了');
+  if(ua===75)            a('a','後期高齢者医療へ');
+  if(ua===LIFE_END_AGE)  a('r','プラン終了');
+  const carDone=p.Y0+p.carLoanYears+2;
+  if([carDone,carDone+10,carDone+20].includes(yr)&&ua<75) a('a','車の買い替え');
+  // カスタムイベント
+  for(const ev2 of p.customEvents){
+    const inRange=ev2.rec?(yr>=ev2.year&&yr<=(ev2.endYear||p.YEND)):yr===ev2.year;
+    if(inRange) a(ev2.type==='income'?'g':'a', ev2.name+(ev2.rec?' (毎年)':''));
+  }
+  return ev;
 }
 
-// ─── パラメータ収集 ──────────────────────────────────────
-function getP() {
-    const carAnn = g('f_carloan_m') * 12 + g('f_carloan_b');
-    const carLoanYears = carAnn > 0 ? Math.ceil(g('f_carloan') * 10000 / carAnn) : 0;
-
-    // 家族情報（生年ベース）
-    const Y0      = g('f_year');
-    const uBY     = g('f_uby');
-    const wBY     = g('f_wby');
-    const c1BY    = g('f_c1by');
-    const c2BY    = g('f_c2by');
-    const retAge  = g('f_retage');
-    const wRetAge = g('f_wretage');
-
-    return {
-        // 家族情報（導出値も含む）
-        Y0,   uBY,   wBY,   c1BY,  c2BY,
-        UA0:  Y0 - uBY,           // 今年の本人年齢
-        WA0:  Y0 - wBY,           // 今年の妻年齢
-        RET:  uBY + retAge,       // 本人定年年
-        WRET: wBY + wRetAge,      // 妻退職年
-        YEND: uBY + LIFE_END_AGE, // 計画終了年
-
-        cashAmt:    g('a_cash')       * 10000,
-        cashRate:   g('a_cashrate')   / 100,
-        investAmt:  g('a_invest')     * 10000,
-        investRate: g('a_investrate') / 100,
-        uMon:     g('u_mon'),
-        uBon:     g('u_bon'),
-        uGrow:    g('u_grow') / 100,
-        wMon:     g('w_mon'),
-        wBon:     g('w_bon'),
-        wret:     g('w_ret'),
-        // 変動費（月額）
-        food:     g('e_food'),  util:  g('e_util'), ent:   g('e_ent'),
-        cloth:    g('e_cloth'), aself: g('e_aself'), awife: g('e_awife'),
-        kids:     g('e_kids'),  misc:  g('e_misc'),
-        // 固定費（月額、住居除く）
-        ins:      g('f_ins'),   tel:   g('f_tel'),   carM:  g('f_car'),
-        sub:      g('f_sub'),   oth:   g('f_oth'),
-        // 車ローン
-        carLoanAnn:   carAnn,
-        carLoanYears: carLoanYears,
-        // 住宅
-        rent:  g('h_rent'),
-        hyr:   g('h_yr'),
-        hprc:  g('h_prc'),
-        hdp:   g('h_dp') * 10000,
-        hrate: g('h_rate'),
-        hper:  g('h_per'),
-        hmgmt: g('h_mgmt'),
-        // 将来
-        tBaby:   g('t_baby'),  tSchool: g('t_school'),
-        tEmpty:  g('t_empty'), tRetire: g('t_retire'),
-        sev:  g('r_sev') * 10000,
-        pen:  g('r_pen') * 10000,
-        edu:  g('s_edu')
-    };
+function riskLevel(r){
+  if(r.totalAsset<0||(r.totalAsset<5000000&&r.ua>60)) return 'red';
+  if(r.balance<0||r.totalAsset<10000000) return 'amber';
+  return 'green';
 }
 
-// ─── ライブ収支バー ──────────────────────────────────────
-function live() {
-    const p = getP();
-    const monthlyInc = (p.uMon * 12 + p.uBon) / 12;
-    const monthlyVar = p.food + p.util + p.ent + p.cloth + p.aself + p.awife + p.kids + p.misc;
-    const monthlyFix = p.ins + p.tel + p.carM + p.sub + p.oth;
-    const totalExp   = monthlyVar + monthlyFix + p.rent;
-    const bal        = monthlyInc - totalExp;
+// ══════════════════════════════════════════════════════
+// PARAMETER COLLECTION
+// ══════════════════════════════════════════════════════
+function getP(){
+  const carAnn=g('f_carloan_m')*12+g('f_carloan_b');
+  const carLoanYears=carAnn>0?Math.ceil(g('f_carloan')*10000/carAnn):0;
+  const Y0=g('f_year')||new Date().getFullYear();
+  const uBY=g('f_uby'), wBY=g('f_wby'), c1BY=g('f_c1by'), c2BY=g('f_c2by');
+  const retAge=g('f_retage'), wRetAge=g('f_wretage');
 
-    document.getElementById('lb-inc').textContent = mw(monthlyInc) + '万円';
-    document.getElementById('lb-exp').textContent = mw(totalExp) + '万円';
-    const balEl = document.getElementById('lb-bal');
-    balEl.textContent = (bal >= 0 ? '+' : '') + mw(bal) + '万円';
-    balEl.className = 'lv ' + (bal >= 0 ? 'pos' : 'neg');
+  // 教育（子どもごと）
+  const parseUni=id=>{const v=(gs(id)||'54|28').split('|');return{uni:+v[0],uni0:+v[1]};};
+  const u1=parseUni('c1_uni'), u2=parseUni('c2_uni');
+  const c1edu={el:g('c1_el'),mid:g('c1_mid'),hi:g('c1_hi'),uni:u1.uni,uni0:u1.uni0,dorm:g('c1_dorm'),study:g('c1_study'),extra:g('c1_extra')};
+  const c2edu={el:g('c2_el'),mid:g('c2_mid'),hi:g('c2_hi'),uni:u2.uni,uni0:u2.uni0,dorm:g('c2_dorm'),study:g('c2_study'),extra:g('c2_extra')};
 
-    // ヘッダーステータス更新
-    const c1a = p.Y0 - p.c1BY;
-    const c2a = p.Y0 - p.c2BY;
-    const c2txt = c2a >= 0 ? `次子${c2a}歳` : `次子${p.c2BY}年予定`;
-    document.getElementById('header-status').textContent =
-        `${p.Y0}年 ／ 本人${p.UA0}歳・妻${p.WA0}歳・長女${c1a}歳・${c2txt}`;
+  return{
+    Y0,uBY,wBY,c1BY,c2BY,
+    UA0:Y0-uBY, WA0:Y0-wBY,
+    RET:uBY+retAge, WRET:wBY+wRetAge,
+    YEND:uBY+LIFE_END_AGE,
+    // 収入
+    uMon:g('u_mon'), uBon:g('u_bon'), uGrow:g('u_grow')/100,
+    hAllow:g('u_house_allow'), depAllow:g('u_dep_allow'), otherAllow:g('u_other_allow'),
+    reemployM:g('u_reemploy_m'), reemployY:g('u_reemploy_y'),
+    wMon:g('w_mon'), wBon:g('w_bon'), wret:g('w_ret'),
+    // インフレ
+    inflRate:g('infl')/100,
+    // 変動費（月額）
+    food:g('e_food'),util:g('e_util'),ent:g('e_ent'),cloth:g('e_cloth'),
+    aself:g('e_aself'),awife:g('e_awife'),kids:g('e_kids'),misc:g('e_misc'),
+    // 旅行
+    tBaby:g('t_baby'),tSchool:g('t_school'),tEmpty:g('t_empty'),tRetire:g('t_retire'),
+    // 固定費（月額）
+    ins:g('f_ins'),tel:g('f_tel'),carM:g('f_car'),sub:g('f_sub'),oth:g('f_oth'),
+    carLoanAnn:carAnn, carLoanYears,
+    // 住宅
+    rent:g('h_rent'),hyr:g('h_yr'),hprc:g('h_prc'),hdp:g('h_dp')*10000,
+    hrate:g('h_rate'),hper:g('h_per'),hmgmt:g('h_mgmt'),
+    // 教育
+    c1edu, c2edu,
+    // 資産
+    cashAmt:g('a_cash')*10000, cashRate:g('a_cashrate')/100,
+    investAmt:g('a_invest')*10000, investRate:g('a_investrate')/100,
+    // 老後
+    sev:g('r_sev')*10000, pen:g('r_pen')*10000,
+    // カスタムイベント
+    customEvents:[...customEvents]
+  };
 }
 
-// ─── タブ切替 ────────────────────────────────────────────
-function showTab(name, btn) {
-    document.querySelectorAll('.tab-pane').forEach(e => e.classList.remove('on'));
-    document.querySelectorAll('.tab-btn').forEach(e => e.classList.remove('on'));
-    document.getElementById('tc-' + name).classList.add('on');
-    btn.classList.add('on');
-}
+// ══════════════════════════════════════════════════════
+// CORE CALCULATION（pure function）
+// ══════════════════════════════════════════════════════
+function calculate(p){
+  const loan=Math.max(0,p.hprc*10000-p.hdp);
+  const mgage=annualMortgage(loan,p.hrate,p.hper);
+  const carDoneY=p.Y0+p.carLoanYears+2;
+  const carRepYrs=[carDoneY,carDoneY+10,carDoneY+20];
+  const rows=[];
+  let cash=p.cashAmt, invest=p.investAmt;
 
-// ─── メイン計算 ──────────────────────────────────────────
-function run() {
-    const p = getP();
-    const loan  = Math.max(0, p.hprc * 10000 - p.hdp);
-    const mgage = annualMortgage(loan, p.hrate, p.hper);
+  for(let yr=p.Y0;yr<=p.YEND;yr++){
+    const ua=p.UA0+(yr-p.Y0);
+    const wa=p.WA0+(yr-p.Y0);
+    const c1a=yr-p.c1BY;
+    const c2a=yr-p.c2BY;
+    const dy=yr-p.Y0;
+    const inf=Math.pow(1+p.inflRate,dy);
 
-    // 車買い替え年（完済2年後、その後10年おき）
-    const carDoneY  = p.Y0 + p.carLoanYears + 2;
-    const carRepYrs = [carDoneY, carDoneY+10, carDoneY+20];
+    // ── 収入 ──
+    let uInc=0,wInc=0,pen=0,sev=0,reemploy=0;
+    const depChildren=(c1a>=0&&c1a<18?1:0)+(c2a>=0&&c2a<18?1:0);
+    const allowTotal=(p.hAllow+p.depAllow*depChildren+p.otherAllow)*12;
 
-    const rows = [];
-    let cash   = p.cashAmt;
-    let invest = p.investAmt;
+    if(yr<p.RET){
+      uInc=(p.uMon*12+p.uBon)*Math.pow(1+p.uGrow,dy)+allowTotal;
+    }
+    if(p.reemployM>0&&yr>=p.RET&&yr<p.RET+p.reemployY){
+      reemploy=p.reemployM*12;
+    }
+    if(yr>=p.wret&&yr<p.WRET){
+      const wy=yr-p.wret;
+      wInc=(p.wMon*12+p.wBon)*Math.pow(1+p.uGrow*0.5,wy);
+    }
+    if(yr>=p.RET) pen=p.pen;
+    if(yr===p.RET) sev=p.sev;
 
-    for (let yr = p.Y0; yr <= p.YEND; yr++) {
-        const ua  = p.UA0 + (yr - p.Y0);
-        const wa  = p.WA0 + (yr - p.Y0);
-        const c1a = yr - p.c1BY;
-        const c2a = yr - p.c2BY;
-        const dy  = yr - p.Y0;
-        const inf = Math.pow(1.01, dy);
+    // カスタム収入
+    let custInc=0;
+    for(const ev of p.customEvents){
+      if(ev.type!=='income') continue;
+      const inR=ev.rec?(yr>=ev.year&&yr<=(ev.endYear||p.YEND)):yr===ev.year;
+      if(inR) custInc+=ev.amt*10000;
+    }
+    const totalInc=uInc+wInc+pen+sev+reemploy+custInc;
 
-        // ── 収入 ──────────────────────────────────────
-        let uInc = 0, wInc = 0, pen = 0, sev = 0;
-        if (yr < p.RET) {
-            uInc = (p.uMon * 12 + p.uBon) * Math.pow(1 + p.uGrow, dy);
-        }
-        if (yr >= p.wret && yr < p.WRET) {
-            const wy = yr - p.wret;
-            wInc = (p.wMon * 12 + p.wBon) * Math.pow(1 + p.uGrow * 0.5, wy);
-        }
-        if (yr >= p.RET) pen = p.pen;
-        if (yr === p.RET) sev = p.sev;
-        const totalInc = uInc + wInc + pen + sev;
+    // ── 支出 ──
+    const monthlyVar=p.food+p.util+p.ent+p.cloth+p.aself+p.awife+p.kids+p.misc;
+    const varExp=monthlyVar*12*inf;
+    const monthlyFix=p.ins+p.tel+p.carM+p.sub+p.oth;
+    const fixExp=monthlyFix*12*inf;
 
-        // ── 支出：変動費 ──────────────────────────────
-        const monthlyVar = p.food + p.util + p.ent + p.cloth + p.aself + p.awife + p.kids + p.misc;
-        const varExp = monthlyVar * 12 * inf;
+    // 住居費
+    let housing=0;
+    if(yr<p.hyr){
+      housing=p.rent*12;
+    } else if(yr<p.hyr+p.hper){
+      housing=mgage+p.hmgmt*12;
+    } else {
+      housing=p.hmgmt*12;
+    }
+    const dpCost=(yr===p.hyr)?(p.hdp+p.hprc*10000*0.03):0;
 
-        // ── 支出：固定費（住居除く）─────────────────
-        const monthlyFix = p.ins + p.tel + p.carM + p.sub + p.oth;
-        const fixExp = monthlyFix * 12 * inf;
+    // 車ローン
+    const carLoan=(yr<p.Y0+p.carLoanYears)?p.carLoanAnn:0;
 
-        // ── 支出：住居 ─────────────────────────────
-        let housing = 0;
-        if (yr < p.hyr) {
-            housing = p.rent * 12;
-        } else if (yr < p.hyr + p.hper) {
-            housing = mgage + p.hmgmt * 12;
-        } else {
-            housing = p.hmgmt * 12;   // ローン完済後も管理費は継続
-        }
-        const dpCost = (yr === p.hyr) ? (p.hdp + p.hprc * 10000 * 0.03) : 0;  // 頭金＋諸費用3%
+    // 保育費（0〜2歳：6万/月）
+    let childcare=0;
+    if(c1a>=0&&c1a<=2) childcare+=720000;
+    if(c2a>=0&&c2a<=2) childcare+=720000;
 
-        // ── 支出：車ローン ─────────────────────────
-        const carLoan = (yr < Y0 + p.carLoanYears) ? p.carLoanAnn : 0;
+    // 教育費（子どもごと）
+    let edu=0;
+    if(c1a>=0) edu+=eduChild(c1a,p.c1edu);
+    if(c2a>=0) edu+=eduChild(c2a,p.c2edu);
 
-        // ── 支出：保育費（0〜2歳：6万/月）─────────
-        let childcare = 0;
-        if (c1a >= 0 && c1a <= 2) childcare += 720000;
-        if (c2a >= 0 && c2a <= 2) childcare += 720000;
+    // 旅行
+    let trv;
+    if(yr>=p.RET)                                  trv=p.tRetire;
+    else if(c1a>=22&&(c2a<0||c2a>=22))             trv=p.tEmpty;
+    else if(c1a>=6||c2a>=6)                        trv=p.tSchool;
+    else                                            trv=p.tBaby;
+    trv*=10000;
 
-        // ── 支出：教育費 ────────────────────────────
-        let edu = 0;
-        if (c1a >= 0) edu += eduAnnual(c1a, p.edu);
-        if (c2a >= 0) edu += eduAnnual(c2a, p.edu);
+    // 特別費
+    let special=0;
+    if(carRepYrs.includes(yr)&&ua<75) special+=2000000;
+    if(c1a===20) special+=200000;
+    if(c2a===20) special+=200000;
 
-        // ── 支出：旅行・特別費 ──────────────────────
-        let trv;
-        if (yr >= RET)                                   trv = p.tRetire;
-        else if (c1a >= 22 && (c2a < 0 || c2a >= 22))  trv = p.tEmpty;
-        else if (c1a >= 6  || c2a >= 6)                 trv = p.tSchool;
-        else                                             trv = p.tBaby;
-        trv *= 10000;
+    // 医療・介護
+    let medical=0;
+    if(ua>=70) medical+=300000*inf;
+    if(ua>=80) medical+=500000*inf;
 
-        let special = 0;
-        if (carRepYrs.includes(yr) && ua < 75) special += 2000000;  // 車買い替え200万
-        if (c1a === 20) special += 200000;   // 成人式
-        if (c2a === 20) special += 200000;
-
-        let medical = 0;
-        if (ua >= 70) medical += 300000;
-        if (ua >= 80) medical += 500000;
-
-        const otherExp    = dpCost + carLoan + trv + special + medical;
-        const totalExp    = varExp + fixExp + housing + childcare + edu + otherExp;
-        const balance     = totalInc - totalExp;
-
-        // 投資資産は利回りで独立して複利成長
-        const investReturn = invest * p.investRate;
-        invest = invest * (1 + p.investRate);
-        // 現金は収支差分＋預金利息で増減
-        cash   = (cash + balance) * (1 + p.cashRate);
-        const totalAsset = cash + invest;
-
-        const evList = events(yr, ua, c1a, c2a, {...p, carLoanYears: p.carLoanYears});
-
-        rows.push({ yr, ua, wa, c1a, c2a,
-            totalInc, uInc, wInc, pen, sev,
-            varExp, fixExp, housing, childcare, edu, otherExp,
-            totalExp, balance,
-            cash, invest, totalAsset, investReturn,
-            evList, hasEv: evList.length > 0 });
+    // カスタム支出
+    let custExp=0;
+    for(const ev of p.customEvents){
+      if(ev.type!=='expense') continue;
+      const inR=ev.rec?(yr>=ev.year&&yr<=(ev.endYear||p.YEND)):yr===ev.year;
+      if(inR) custExp+=ev.amt*10000;
     }
 
-    currentRows = rows;
-    drawSummary(rows);
-    drawLifeTable(rows);
-    drawCFTable(rows);
-    drawChart(rows);
+    const otherExp=dpCost+carLoan+trv+special+medical+custExp;
+    const totalExp=varExp+fixExp+housing+childcare+edu+otherExp;
+    const balance=totalInc-totalExp;
+
+    // 資産更新
+    const investReturn=invest*p.investRate;
+    invest*=(1+p.investRate);
+    cash=(cash+balance)*(1+p.cashRate);
+    const totalAsset=cash+invest;
+
+    const evList=lifeEvents(yr,ua,c1a,c2a,p);
+    rows.push({yr,ua,wa,c1a,c2a,
+      totalInc,uInc,wInc,pen,sev,reemploy,custInc,
+      varExp,fixExp,housing,childcare,edu,otherExp,
+      totalExp,balance,cash,invest,totalAsset,investReturn,
+      evList,hasEv:evList.length>0});
+  }
+  return rows;
 }
 
-// ─── サマリーカード ──────────────────────────────────────
-function drawSummary(rows) {
-    const last     = rows[rows.length-1];
-    const finalTotal  = last.totalAsset;
-    const finalCash   = last.cash;
-    const finalInvest = last.invest;
-    const maxTotal = Math.max(...rows.map(r => r.totalAsset));
-    const maxRow   = rows.find(r => r.totalAsset === maxTotal);
-    const minTotal = Math.min(...rows.map(r => r.totalAsset));
-    const minRow   = rows.find(r => r.totalAsset === minTotal);
-    const defs     = rows.filter(r => r.balance < 0).length;
-    const fc = finalTotal > 10000000 ? 'g' : finalTotal > 0 ? '' : 'r';
-    const dc = defs > 15 ? 'r' : defs > 8 ? 'a' : 'g';
-    document.getElementById('summary').innerHTML = `
-        <div class="sc ${fc}">
-            <div class="sc-l">90歳時点の総資産</div>
-            <div class="sc-v">${fmt(w(finalTotal))}万円</div>
-            <div class="sc-s">現金${fmt(w(finalCash))}万 ／ 投資${fmt(w(finalInvest))}万</div>
-        </div>
-        <div class="sc">
-            <div class="sc-l">ピーク時の総資産</div>
-            <div class="sc-v">${fmt(w(maxTotal))}万円</div>
-            <div class="sc-s">${maxRow.yr}年（本人${maxRow.ua}歳）</div>
-        </div>
-        <div class="sc a">
-            <div class="sc-l">最低総資産</div>
-            <div class="sc-v">${fmt(w(minTotal))}万円</div>
-            <div class="sc-s">${minRow.yr}年（本人${minRow.ua}歳）</div>
-        </div>
-        <div class="sc ${dc}">
-            <div class="sc-l">年間赤字の年数</div>
-            <div class="sc-v">${defs}年</div>
-            <div class="sc-s">全${rows.length}年中</div>
-        </div>`;
+function getMetrics(rows,p){
+  const hit=r=>r.totalAsset<0;
+  const depRow=rows.find(hit);
+  const assetLife=depRow?depRow.ua-1:`${LIFE_END_AGE}歳以降`;
+  const r65=rows.find(r=>r.ua===65);
+  const r85=rows.find(r=>r.ua===85);
+  const worst=rows.reduce((m,r)=>r.balance<m.balance?r:m,rows[0]);
+  return{
+    assetLife,
+    asset65:r65?r65.totalAsset:null,
+    asset85:r85?r85.totalAsset:null,
+    totalBalance:rows.reduce((s,r)=>s+r.balance,0),
+    worstYr:worst.yr, worstBal:worst.balance,
+    finalAsset:rows[rows.length-1].totalAsset,
+  };
 }
 
-// ─── ライフイベント表 ────────────────────────────────────
-function drawLifeTable(rows) {
-    const tbody = document.getElementById('lt-body');
-    tbody.innerHTML = '';
-    rows.forEach(r => {
-        const tr = document.createElement('tr');
-        if (r.hasEv) tr.classList.add('ev');
-        const evHtml = r.evList.length
-            ? r.evList.map(([c,t]) => `<span class="tag ${c}">${t}</span>`).join('')
-            : '<span style="color:#9ca3af">−</span>';
-        tr.innerHTML = `
-            <td class="c">${r.yr}</td><td class="c">${r.ua}歳</td><td class="c">${r.wa}歳</td>
-            <td class="c">${stageLabel(r.c1a)}</td>
-            <td class="c">${r.c2a >= 0 ? stageLabel(r.c2a) : '−'}</td>
-            <td class="l" style="padding-left:10px">${evHtml}</td>`;
-        tbody.appendChild(tr);
+// ══════════════════════════════════════════════════════
+// RUN（main entry）
+// ══════════════════════════════════════════════════════
+function run(){
+  currentP=getP();
+  currentRows=calculate(currentP);
+  const metrics=getMetrics(currentRows,currentP);
+  drawSummary(currentRows,metrics);
+  drawAssetLife(metrics,currentP);
+  drawRiskBanner(currentRows);
+  drawLifeTable(currentRows);
+  drawCFTable(currentRows);
+  drawCharts(currentRows,currentP);
+  saveToLS();
+}
+
+// ══════════════════════════════════════════════════════
+// LIVE BALANCE BAR
+// ══════════════════════════════════════════════════════
+function live(){
+  const Y0=g('f_year')||new Date().getFullYear();
+  const uBY=g('f_uby'),wBY=g('f_wby'),c1BY=g('f_c1by'),c2BY=g('f_c2by');
+  const c1a=Y0-c1BY,c2a=Y0-c2BY;
+  const c2txt=c2a>=0?`次子${c2a}歳`:`次子${c2BY}年予定`;
+  document.getElementById('h-status').textContent=
+    `${Y0}年 ／ 本人${Y0-uBY}歳・妻${Y0-wBY}歳・長女${c1a}歳・${c2txt}`;
+
+  const depCh=(c1a>=0&&c1a<18?1:0)+(c2a>=0&&c2a<18?1:0);
+  const allowM=g('u_house_allow')+g('u_dep_allow')*depCh+g('u_other_allow');
+  const monthlyInc=(g('u_mon')*12+g('u_bon'))/12+allowM;
+  const monthlyVar=g('e_food')+g('e_util')+g('e_ent')+g('e_cloth')+g('e_aself')+g('e_awife')+g('e_kids')+g('e_misc');
+  const monthlyFix=g('f_ins')+g('f_tel')+g('f_car')+g('f_sub')+g('f_oth');
+  const totalExp=monthlyVar+monthlyFix+g('h_rent');
+  const bal=monthlyInc-totalExp;
+  document.getElementById('lb-inc').textContent=mw(monthlyInc)+'万円';
+  document.getElementById('lb-exp').textContent=mw(totalExp)+'万円';
+  const el=document.getElementById('lb-bal');
+  el.textContent=(bal>=0?'+':'')+mw(bal)+'万円';
+  el.className='lv '+(bal>=0?'pos':'neg');
+}
+
+// ══════════════════════════════════════════════════════
+// RENDER FUNCTIONS
+// ══════════════════════════════════════════════════════
+function drawSummary(rows,metrics){
+  const finalTotal=rows[rows.length-1].totalAsset;
+  const maxTotal=Math.max(...rows.map(r=>r.totalAsset));
+  const maxRow=rows.find(r=>r.totalAsset===maxTotal);
+  const defs=rows.filter(r=>r.balance<0).length;
+  const fc=finalTotal>10000000?'g':finalTotal>0?'':'r';
+  const dc=defs>15?'r':defs>8?'a':'g';
+  document.getElementById('summary').innerHTML=`
+    <div class="sc ${fc}">
+      <div class="sc-l">90歳時点の総資産</div>
+      <div class="sc-v">${fmt(w(finalTotal))}万円</div>
+      <div class="sc-s">現金${fmt(w(rows[rows.length-1].cash))}万 ／ 投資${fmt(w(rows[rows.length-1].invest))}万</div>
+    </div>
+    <div class="sc">
+      <div class="sc-l">ピーク時の総資産</div>
+      <div class="sc-v">${fmt(w(maxTotal))}万円</div>
+      <div class="sc-s">${maxRow.yr}年（本人${maxRow.ua}歳）</div>
+    </div>
+    <div class="sc a">
+      <div class="sc-l">65歳時点の総資産</div>
+      <div class="sc-v">${metrics.asset65!==null?fmt(w(metrics.asset65))+'万円':'−'}</div>
+      <div class="sc-s">85歳時点：${metrics.asset85!==null?fmt(w(metrics.asset85))+'万円':'−'}</div>
+    </div>
+    <div class="sc ${dc}">
+      <div class="sc-l">年間赤字の年数</div>
+      <div class="sc-v">${defs}年</div>
+      <div class="sc-s">全${rows.length}年中</div>
+    </div>`;
+}
+
+function drawAssetLife(metrics,p){
+  const bar=document.getElementById('asset-life-bar');
+  bar.style.display='flex';
+  document.getElementById('al-val').textContent=
+    typeof metrics.assetLife==='number'?`${metrics.assetLife}歳まで資産維持可能`:metrics.assetLife;
+  const dep=typeof metrics.assetLife==='number';
+  document.getElementById('al-detail').textContent=
+    dep?`（${metrics.assetLife}歳時点で資産が枯渇する見込み）`:'（計画期間中は資産がプラスで推移）';
+}
+
+function drawRiskBanner(rows){
+  const banner=document.getElementById('risk-banner');
+  const reds=rows.filter(r=>riskLevel(r)==='red');
+  const ambers=rows.filter(r=>riskLevel(r)==='amber');
+  banner.style.display='flex';
+  if(reds.length>5){
+    banner.className='danger';
+    banner.innerHTML=`🔴 <strong>要対策：</strong>${reds.length}年間で年間赤字かつ資産500万円未満の時期があります。支出削減や収入増加を検討してください。`;
+  } else if(ambers.length>8){
+    banner.className='caution';
+    banner.innerHTML=`🟡 <strong>注意：</strong>${ambers.length}年間で資産減少傾向または年間赤字の時期があります。`;
+  } else {
+    banner.className='safe';
+    banner.innerHTML=`🟢 <strong>安全：</strong>計画期間中の資産は概ね良好に推移しています。`;
+  }
+}
+
+function drawLifeTable(rows){
+  const tbody=document.getElementById('lt-body');
+  tbody.innerHTML='';
+  rows.forEach(r=>{
+    const tr=document.createElement('tr');
+    if(r.hasEv) tr.classList.add('ev');
+    const evHtml=r.evList.length
+      ?r.evList.map(([c,t])=>`<span class="tag ${c}">${t}</span>`).join('')
+      :'<span style="color:var(--gray-5)">−</span>';
+    tr.innerHTML=`
+      <td class="c">${r.yr}</td><td class="c">${r.ua}歳</td><td class="c">${r.wa}歳</td>
+      <td class="c">${stageLabel(r.c1a)}</td>
+      <td class="c">${r.c2a>=0?stageLabel(r.c2a):'−'}</td>
+      <td class="l" style="padding-left:8px">${evHtml}</td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+function drawCFTable(rows){
+  const tbody=document.getElementById('cf-body');
+  tbody.innerHTML='';
+  rows.forEach(r=>{
+    const tr=document.createElement('tr');
+    if(r.ua>=65) tr.classList.add('ret');
+    const rl=riskLevel(r);
+    const ri=rl==='red'?'🔴':rl==='amber'?'🟡':'🟢';
+    const bc=r.balance>=0?'pos':'neg';
+    const sc=r.totalAsset<0?'neg':r.totalAsset<5000000?'wrn':'pos';
+    const tip=`本人:${fmt(w(r.uInc))}万${r.wInc?` 妻:${fmt(w(r.wInc))}万`:''}${r.pen?` 年金:${fmt(w(r.pen))}万`:''}${r.sev?` 退職金:${fmt(w(r.sev))}万`:''}${r.reemploy?` 再任用:${fmt(w(r.reemploy))}万`:''}${r.custInc?` カスタム:${fmt(w(r.custInc))}万`:''}`;
+    const atip=`現金:${fmt(w(r.cash))}万 ／ 投資:${fmt(w(r.invest))}万（投資収益+${fmt(w(r.investReturn))}万）`;
+    tr.innerHTML=`
+      <td class="c ri">${ri}</td>
+      <td class="c">${r.yr}</td><td class="c">${r.ua}歳</td>
+      <td title="${tip}"><strong>${fmt(w(r.totalInc))}</strong></td>
+      <td>${fmt(w(r.varExp))}</td><td>${fmt(w(r.fixExp))}</td>
+      <td>${fmt(w(r.housing))}</td><td>${fmt(w(r.childcare))}</td><td>${fmt(w(r.edu))}</td>
+      <td>${fmt(w(r.otherExp))}</td><td>${fmt(w(r.totalExp))}</td>
+      <td class="${bc}">${w(r.balance)>=0?'+':''}${fmt(w(r.balance))}</td>
+      <td>${fmt(w(r.cash))}</td><td>${fmt(w(r.invest))}</td>
+      <td class="${sc}" title="${atip}"><strong>${fmt(w(r.totalAsset))}</strong></td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+// ══════════════════════════════════════════════════════
+// CHARTS
+// ══════════════════════════════════════════════════════
+function destroyChart(key){
+  if(chartObjs[key]){chartObjs[key].destroy();delete chartObjs[key];}
+}
+
+function drawCharts(rows,p){
+  drawAssetChart(rows);
+  drawBalanceChart(rows);
+  drawBreakdownChart(rows,p);
+  drawExpensePie(rows,p);
+}
+
+function drawAssetChart(rows){
+  destroyChart('asset');
+  const ctx=document.getElementById('ch-asset').getContext('2d');
+  chartObjs.asset=new Chart(ctx,{
+    data:{
+      labels:rows.map(r=>`${r.yr}(${r.ua}歳)`),
+      datasets:[
+        {type:'line',label:'総資産（万円）',data:rows.map(r=>w(r.totalAsset)),
+          borderColor:'#3b82f6',backgroundColor:'rgba(59,130,246,.07)',fill:true,tension:.35,pointRadius:0,yAxisID:'yL',order:0},
+        {type:'line',label:'うち投資資産（万円）',data:rows.map(r=>w(r.invest)),
+          borderColor:'#7c3aed',backgroundColor:'transparent',tension:.35,pointRadius:0,borderDash:[4,3],yAxisID:'yL',order:0},
+        {type:'bar',label:'年間収入（万円）',data:rows.map(r=>w(r.totalInc)),
+          backgroundColor:'rgba(34,197,94,.45)',yAxisID:'yR',order:1},
+        {type:'bar',label:'年間支出（万円）',data:rows.map(r=>w(r.totalExp)),
+          backgroundColor:'rgba(239,68,68,.4)',yAxisID:'yR',order:1}
+      ]
+    },
+    options:chartOpts('総資産（万円）','年間収支（万円）')
+  });
+}
+
+function drawBalanceChart(rows){
+  destroyChart('balance');
+  const ctx=document.getElementById('ch-balance').getContext('2d');
+  chartObjs.balance=new Chart(ctx,{
+    data:{
+      labels:rows.map(r=>`${r.yr}(${r.ua}歳)`),
+      datasets:[
+        {type:'bar',label:'年間収支（万円）',data:rows.map(r=>w(r.balance)),
+          backgroundColor:rows.map(r=>r.balance>=0?'rgba(34,197,94,.6)':'rgba(239,68,68,.6)'),yAxisID:'yL'}
+      ]
+    },
+    options:chartOpts('年間収支（万円）','')
+  });
+}
+
+function drawBreakdownChart(rows,p){
+  destroyChart('breakdown');
+  const ctx=document.getElementById('ch-breakdown').getContext('2d');
+  const houseAsset=rows.map(r=>r.yr>=p.hyr?w(p.hprc*10000):0);
+  chartObjs.breakdown=new Chart(ctx,{
+    data:{
+      labels:rows.map(r=>`${r.yr}(${r.ua}歳)`),
+      datasets:[
+        {type:'line',label:'現金残高（万円）',data:rows.map(r=>w(r.cash)),
+          borderColor:'#3b82f6',backgroundColor:'rgba(59,130,246,.15)',fill:true,tension:.35,pointRadius:0,yAxisID:'yL'},
+        {type:'line',label:'投資残高（万円）',data:rows.map(r=>w(r.invest)),
+          borderColor:'#7c3aed',backgroundColor:'rgba(124,58,237,.1)',fill:true,tension:.35,pointRadius:0,yAxisID:'yL'},
+        {type:'line',label:'住宅資産（購入額）',data:houseAsset,
+          borderColor:'#d97706',backgroundColor:'rgba(217,119,6,.08)',fill:true,tension:.35,pointRadius:0,yAxisID:'yL',borderDash:[5,4]}
+      ]
+    },
+    options:chartOpts('資産残高（万円）','')
+  });
+}
+
+function drawExpensePie(rows,p){
+  destroyChart('expense');
+  const mid=rows[Math.floor(rows.length/2)]||rows[0];
+  if(!mid) return;
+  const ctx=document.getElementById('ch-expense').getContext('2d');
+  chartObjs.expense=new Chart(ctx,{
+    type:'doughnut',
+    data:{
+      labels:['生活費(変動)','生活費(固定)','住居費','保育費','教育費','旅行・特別費'],
+      datasets:[{
+        data:[w(mid.varExp),w(mid.fixExp),w(mid.housing),w(mid.childcare),w(mid.edu),w(mid.otherExp)],
+        backgroundColor:['#3b82f6','#8b5cf6','#f59e0b','#10b981','#ef4444','#6b7280']
+      }]
+    },
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{position:'right'},
+        title:{display:true,text:`${mid.yr}年（本人${mid.ua}歳）の支出割合`}}}
+  });
+}
+
+function chartOpts(leftLabel,rightLabel){
+  return{
+    responsive:true,maintainAspectRatio:false,
+    plugins:{legend:{position:'top',labels:{font:{size:11}}},
+      tooltip:{callbacks:{label:c=>`${c.dataset.label}: ${c.parsed.y.toLocaleString()}万円`}}},
+    scales:{
+      x:{ticks:{maxTicksLimit:16,maxRotation:45,font:{size:9}}},
+      yL:{type:'linear',position:'left',title:{display:!!leftLabel,text:leftLabel,font:{size:10}},grid:{color:'rgba(0,0,0,.05)'}},
+      ...(rightLabel?{yR:{type:'linear',position:'right',title:{display:true,text:rightLabel,font:{size:10}},grid:{drawOnChartArea:false}}}:{})
+    }
+  };
+}
+
+// ══════════════════════════════════════════════════════
+// SCENARIOS
+// ══════════════════════════════════════════════════════
+function openSaveScenario(){
+  document.getElementById('modal').style.display='flex';
+  document.getElementById('modal-name').focus();
+}
+function closeModal(){
+  document.getElementById('modal').style.display='none';
+}
+
+function saveScenario(){
+  const name=document.getElementById('modal-name').value.trim();
+  if(!name){alert('シナリオ名を入力してください');return;}
+  if(!currentRows){run();}
+  const p=currentP;
+  const metrics=getMetrics(currentRows,p);
+  scenarios[name]={metrics};
+  closeModal();
+  document.getElementById('modal-name').value='';
+  saveToLS();
+  renderScenarioList();
+  // 比較パネルを開く
+  const card=document.getElementById('scenario-card');
+  card.classList.remove('closed');
+}
+
+function deleteScenario(name){
+  delete scenarios[name];
+  saveToLS();
+  renderScenarioList();
+}
+
+function renderScenarioList(){
+  const area=document.getElementById('scenario-list-area');
+  const names=Object.keys(scenarios);
+  if(names.length===0){
+    area.innerHTML='<p style="color:var(--gray-5);font-size:.82rem">シナリオがまだ保存されていません。</p>';
+    document.getElementById('scenario-cmp-table').innerHTML='';
+    return;
+  }
+  area.innerHTML=`
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">
+      ${names.map(n=>`
+        <div style="background:var(--blue-l);color:var(--blue-d);padding:4px 10px;border-radius:20px;font-size:.78rem;font-weight:600;display:flex;align-items:center;gap:6px">
+          ${n}
+          <button onclick="deleteScenario('${n}')" style="background:none;border:none;cursor:pointer;color:var(--blue-d);font-size:.9rem;line-height:1">✕</button>
+        </div>`).join('')}
+    </div>`;
+
+  // 比較表
+  const metrics_keys=[
+    ['assetLife','資産寿命'],
+    ['asset65','65歳時点資産'],
+    ['asset85','85歳時点資産'],
+    ['finalAsset','90歳時点資産'],
+    ['totalBalance','生涯収支合計'],
+    ['worstBal','最大赤字額'],
+    ['worstYr','最大赤字年'],
+  ];
+  const rows=metrics_keys.map(([key,label])=>{
+    const cells=names.map(n=>{
+      const v=scenarios[n].metrics[key];
+      if(v===null||v===undefined) return '−';
+      if(key==='assetLife') return typeof v==='number'?`${v}歳`:v;
+      if(key==='worstYr') return `${v}年`;
+      return fmt(w(v))+'万円';
     });
+    return`<tr><td class="metric" style="font-weight:600;padding:6px 10px;white-space:nowrap">${label}</td>${cells.map(c=>`<td style="padding:6px 10px;text-align:right">${c}</td>`).join('')}</tr>`;
+  }).join('');
+
+  document.getElementById('scenario-cmp-table').innerHTML=`
+    <div class="cmp-table-wrap">
+      <table class="cmp-table">
+        <thead><tr>
+          <th>比較項目</th>
+          ${names.map(n=>`<th>${n}</th>`).join('')}
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>`;
 }
 
-// ─── キャッシュフロー表 ──────────────────────────────────
-function drawCFTable(rows) {
-    const tbody = document.getElementById('cf-body');
-    tbody.innerHTML = '';
-    rows.forEach(r => {
-        const tr = document.createElement('tr');
-        if (r.balance < 0)  tr.classList.add('def');
-        else if (r.ua >= 65) tr.classList.add('ret');
-        const bc = r.balance >= 0 ? 'pos' : 'neg';
-        const sc = r.totalAsset < 0 ? 'neg' : r.totalAsset < 5000000 ? 'wrn' : 'pos';
-        const assetTip = `現金:${fmt(w(r.cash))}万 ／ 投資:${fmt(w(r.invest))}万（投資収益+${fmt(w(r.investReturn))}万）`;
-        const tipInc = [
-            r.uInc  ? `本人:${fmt(w(r.uInc))}万`    : '',
-            r.wInc  ? `妻:${fmt(w(r.wInc))}万`       : '',
-            r.pen   ? `年金:${fmt(w(r.pen))}万`       : '',
-            r.sev   ? `退職金:${fmt(w(r.sev))}万`     : ''
-        ].filter(Boolean).join(' / ');
-        tr.innerHTML = `
-            <td class="c">${r.yr}</td><td class="c">${r.ua}歳</td>
-            <td title="${tipInc}"><strong>${fmt(w(r.totalInc))}</strong></td>
-            <td>${fmt(w(r.varExp))}</td>
-            <td>${fmt(w(r.fixExp))}</td>
-            <td>${fmt(w(r.housing))}</td>
-            <td>${fmt(w(r.childcare))}</td>
-            <td>${fmt(w(r.edu))}</td>
-            <td>${fmt(w(r.otherExp))}</td>
-            <td>${fmt(w(r.totalExp))}</td>
-            <td class="${bc}">${w(r.balance) >= 0 ? '+' : ''}${fmt(w(r.balance))}</td>
-            <td class="${sc}" title="${assetTip}"><strong>${fmt(w(r.totalAsset))}</strong></td>`;
-        tbody.appendChild(tr);
-    });
+// ══════════════════════════════════════════════════════
+// RETIREMENT COMPARISON
+// ══════════════════════════════════════════════════════
+function runRetirementCmp(){
+  const p=getP();
+  const ages=[g('ret_a'),g('ret_b'),g('ret_c'),g('ret_d')].filter(a=>a>0);
+  const results=ages.map(retAge=>{
+    const pp={...p,RET:p.uBY+retAge};
+    const rows=calculate(pp);
+    const m=getMetrics(rows,pp);
+    return{retAge,m};
+  });
+
+  const metricRows=[
+    ['asset65','65歳時点の総資産'],
+    ['asset85','85歳時点の総資産'],
+    ['finalAsset','90歳時点の総資産'],
+    ['assetLife','資産寿命'],
+    ['totalBalance','生涯収支合計'],
+  ];
+
+  const html=`
+    <div class="cmp-table-wrap">
+      <table class="cmp-table">
+        <thead><tr>
+          <th>比較項目</th>
+          ${results.map(r=>`<th>${r.retAge}歳退職</th>`).join('')}
+        </tr></thead>
+        <tbody>
+          ${metricRows.map(([key,label])=>`
+            <tr>
+              <td class="metric" style="font-weight:600;padding:6px 10px">${label}</td>
+              ${results.map(r=>{
+                const v=r.m[key];
+                if(v===null||v===undefined) return '<td style="padding:6px 10px;text-align:right">−</td>';
+                if(key==='assetLife') return `<td style="padding:6px 10px;text-align:right">${typeof v==='number'?v+'歳':v}</td>`;
+                return`<td style="padding:6px 10px;text-align:right">${fmt(w(v))}万円</td>`;
+              }).join('')}
+            </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>`;
+  document.getElementById('retire-cmp-table').innerHTML=html;
 }
 
-// ─── グラフ ─────────────────────────────────────────────
-function drawChart(rows) {
-    const ctx = document.getElementById('myChart').getContext('2d');
-    if (chartObj) { chartObj.destroy(); chartObj = null; }
-    chartObj = new Chart(ctx, {
-        data: {
-            labels: rows.map(r => `${r.yr}(${r.ua}歳)`),
-            datasets: [
-                { type:'line', label:'総資産（万円）',
-                  data: rows.map(r => w(r.totalAsset)),
-                  borderColor:'#3b82f6', backgroundColor:'rgba(59,130,246,.07)', fill:true, tension:.35, pointRadius:0, yAxisID:'yL', order:0 },
-                { type:'line', label:'うち投資資産（万円）',
-                  data: rows.map(r => w(r.invest)),
-                  borderColor:'#8b5cf6', backgroundColor:'transparent', tension:.35, pointRadius:0, borderDash:[4,3], yAxisID:'yL', order:0 },
-                { type:'bar',  label:'年間収入（万円）',  data: rows.map(r => w(r.totalInc)),
-                  backgroundColor:'rgba(34,197,94,.55)', yAxisID:'yR', order:1 },
-                { type:'bar',  label:'年間支出（万円）',  data: rows.map(r => w(r.totalExp)),
-                  backgroundColor:'rgba(239,68,68,.45)', yAxisID:'yR', order:1 }
-            ]
-        },
-        options: {
-            responsive:true, maintainAspectRatio:false,
-            plugins: {
-                legend:{ position:'top', labels:{ font:{ size:11 } } },
-                tooltip:{ callbacks:{ label: c => `${c.dataset.label}: ${c.parsed.y.toLocaleString()}万円` } }
-            },
-            scales: {
-                x: { ticks:{ maxTicksLimit:18, maxRotation:45, font:{ size:9 } } },
-                yL:{ type:'linear', position:'left',  title:{ display:true, text:'総資産（万円）', font:{ size:10 } }, grid:{ color:'rgba(0,0,0,.05)' } },
-                yR:{ type:'linear', position:'right', title:{ display:true, text:'年間収支（万円）',  font:{ size:10 } }, grid:{ drawOnChartArea:false } }
-            }
-        }
-    });
+// ══════════════════════════════════════════════════════
+// CUSTOM EVENTS
+// ══════════════════════════════════════════════════════
+function addCustomEvent(){
+  const yr=parseInt(document.getElementById('nev_yr').value);
+  const name=document.getElementById('nev_name').value.trim();
+  const amt=parseFloat(document.getElementById('nev_amt').value)||0;
+  const type=document.getElementById('nev_type').value;
+  const rec=document.getElementById('nev_rec').value==='1';
+  const endYear=parseInt(document.getElementById('nev_end').value)||null;
+
+  if(!yr||!name||!amt){alert('年・イベント名・金額を入力してください');return;}
+  customEvents.push({id:Date.now(),year:yr,name,amt,type,rec,endYear});
+  // フォームリセット
+  ['nev_yr','nev_name','nev_amt','nev_end'].forEach(id=>{document.getElementById(id).value='';});
+  document.getElementById('nev_type').value='expense';
+  document.getElementById('nev_rec').value='0';
+  renderCustomEvents();
+  saveToLS();
 }
 
-// ─── エクスポート ────────────────────────────────────────
-function buildLifeRows() {
-    return [
-        ['西暦','本人年齢','妻年齢','長女（子①）','次子（子②）','ライフイベント'],
-        ...currentRows.map(r => [
-            r.yr,
-            r.ua + '歳',
-            r.wa + '歳',
-            stageLabel(r.c1a),
-            r.c2a >= 0 ? stageLabel(r.c2a) : '−',
-            r.evList.map(([,t]) => t).join(' ／ ')
-        ])
-    ];
+function deleteCustomEvent(id){
+  customEvents=customEvents.filter(e=>e.id!==id);
+  renderCustomEvents();
+  saveToLS();
 }
 
-function buildCFRows() {
-    return [
-        ['西暦','本人年齢','収入合計','生活費(変動)','生活費(固定)','住居費',
-         '保育費','教育費','その他特別費','支出合計','年間収支',
-         '現金残高','投資残高','総資産',
-         '※金額はすべて万円'],
-        ...currentRows.map(r => [
-            r.yr, r.ua,
-            w(r.totalInc), w(r.varExp),  w(r.fixExp),
-            w(r.housing),  w(r.childcare), w(r.edu), w(r.otherExp),
-            w(r.totalExp), w(r.balance),
-            w(r.cash),     w(r.invest),  w(r.totalAsset), ''
-        ])
-    ];
+function renderCustomEvents(){
+  const list=document.getElementById('ev-list');
+  if(customEvents.length===0){list.innerHTML='<p style="color:var(--gray-5);font-size:.8rem;margin-top:8px">イベントはまだ追加されていません。</p>';return;}
+  list.innerHTML=customEvents.map(ev=>`
+    <div class="ev-item">
+      <div class="ev-info">
+        <strong>${ev.year}年${ev.rec?(ev.endYear?`〜${ev.endYear}年（毎年）`:'〜（毎年）'):''}</strong>　${ev.name}
+        　<span class="ev-badge ${ev.type==='income'?'inc':''}">${ev.type==='income'?'収入':'支出'}</span>
+        　<strong>${fmt(ev.amt)}万円</strong>
+      </div>
+      <button class="btn-o r btn-sm" onclick="deleteCustomEvent(${ev.id})">削除</button>
+    </div>`).join('');
 }
 
-function exportExcel() {
-    if (!currentRows) { alert('先に「再計算」を押してください'); return; }
-    if (typeof XLSX === 'undefined') { alert('SheetJSライブラリを読み込み中です。少し待ってから再試行してください'); return; }
-
-    const wb = XLSX.utils.book_new();
-
-    // シート①：ライフイベント
-    const ws1 = XLSX.utils.aoa_to_sheet(buildLifeRows());
-    ws1['!cols'] = [
-        {wch:6},{wch:10},{wch:10},{wch:18},{wch:18},{wch:50}
-    ];
-    XLSX.utils.book_append_sheet(wb, ws1, 'ライフイベント');
-
-    // シート②：キャッシュフロー
-    const ws2 = XLSX.utils.aoa_to_sheet(buildCFRows());
-    ws2['!cols'] = [
-        {wch:6},{wch:10},{wch:10},{wch:12},{wch:12},{wch:10},
-        {wch:8},{wch:8},{wch:12},{wch:10},{wch:10},
-        {wch:10},{wch:10},{wch:10}
-    ];
-    XLSX.utils.book_append_sheet(wb, ws2, 'キャッシュフロー');
-
-    // シート③：設定値スナップショット
-    const p = getP();
-    const ws3 = XLSX.utils.aoa_to_sheet([
-        ['項目', '値'],
-        ['出力日時', new Date().toLocaleString('ja-JP')],
-        ['現在年', p.Y0],
-        ['本人年齢', p.UA0 + '歳（' + p.uBY + '年生）'],
-        ['妻年齢',   p.WA0 + '歳（' + p.wBY + '年生）'],
-        ['長女生年', p.c1BY + '年'],
-        ['次子生年', p.c2BY + '年'],
-        ['本人定年年', p.RET + '年（' + (p.uBY + g('f_retage')) + '歳）'],
-        [''],
-        ['本人月収（手取り）', w(p.uMon) + '万円/月'],
-        ['本人ボーナス（年）', w(p.uBon) + '万円'],
-        ['年収上昇率', (p.uGrow * 100).toFixed(1) + '%'],
-        ['妻月収（復職後）', w(p.wMon) + '万円/月'],
-        ['妻復職年', p.wret + '年'],
-        [''],
-        ['現金・預金', w(p.cashAmt)   + '万円（金利' + (p.cashRate*100).toFixed(2)   + '%）'],
-        ['株式・投資信託', w(p.investAmt) + '万円（利回り' + (p.investRate*100).toFixed(1) + '%）'],
-        [''],
-        ['住宅購入予定年', p.hyr + '年'],
-        ['住宅価格', p.hprc + '万円'],
-        ['頭金', w(p.hdp) + '万円'],
-        ['ローン金利', p.hrate + '%'],
-        ['ローン期間', p.hper + '年'],
-        [''],
-        ['退職金', w(p.sev) + '万円'],
-        ['公的年金（夫婦）', w(p.pen) + '万円/年'],
-        ['教育方針', {public:'公立中心', semi:'高校から私立', private:'私立中心'}[p.edu]],
-    ]);
-    ws3['!cols'] = [{wch:22},{wch:30}];
-    XLSX.utils.book_append_sheet(wb, ws3, '設定値');
-
-    const d = new Date();
-    const stamp = `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}`;
-    XLSX.writeFile(wb, `ライフプラン_${stamp}.xlsx`);
+// ══════════════════════════════════════════════════════
+// PERSISTENCE
+// ══════════════════════════════════════════════════════
+function saveToLS(){
+  try{
+    localStorage.setItem('lp_scenarios',JSON.stringify(scenarios));
+    localStorage.setItem('lp_custom',JSON.stringify(customEvents));
+  }catch(e){}
 }
 
-function exportCSV() {
-    if (!currentRows) { alert('先に「再計算」を押してください'); return; }
-    const lines = buildCFRows().map(row =>
-        row.map(cell => (String(cell).includes(',') ? `"${cell}"` : cell)).join(',')
-    );
-    const bom  = '﻿';  // Excel で文字化けしないよう BOM を付与
-    const blob = new Blob([bom + lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
-    const url  = URL.createObjectURL(blob);
-    const a    = document.createElement('a');
-    a.href     = url;
-    a.download = `ライフプラン_${new Date().getFullYear()}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
+function loadFromLS(){
+  try{
+    const sc=localStorage.getItem('lp_scenarios');
+    if(sc) Object.assign(scenarios,JSON.parse(sc));
+    const ev=localStorage.getItem('lp_custom');
+    if(ev) customEvents=[...JSON.parse(ev)];
+  }catch(e){}
 }
 
-// 初回実行：現在年を自動セット
-document.getElementById('f_year').value = new Date().getFullYear();
-live();
-run();
+function exportJSON(){
+  const data={scenarios,customEvents,params:getP(),exportedAt:new Date().toISOString()};
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;a.download=`lifeplan_${new Date().getFullYear()}.json`;
+  a.click();URL.revokeObjectURL(url);
+}
+
+function importJSON(input){
+  const file=input.files[0];if(!file) return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    try{
+      const data=JSON.parse(e.target.result);
+      if(data.scenarios) Object.assign(scenarios,data.scenarios);
+      if(data.customEvents) customEvents=[...data.customEvents];
+      // パラメータの復元（主要項目）
+      if(data.params){
+        const p=data.params;
+        const setV=(id,v)=>{const el=document.getElementById(id);if(el&&v!==undefined) el.value=v;};
+        setV('f_uby',p.uBY);setV('f_wby',p.wBY);setV('f_c1by',p.c1BY);setV('f_c2by',p.c2BY);
+        setV('u_mon',p.uMon);setV('u_bon',p.uBon);setV('w_mon',p.wMon);setV('w_bon',p.wBon);
+        setV('a_cash',w(p.cashAmt));setV('a_invest',w(p.investAmt));
+        setV('r_sev',w(p.sev));setV('r_pen',w(p.pen));
+        setV('h_yr',p.hyr);setV('h_prc',p.hprc);setV('h_dp',w(p.hdp));
+      }
+      saveToLS();
+      renderCustomEvents();
+      renderScenarioList();
+      live();run();
+      alert('データを読み込みました');
+    }catch(ex){alert('ファイルの読み込みに失敗しました');}
+    input.value='';
+  };
+  reader.readAsText(file);
+}
+
+// ══════════════════════════════════════════════════════
+// EXCEL / CSV EXPORT
+// ══════════════════════════════════════════════════════
+function buildLifeArr(){
+  if(!currentRows) return [];
+  return[
+    ['西暦','本人年齢','妻年齢','長女（子①）','次子（子②）','ライフイベント'],
+    ...currentRows.map(r=>[r.yr,r.ua+'歳',r.wa+'歳',stageLabel(r.c1a),r.c2a>=0?stageLabel(r.c2a):'−',r.evList.map(([,t])=>t).join(' ／ ')])
+  ];
+}
+
+function buildCFArr(){
+  if(!currentRows) return [];
+  return[
+    ['西暦','本人年齢','収入合計','生活費(変動)','生活費(固定)','住居費','保育費','教育費','その他特別費','支出合計','年間収支','現金残高','投資残高','総資産','※万円'],
+    ...currentRows.map(r=>[r.yr,r.ua,w(r.totalInc),w(r.varExp),w(r.fixExp),w(r.housing),w(r.childcare),w(r.edu),w(r.otherExp),w(r.totalExp),w(r.balance),w(r.cash),w(r.invest),w(r.totalAsset),''])
+  ];
+}
+
+function exportExcel(){
+  if(!currentRows){alert('先に「再計算」を押してください');return;}
+  if(typeof XLSX==='undefined'){alert('ライブラリ読み込み中です。少し待ってから再試行してください');return;}
+  const wb=XLSX.utils.book_new();
+  const ws1=XLSX.utils.aoa_to_sheet(buildLifeArr());
+  ws1['!cols']=[{wch:6},{wch:10},{wch:10},{wch:18},{wch:18},{wch:55}];
+  XLSX.utils.book_append_sheet(wb,ws1,'ライフイベント');
+  const ws2=XLSX.utils.aoa_to_sheet(buildCFArr());
+  ws2['!cols']=[{wch:6},{wch:9},...Array(12).fill({wch:11})];
+  XLSX.utils.book_append_sheet(wb,ws2,'キャッシュフロー');
+  const p=currentP;
+  const ws3=XLSX.utils.aoa_to_sheet([
+    ['項目','値'],['出力日時',new Date().toLocaleString('ja-JP')],['現在年',p.Y0],
+    ['本人',`${p.UA0}歳（${p.uBY}年生）`],['妻',`${p.WA0}歳（${p.wBY}年生）`],
+    ['長女生年',`${p.c1BY}年`],['次子生年',`${p.c2BY}年`],
+    ['月収（手取）',`${w(p.uMon)}万円/月`],['ボーナス（年）',`${w(p.uBon)}万円`],
+    ['物価上昇率',`${(p.inflRate*100).toFixed(1)}%`],
+    ['現金・預金',`${w(p.cashAmt)}万円（金利${(p.cashRate*100).toFixed(2)}%）`],
+    ['投資資産',`${w(p.investAmt)}万円（利回り${(p.investRate*100).toFixed(1)}%）`],
+    ['住宅購入',`${p.hyr}年 ${p.hprc}万円`],
+    ['退職金',`${w(p.sev)}万円`],['年金',`${w(p.pen)}万円/年`],
+  ]);
+  ws3['!cols']=[{wch:20},{wch:30}];
+  XLSX.utils.book_append_sheet(wb,ws3,'設定値');
+  const d=new Date();
+  XLSX.writeFile(wb,`ライフプラン_${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}.xlsx`);
+}
+
+function exportCSV(){
+  if(!currentRows){alert('先に「再計算」を押してください');return;}
+  const lines=buildCFArr().map(r=>r.map(c=>String(c).includes(',')?`"${c}"`:c).join(','));
+  const blob=new Blob(['﻿'+lines.join('\n')],{type:'text/csv;charset=utf-8;'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;a.download=`ライフプラン_${new Date().getFullYear()}.csv`;
+  a.click();URL.revokeObjectURL(url);
+}
+
+// ══════════════════════════════════════════════════════
+// UI HELPERS
+// ══════════════════════════════════════════════════════
+function showTab(name,btn){
+  document.querySelectorAll('.tp').forEach(e=>e.classList.remove('on'));
+  document.querySelectorAll('.tb').forEach(e=>e.classList.remove('on'));
+  document.getElementById('tc-'+name).classList.add('on');
+  btn.classList.add('on');
+}
+
+function showChartTab(name,btn){
+  document.querySelectorAll('.cp').forEach(e=>e.classList.remove('on'));
+  document.querySelectorAll('.ctb').forEach(e=>e.classList.remove('on'));
+  document.getElementById('cp-'+name).classList.add('on');
+  btn.classList.add('on');
+}
+
+function toggleCollapse(id){
+  document.getElementById(id).classList.toggle('closed');
+}
+
+// ══════════════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded',()=>{
+  document.getElementById('f_year').value=new Date().getFullYear();
+  loadFromLS();
+  renderCustomEvents();
+  renderScenarioList();
+  live();
+  run();
+});
 </script>
 </body>
 </html>
