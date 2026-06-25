@@ -43,16 +43,16 @@ body{font-family:'Hiragino Sans','Yu Gothic UI','Meiryo',sans-serif;background:v
 .xp-bar{background:linear-gradient(90deg,var(--blue),var(--purple));height:6px;border-radius:10px;transition:width .5s ease}
 
 /* ── Main ── */
-#main{margin-left:var(--sidebar-w);flex:1;min-height:100vh}
-#app{padding:24px 28px;max-width:1200px;width:100%}
-.page{display:none}.page.active{display:block}
+#main{margin-left:var(--sidebar-w);flex:1;min-width:0;min-height:100vh}
+#app{padding:24px 28px;max-width:1200px;width:100%;min-width:0}
+.page{display:none;min-width:0}.page.active{display:block}
 
 /* ── Mobile ── */
 #bottom-nav{display:none}
 @media(max-width:768px){
   #sidebar{display:none}
-  #main{margin-left:0;padding-bottom:var(--nav-h)}
-  #app{padding:16px 14px}
+  #main{margin-left:0;padding-bottom:var(--nav-h);width:100%;max-width:100%;overflow-x:hidden}
+  #app{padding:16px 14px;width:100%;max-width:100%;overflow-x:hidden}
   #bottom-nav{display:flex;position:fixed;bottom:0;left:0;right:0;height:var(--nav-h);background:var(--dark2);z-index:100;border-top:1px solid var(--dark3)}
   .bni{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#94a3b8;font-size:.6rem;gap:2px;cursor:pointer;transition:color .15s;padding:4px;border:none;background:none;font-family:inherit}
   .bni .ico{font-size:1.3rem}
@@ -60,7 +60,7 @@ body{font-family:'Hiragino Sans','Yu Gothic UI','Meiryo',sans-serif;background:v
 }
 
 /* ── Card ── */
-.card{background:var(--surf);border-radius:var(--radius);box-shadow:var(--shadow);padding:18px 20px;margin-bottom:16px}
+.card{background:var(--surf);border-radius:var(--radius);box-shadow:var(--shadow);padding:18px 20px;margin-bottom:16px;min-width:0}
 .card-h{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
 .card-h h2{font-size:.95rem;color:var(--dark2);font-weight:700;display:flex;align-items:center;gap:6px}
 .card-h h2::before{content:'';display:inline-block;width:3px;height:16px;background:var(--blue);border-radius:2px}
@@ -151,7 +151,7 @@ body{font-family:'Hiragino Sans','Yu Gothic UI','Meiryo',sans-serif;background:v
 .btn-o.r{color:var(--red);border-color:var(--red)}.btn-o.r:hover{background:var(--red);color:#fff}
 
 /* ── Tables ── */
-.tbl-wrap{overflow-x:auto}
+.tbl-wrap{overflow-x:auto;max-width:100%;-webkit-overflow-scrolling:touch}
 table{width:100%;border-collapse:collapse;font-size:.77rem}
 thead th{background:var(--dark2);color:#fff;padding:7px 6px;text-align:center;white-space:nowrap;font-weight:600}
 tbody td{padding:5px 6px;text-align:right;border-bottom:1px solid var(--gray-2);white-space:nowrap}
@@ -165,7 +165,7 @@ tbody tr.ret td{background:#f0fdf4}
 .ctb{padding:5px 13px;border:1.5px solid var(--gray-2);border-radius:20px;background:#fff;cursor:pointer;font-size:.75rem;font-weight:600;font-family:inherit;color:var(--gray-5);transition:all .15s}
 .ctb.on{background:var(--blue-d);color:#fff;border-color:var(--blue-d)}
 .cp{display:none}.cp.on{display:block}
-.chart-wrap{position:relative;height:320px}
+.chart-wrap{position:relative;height:320px;max-width:100%;min-width:0}
 
 /* ── Risk banner ── */
 .risk{display:flex;align-items:center;gap:10px;padding:10px 16px;border-radius:var(--radius-sm);margin-bottom:16px;font-size:.82rem;font-weight:600}
@@ -211,7 +211,13 @@ tbody tr.ret td{background:#f0fdf4}
 .collapsible.closed .c-body{display:none}
 .ev-item{display:flex;align-items:center;gap:10px;padding:9px 13px;border:1px solid var(--gray-2);border-radius:var(--radius-sm);margin-bottom:6px;font-size:.8rem;background:var(--bg);flex-wrap:wrap}
 .ev-info{flex:1}
-@media(max-width:600px){.mc-grid{grid-template-columns:repeat(2,1fr)}.fg,.fg2,.fg3{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:600px){
+  .mc-grid{grid-template-columns:1fr}
+  .fg,.fg2,.fg3{grid-template-columns:1fr}
+  .card{padding:14px 12px}
+  .tab-nav,.btn-row,.chat-qs{overflow-x:auto;flex-wrap:nowrap;padding-bottom:6px}
+  .tb,.btn,.btn-o,.cq{white-space:nowrap;flex-shrink:0}
+}
 </style>
 </head>
 <body>
@@ -1337,7 +1343,7 @@ function renderCustomEventsList(){
 // ══════════════════════════════════════════════════════
 // EXPORT
 // ══════════════════════════════════════════════════════
-function buildLifeArr(rows){return[['西暦','本人','妻','長女','次子','ライフイベント'],...rows.map(r=>{const evs=lifeEventsOf(r.yr,r.ua,r.c1a,r.c2a,currentP);return[r.yr,r.ua+'歳',r.wa+'歳',stageLabel(r.c1a),r.c2a>=0?stageLabel(r.c2a):'−',evs.map(([,t])=>t).join(' ／ ')];})]];}
+function buildLifeArr(rows){return[['西暦','本人','妻','長女','次子','ライフイベント'],...rows.map(r=>{const evs=lifeEventsOf(r.yr,r.ua,r.c1a,r.c2a,currentP);return[r.yr,r.ua+'歳',r.wa+'歳',stageLabel(r.c1a),r.c2a>=0?stageLabel(r.c2a):'−',evs.map(([,t])=>t).join(' ／ ')];})];}
 function buildCFArr(rows){return[['西暦','本人','収入合計','変動費','固定費','住居費','保育費','教育費','その他','支出合計','年収支','現金残','投資残','総資産'],...rows.map(r=>[r.yr,r.ua,w(r.totalInc),w(r.varExp),w(r.fixExp),w(r.housing),w(r.childcare),w(r.edu),w(r.otherExp),w(r.totalExp),w(r.balance),w(r.cash),w(r.invest),w(r.totalAsset)])];}
 
 function exportExcel(){
@@ -1419,14 +1425,17 @@ document.addEventListener('DOMContentLoaded',()=>{
   updateXPDisplay();renderCustomEventsList();renderGoals();live();
   if(state.sim){
     currentP=state.sim.p;
-  } else {
+    drawSimResults(state.sim.rows,state.sim.p,state.sim.metrics);
+    refreshDashboard();
+  }else{
     currentP=getP();
     const _rows=calculate(currentP);
     const _metrics=getMetrics(_rows,currentP);
     state.sim={rows:_rows,p:currentP,metrics:_metrics};
     saveState();
+    drawSimResults(_rows,currentP,_metrics);
+    refreshDashboard();
   }
-  refreshDashboard();
   const hash=window.location.hash.replace('#/','');
   const valid=['dashboard','goals','sim','coach','settings'];
   if(valid.includes(hash)) nav(hash);
