@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ライフプランシミュレーター</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
         :root {
@@ -97,7 +98,12 @@
         /* Note */
         .note { font-size: .72rem; color: var(--gray-5); background: var(--gray-0); border-left: 3px solid var(--blue); padding: 7px 10px; border-radius: 0 6px 6px 0; margin-top: 9px; line-height: 1.65; }
 
-        @media print { .card:first-of-type, .btn { display: none; } body { background: #fff; } }
+        .btn-row { display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-top:10px; }
+        .btn-outline { background:#fff; color:var(--blue); border:2px solid var(--blue); padding:8px 18px; border-radius:8px; cursor:pointer; font-size:.88rem; font-weight:700; font-family:inherit; transition:all .15s; }
+        .btn-outline:hover { background:var(--blue); color:#fff; }
+        .btn-outline.green { color:var(--green); border-color:var(--green); }
+        .btn-outline.green:hover { background:var(--green); color:#fff; }
+        @media print { .card:first-of-type, .btn, .btn-row { display: none; } body { background: #fff; } }
     </style>
 </head>
 <body>
@@ -251,7 +257,11 @@
             <div class="live-item"><span class="lk">月収支</span><span class="lv" id="lb-bal">−</span></div>
         </div>
 
-        <button class="btn" onclick="run()">▶ 再計算・グラフ更新</button>
+        <div class="btn-row">
+            <button class="btn" onclick="run()">▶ 再計算・グラフ更新</button>
+            <button class="btn-outline" onclick="exportExcel()">📥 Excel (.xlsx) 出力</button>
+            <button class="btn-outline green" onclick="exportCSV()">📥 CSV 出力</button>
+        </div>
         <div class="note">
             ※ 月収支バーは入力に応じてリアルタイム更新。グラフ・表の更新は「再計算」ボタンを押してください。<br>
             ※ 車ローンは残高・月額・ボーナス払いから完済年を自動計算。住宅購入年以降、家賃はローン返済に切り替わります。
@@ -316,7 +326,8 @@
 
 <script>
 // ─── 定数（生年ベースで動的計算のため最小限）────────────
-const LIFE_END_AGE = 90;  // 計画終了年齢
+const LIFE_END_AGE = 90;
+let currentRows = null;   // エクスポート用にrun()の結果を保持
 
 const EDU = {
     public:  { kg:2.2,  el:32,  mid:48,  hi:51,  uni:54,  uni0:28 },
@@ -589,6 +600,7 @@ function run() {
             evList, hasEv: evList.length > 0 });
     }
 
+    currentRows = rows;
     drawSummary(rows);
     drawLifeTable(rows);
     drawCFTable(rows);
@@ -716,6 +728,113 @@ function drawChart(rows) {
             }
         }
     });
+}
+
+// ─── エクスポート ────────────────────────────────────────
+function buildLifeRows() {
+    return [
+        ['西暦','本人年齢','妻年齢','長女（子①）','次子（子②）','ライフイベント'],
+        ...currentRows.map(r => [
+            r.yr,
+            r.ua + '歳',
+            r.wa + '歳',
+            stageLabel(r.c1a),
+            r.c2a >= 0 ? stageLabel(r.c2a) : '−',
+            r.evList.map(([,t]) => t).join(' ／ ')
+        ])
+    ];
+}
+
+function buildCFRows() {
+    return [
+        ['西暦','本人年齢','収入合計','生活費(変動)','生活費(固定)','住居費',
+         '保育費','教育費','その他特別費','支出合計','年間収支',
+         '現金残高','投資残高','総資産',
+         '※金額はすべて万円'],
+        ...currentRows.map(r => [
+            r.yr, r.ua,
+            w(r.totalInc), w(r.varExp),  w(r.fixExp),
+            w(r.housing),  w(r.childcare), w(r.edu), w(r.otherExp),
+            w(r.totalExp), w(r.balance),
+            w(r.cash),     w(r.invest),  w(r.totalAsset), ''
+        ])
+    ];
+}
+
+function exportExcel() {
+    if (!currentRows) { alert('先に「再計算」を押してください'); return; }
+    if (typeof XLSX === 'undefined') { alert('SheetJSライブラリを読み込み中です。少し待ってから再試行してください'); return; }
+
+    const wb = XLSX.utils.book_new();
+
+    // シート①：ライフイベント
+    const ws1 = XLSX.utils.aoa_to_sheet(buildLifeRows());
+    ws1['!cols'] = [
+        {wch:6},{wch:10},{wch:10},{wch:18},{wch:18},{wch:50}
+    ];
+    XLSX.utils.book_append_sheet(wb, ws1, 'ライフイベント');
+
+    // シート②：キャッシュフロー
+    const ws2 = XLSX.utils.aoa_to_sheet(buildCFRows());
+    ws2['!cols'] = [
+        {wch:6},{wch:10},{wch:10},{wch:12},{wch:12},{wch:10},
+        {wch:8},{wch:8},{wch:12},{wch:10},{wch:10},
+        {wch:10},{wch:10},{wch:10}
+    ];
+    XLSX.utils.book_append_sheet(wb, ws2, 'キャッシュフロー');
+
+    // シート③：設定値スナップショット
+    const p = getP();
+    const ws3 = XLSX.utils.aoa_to_sheet([
+        ['項目', '値'],
+        ['出力日時', new Date().toLocaleString('ja-JP')],
+        ['現在年', p.Y0],
+        ['本人年齢', p.UA0 + '歳（' + p.uBY + '年生）'],
+        ['妻年齢',   p.WA0 + '歳（' + p.wBY + '年生）'],
+        ['長女生年', p.c1BY + '年'],
+        ['次子生年', p.c2BY + '年'],
+        ['本人定年年', p.RET + '年（' + (p.uBY + g('f_retage')) + '歳）'],
+        [''],
+        ['本人月収（手取り）', w(p.uMon) + '万円/月'],
+        ['本人ボーナス（年）', w(p.uBon) + '万円'],
+        ['年収上昇率', (p.uGrow * 100).toFixed(1) + '%'],
+        ['妻月収（復職後）', w(p.wMon) + '万円/月'],
+        ['妻復職年', p.wret + '年'],
+        [''],
+        ['現金・預金', w(p.cashAmt)   + '万円（金利' + (p.cashRate*100).toFixed(2)   + '%）'],
+        ['株式・投資信託', w(p.investAmt) + '万円（利回り' + (p.investRate*100).toFixed(1) + '%）'],
+        [''],
+        ['住宅購入予定年', p.hyr + '年'],
+        ['住宅価格', p.hprc + '万円'],
+        ['頭金', w(p.hdp) + '万円'],
+        ['ローン金利', p.hrate + '%'],
+        ['ローン期間', p.hper + '年'],
+        [''],
+        ['退職金', w(p.sev) + '万円'],
+        ['公的年金（夫婦）', w(p.pen) + '万円/年'],
+        ['教育方針', {public:'公立中心', semi:'高校から私立', private:'私立中心'}[p.edu]],
+    ]);
+    ws3['!cols'] = [{wch:22},{wch:30}];
+    XLSX.utils.book_append_sheet(wb, ws3, '設定値');
+
+    const d = new Date();
+    const stamp = `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}`;
+    XLSX.writeFile(wb, `ライフプラン_${stamp}.xlsx`);
+}
+
+function exportCSV() {
+    if (!currentRows) { alert('先に「再計算」を押してください'); return; }
+    const lines = buildCFRows().map(row =>
+        row.map(cell => (String(cell).includes(',') ? `"${cell}"` : cell)).join(',')
+    );
+    const bom  = '﻿';  // Excel で文字化けしないよう BOM を付与
+    const blob = new Blob([bom + lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href     = url;
+    a.download = `ライフプラン_${new Date().getFullYear()}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
 }
 
 // 初回実行：現在年を自動セット
