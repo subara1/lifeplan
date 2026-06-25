@@ -2,575 +2,726 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ライフプランシミュレーター</title>
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>ライフプランOS</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --blue:#3b82f6;--blue-d:#1d4ed8;--blue-l:#dbeafe;
-  --green:#16a34a;--green-l:#dcfce7;
-  --red:#dc2626;--red-l:#fee2e2;
-  --amber:#d97706;--amber-l:#fef3c7;
-  --purple:#7c3aed;--purple-l:#ede9fe;
-  --gray-0:#f9fafb;--gray-1:#f3f4f6;--gray-2:#e5e7eb;
-  --gray-5:#6b7280;--gray-7:#374151;--gray-9:#111827;
+  --sidebar-w:220px;
+  --nav-h:60px;
+  --blue:#3b82f6;--blue-d:#1e40af;--blue-l:#dbeafe;--blue-ll:#eff6ff;
+  --green:#10b981;--green-l:#d1fae5;--green-d:#065f46;
+  --red:#ef4444;--red-l:#fee2e2;
+  --amber:#f59e0b;--amber-l:#fef3c7;
+  --purple:#8b5cf6;--purple-l:#ede9fe;
+  --dark:#0f172a;--dark2:#1e293b;--dark3:#334155;
+  --gray-1:#f1f5f9;--gray-2:#e2e8f0;--gray-3:#cbd5e1;
+  --gray-5:#64748b;--gray-7:#374151;--text:#111827;
+  --surf:#ffffff;--bg:#f8fafc;
+  --radius:12px;--radius-sm:8px;
+  --shadow:0 1px 3px rgba(0,0,0,.1),0 1px 2px rgba(0,0,0,.06);
+  --shadow-md:0 4px 12px rgba(0,0,0,.1);
 }
-body{font-family:'Hiragino Sans','Yu Gothic UI','Meiryo',sans-serif;background:var(--gray-0);color:var(--gray-9);font-size:13px;line-height:1.5}
-.wrap{max-width:1500px;margin:0 auto;padding:12px 16px}
+body{font-family:'Hiragino Sans','Yu Gothic UI','Meiryo',sans-serif;background:var(--bg);color:var(--text);font-size:14px;line-height:1.55;min-height:100vh;display:flex}
 
-/* Header */
-header{text-align:center;padding:16px 0 10px}
-header h1{font-size:1.5rem;color:var(--blue-d)}
-header p{color:var(--gray-5);font-size:.8rem;margin-top:2px}
-.h-badge{display:inline-block;background:var(--blue-l);color:var(--blue-d);padding:3px 14px;border-radius:20px;font-size:.78rem;font-weight:700;margin-top:6px}
+/* ── Sidebar ── */
+#sidebar{width:var(--sidebar-w);min-height:100vh;background:var(--dark2);position:fixed;top:0;left:0;z-index:100;display:flex;flex-direction:column}
+.sb-logo{padding:20px 18px 16px;border-bottom:1px solid var(--dark3)}
+.sb-logo h1{color:#f1f5f9;font-size:1.05rem;font-weight:800;letter-spacing:-.3px}
+.sb-logo p{color:var(--gray-5);font-size:.7rem;margin-top:2px}
+.sb-nav{padding:12px 0;flex:1}
+.sbn{display:flex;align-items:center;gap:10px;padding:10px 18px;color:#94a3b8;text-decoration:none;font-size:.85rem;font-weight:600;cursor:pointer;transition:all .15s;border-left:3px solid transparent;user-select:none}
+.sbn:hover{color:#f1f5f9;background:rgba(255,255,255,.05)}
+.sbn.active{color:#fff;background:rgba(59,130,246,.25);border-left-color:var(--blue)}
+.sbn .ico{font-size:1.1rem;width:22px;text-align:center}
+.sb-xp{padding:14px 16px;border-top:1px solid var(--dark3)}
+.xp-label{color:#94a3b8;font-size:.68rem;margin-bottom:5px}
+.xp-level{color:#f1f5f9;font-size:.82rem;font-weight:700;margin-bottom:6px}
+.xp-bar-bg{background:var(--dark3);border-radius:10px;height:6px}
+.xp-bar{background:linear-gradient(90deg,var(--blue),var(--purple));height:6px;border-radius:10px;transition:width .5s ease}
 
-/* Card */
-.card{background:#fff;border-radius:12px;box-shadow:0 1px 4px rgba(0,0,0,.1);padding:15px 18px;margin-bottom:14px}
-.card h2{font-size:.95rem;color:var(--blue-d);border-bottom:2px solid var(--blue-l);padding-bottom:7px;margin-bottom:12px;display:flex;align-items:center;gap:6px}
-.collapsible h2{cursor:pointer;user-select:none}
-.collapsible h2::after{content:'▲';margin-left:auto;font-size:.7rem;color:var(--gray-5);transition:transform .2s}
-.collapsible.closed h2::after{transform:rotate(180deg)}
-.collapsible.closed .c-body{display:none}
+/* ── Main ── */
+#main{margin-left:var(--sidebar-w);flex:1;min-height:100vh}
+#app{padding:24px 28px;max-width:1200px;width:100%}
+.page{display:none}.page.active{display:block}
 
-/* Tabs */
-.tab-nav{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:12px}
-.tb{padding:6px 13px;border:2px solid var(--gray-2);border-radius:8px;background:#fff;cursor:pointer;font-size:.8rem;font-weight:600;font-family:inherit;color:var(--gray-5);transition:all .15s}
-.tb:hover{border-color:var(--blue);color:var(--blue)}
-.tb.on{background:var(--blue);color:#fff;border-color:var(--blue)}
+/* ── Mobile ── */
+#bottom-nav{display:none}
+@media(max-width:768px){
+  #sidebar{display:none}
+  #main{margin-left:0;padding-bottom:var(--nav-h)}
+  #app{padding:16px 14px}
+  #bottom-nav{display:flex;position:fixed;bottom:0;left:0;right:0;height:var(--nav-h);background:var(--dark2);z-index:100;border-top:1px solid var(--dark3)}
+  .bni{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#94a3b8;font-size:.6rem;gap:2px;cursor:pointer;transition:color .15s;padding:4px;border:none;background:none;font-family:inherit}
+  .bni .ico{font-size:1.3rem}
+  .bni.active{color:var(--blue)}
+}
+
+/* ── Card ── */
+.card{background:var(--surf);border-radius:var(--radius);box-shadow:var(--shadow);padding:18px 20px;margin-bottom:16px}
+.card-h{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.card-h h2{font-size:.95rem;color:var(--dark2);font-weight:700;display:flex;align-items:center;gap:6px}
+.card-h h2::before{content:'';display:inline-block;width:3px;height:16px;background:var(--blue);border-radius:2px}
+
+/* ── Metric Cards ── */
+.mc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:12px;margin-bottom:16px}
+.mc{border-radius:var(--radius);padding:16px 18px;color:#fff;position:relative;overflow:hidden}
+.mc::after{content:attr(data-ico);position:absolute;right:12px;top:10px;font-size:2rem;opacity:.25}
+.mc.blue{background:linear-gradient(135deg,#3b82f6,#1d4ed8)}
+.mc.green{background:linear-gradient(135deg,#10b981,#059669)}
+.mc.amber{background:linear-gradient(135deg,#f59e0b,#d97706)}
+.mc.purple{background:linear-gradient(135deg,#8b5cf6,#6d28d9)}
+.mc.red{background:linear-gradient(135deg,#ef4444,#dc2626)}
+.mc-l{font-size:.68rem;opacity:.85;margin-bottom:4px}
+.mc-v{font-size:1.35rem;font-weight:800;letter-spacing:-.5px}
+.mc-s{font-size:.67rem;opacity:.8;margin-top:3px}
+
+/* ── Proposals ── */
+.proposal{display:flex;gap:12px;padding:13px 16px;border-radius:var(--radius-sm);margin-bottom:10px;align-items:flex-start;border:1px solid transparent}
+.proposal.p1{background:#fef2f2;border-color:#fecaca}
+.proposal.p2{background:#fffbeb;border-color:#fde68a}
+.proposal.p3{background:#f0fdf4;border-color:#bbf7d0}
+.prop-ico{font-size:1.3rem;flex-shrink:0;margin-top:1px}
+.prop-body{flex:1}
+.prop-title{font-weight:700;font-size:.88rem;color:var(--dark2);margin-bottom:3px}
+.prop-detail{font-size:.78rem;color:var(--gray-5);margin-bottom:6px}
+.prop-actions{list-style:none;padding:0}
+.prop-actions li{font-size:.78rem;color:var(--dark3);padding:2px 0}
+.prop-actions li::before{content:'→ ';color:var(--blue);font-weight:700}
+
+/* ── Goals ── */
+.goal-item{padding:14px 16px;border:1px solid var(--gray-2);border-radius:var(--radius-sm);margin-bottom:10px;transition:box-shadow .15s}
+.goal-item:hover{box-shadow:var(--shadow-md)}
+.goal-header{display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap}
+.goal-name{font-weight:700;font-size:.9rem;flex:1;min-width:100px}
+.goal-badge{font-size:.65rem;padding:3px 8px;border-radius:10px;font-weight:700}
+.goal-badge.asset{background:var(--blue-l);color:var(--blue-d)}
+.goal-badge.career{background:var(--purple-l);color:#5b21b6}
+.goal-badge.life{background:var(--green-l);color:var(--green-d)}
+.goal-badge.high{background:var(--red-l);color:#991b1b}
+.goal-badge.medium{background:var(--amber-l);color:#92400e}
+.goal-badge.low{background:var(--gray-1);color:var(--gray-5)}
+.goal-prog-wrap{display:flex;align-items:center;gap:10px}
+.goal-prog-bar{flex:1;background:var(--gray-1);border-radius:10px;height:8px;overflow:hidden}
+.goal-prog-fill{height:100%;border-radius:10px;transition:width .5s ease}
+.goal-info{font-size:.75rem;color:var(--gray-5);margin-top:5px;display:flex;gap:12px;flex-wrap:wrap}
+
+/* ── Chat ── */
+.chat-area{height:380px;overflow-y:auto;padding:12px;background:var(--gray-1);border-radius:var(--radius-sm);margin-bottom:12px;display:flex;flex-direction:column;gap:10px}
+.msg{max-width:85%;padding:10px 14px;border-radius:12px;font-size:.83rem;line-height:1.6;white-space:pre-wrap;word-break:break-word}
+.msg.user{align-self:flex-end;background:var(--blue);color:#fff;border-radius:12px 12px 2px 12px}
+.msg.ai{align-self:flex-start;background:var(--surf);color:var(--text);border:1px solid var(--gray-2);border-radius:12px 12px 12px 2px}
+.msg.ai .ai-name{font-size:.65rem;color:var(--blue);font-weight:700;margin-bottom:4px}
+.chat-input-row{display:flex;gap:8px}
+.chat-input{flex:1;padding:10px 14px;border:1.5px solid var(--gray-2);border-radius:var(--radius-sm);font-size:.85rem;font-family:inherit;outline:none;transition:border-color .2s}
+.chat-input:focus{border-color:var(--blue)}
+.chat-qs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.cq{padding:5px 12px;border:1.5px solid var(--blue);color:var(--blue);border-radius:20px;font-size:.75rem;font-weight:600;cursor:pointer;background:#fff;transition:all .15s;font-family:inherit}
+.cq:hover{background:var(--blue);color:#fff}
+
+/* ── Tabs ── */
+.tab-nav{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:14px;border-bottom:2px solid var(--gray-2);padding-bottom:4px}
+.tb{padding:7px 14px;border:none;background:transparent;cursor:pointer;font-size:.82rem;font-weight:600;font-family:inherit;color:var(--gray-5);border-bottom:2px solid transparent;margin-bottom:-6px;transition:all .15s;border-radius:var(--radius-sm) var(--radius-sm) 0 0}
+.tb:hover{color:var(--blue)}
+.tb.on{color:var(--blue);border-bottom-color:var(--blue);background:var(--blue-ll)}
 .tp{display:none}.tp.on{display:block}
 
-/* Chart tabs */
-.chart-tabs{display:flex;gap:4px;margin-bottom:10px}
-.ctb{padding:5px 12px;border:1.5px solid var(--gray-2);border-radius:6px;background:#fff;cursor:pointer;font-size:.78rem;font-weight:600;font-family:inherit;color:var(--gray-5);transition:all .15s}
-.ctb.on{background:var(--blue-d);color:#fff;border-color:var(--blue-d)}
-.cp{display:none}.cp.on{display:block}
-.chart-wrap{position:relative;height:340px}
-
-/* Fields */
-.fg{display:grid;grid-template-columns:repeat(auto-fill,minmax(185px,1fr));gap:8px}
-.fg2{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px}
-.fg3{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:8px}
+/* ── Form fields ── */
+.fg{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px}
+.fg2{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px}
+.fg3{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px}
 .field{display:flex;flex-direction:column;gap:3px}
-.field label{font-size:.71rem;color:var(--gray-5);font-weight:600}
-.field input,.field select{padding:6px 8px;border:1.5px solid var(--gray-2);border-radius:7px;font-size:.87rem;font-family:inherit;background:#fff;transition:border-color .2s}
-.field input:focus,.field select:focus{outline:none;border-color:var(--blue)}
-.field .hint{font-size:.68rem;color:var(--gray-5);margin-top:1px}
-.sl{font-size:.73rem;font-weight:700;color:var(--blue-d);margin:11px 0 6px;padding-bottom:3px;border-bottom:1px solid var(--blue-l)}
+.field label{font-size:.71rem;color:var(--gray-5);font-weight:700;text-transform:uppercase;letter-spacing:.3px}
+.field input,.field select{padding:7px 10px;border:1.5px solid var(--gray-2);border-radius:var(--radius-sm);font-size:.87rem;font-family:inherit;background:#fff;transition:border-color .2s;outline:none}
+.field input:focus,.field select:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(59,130,246,.1)}
+.field .hint{font-size:.66rem;color:var(--gray-3)}
+.sl{font-size:.72rem;font-weight:800;color:var(--dark2);margin:14px 0 8px;text-transform:uppercase;letter-spacing:.5px;padding-bottom:4px;border-bottom:1.5px solid var(--blue-l)}
 
-/* Buttons */
-.btn-row{display:flex;gap:7px;flex-wrap:wrap;align-items:center;margin-top:10px}
-.btn{background:var(--blue);color:#fff;border:none;padding:8px 20px;border-radius:8px;cursor:pointer;font-size:.88rem;font-weight:700;font-family:inherit;transition:background .2s}
-.btn:hover{background:var(--blue-d)}
-.btn-o{background:#fff;color:var(--blue);border:2px solid var(--blue);padding:7px 16px;border-radius:8px;cursor:pointer;font-size:.82rem;font-weight:700;font-family:inherit;transition:all .15s}
+/* ── Buttons ── */
+.btn{background:var(--blue);color:#fff;border:none;padding:9px 20px;border-radius:var(--radius-sm);cursor:pointer;font-size:.87rem;font-weight:700;font-family:inherit;transition:all .15s;display:inline-flex;align-items:center;gap:6px}
+.btn:hover{background:var(--blue-d);transform:translateY(-1px);box-shadow:0 4px 12px rgba(59,130,246,.3)}
+.btn.g{background:var(--green)}.btn.g:hover{background:var(--green-d)}
+.btn.r{background:var(--red)}.btn.r:hover{background:#dc2626}
+.btn.sm{padding:6px 13px;font-size:.78rem}
+.btn-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:12px}
+.btn-o{background:#fff;color:var(--blue);border:2px solid var(--blue);padding:8px 16px;border-radius:var(--radius-sm);cursor:pointer;font-size:.82rem;font-weight:700;font-family:inherit;transition:all .15s}
 .btn-o:hover{background:var(--blue);color:#fff}
-.btn-o.g{color:var(--green);border-color:var(--green)}.btn-o.g:hover{background:var(--green);color:#fff}
 .btn-o.r{color:var(--red);border-color:var(--red)}.btn-o.r:hover{background:var(--red);color:#fff}
-.btn-o.p{color:var(--purple);border-color:var(--purple)}.btn-o.p:hover{background:var(--purple);color:#fff}
-.btn-sm{padding:4px 10px;font-size:.75rem;border-radius:6px}
 
-/* Live bar */
-.live-bar{display:flex;align-items:center;gap:7px;flex-wrap:wrap;background:var(--gray-1);border-radius:9px;padding:9px 13px;margin:12px 0 10px;font-size:.81rem}
-.lb-t{font-weight:700;color:var(--gray-7);margin-right:3px}
-.li{display:flex;align-items:center;gap:3px}
-.lk{color:var(--gray-5)}.lv{font-weight:700}
-.lv.pos{color:var(--green)}.lv.neg{color:var(--red)}
-.sep{color:var(--gray-2)}
-
-/* Summary cards */
-.sc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:9px;margin-bottom:13px}
-.sc{background:var(--blue);color:#fff;border-radius:10px;padding:11px 13px}
-.sc.g{background:var(--green)}.sc.a{background:var(--amber)}.sc.r{background:var(--red)}.sc.p{background:var(--purple)}
-.sc-l{font-size:.68rem;opacity:.9}.sc-v{font-size:1.2rem;font-weight:700;margin:2px 0}.sc-s{font-size:.66rem;opacity:.85}
-
-/* Asset life */
-.asset-life-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:var(--blue-l);border-radius:10px;padding:10px 16px;margin-bottom:13px}
-.al-label{font-size:.8rem;color:var(--blue-d);font-weight:600}
-.al-value{font-size:1.3rem;font-weight:700;color:var(--blue-d)}
-.al-detail{font-size:.75rem;color:var(--blue-d);opacity:.8}
-
-/* Risk banner */
-#risk-banner{display:none;padding:8px 14px;border-radius:9px;margin-bottom:13px;font-size:.8rem;font-weight:600;display:flex;align-items:center;gap:8px}
-#risk-banner.safe{background:var(--green-l);color:var(--green)}
-#risk-banner.caution{background:var(--amber-l);color:var(--amber)}
-#risk-banner.danger{background:var(--red-l);color:var(--red)}
-
-/* Tables */
+/* ── Tables ── */
 .tbl-wrap{overflow-x:auto}
-table{width:100%;border-collapse:collapse;font-size:.78rem}
-thead th{background:var(--blue-d);color:#fff;padding:7px 5px;text-align:center;white-space:nowrap;font-weight:600}
-tbody td{padding:5px 5px;text-align:right;border-bottom:1px solid var(--gray-2);white-space:nowrap}
+table{width:100%;border-collapse:collapse;font-size:.77rem}
+thead th{background:var(--dark2);color:#fff;padding:7px 6px;text-align:center;white-space:nowrap;font-weight:600}
+tbody td{padding:5px 6px;text-align:right;border-bottom:1px solid var(--gray-2);white-space:nowrap}
 tbody td.c{text-align:center}tbody td.l{text-align:left}
-tbody tr:hover{background:#eff6ff}
-tbody tr.ev td:first-child{font-weight:700;color:var(--blue-d)}
+tbody tr:hover{background:var(--blue-ll)}
 tbody tr.ret td{background:#f0fdf4}
 .pos{color:var(--green);font-weight:700}.neg{color:var(--red);font-weight:700}.wrn{color:var(--amber);font-weight:700}
 
-/* Risk icons */
-.ri{font-size:.9rem}
+/* ── Chart ── */
+.chart-tabs{display:flex;gap:4px;margin-bottom:10px}
+.ctb{padding:5px 13px;border:1.5px solid var(--gray-2);border-radius:20px;background:#fff;cursor:pointer;font-size:.75rem;font-weight:600;font-family:inherit;color:var(--gray-5);transition:all .15s}
+.ctb.on{background:var(--blue-d);color:#fff;border-color:var(--blue-d)}
+.cp{display:none}.cp.on{display:block}
+.chart-wrap{position:relative;height:320px}
 
-/* Tags */
-.tag{display:inline-block;padding:2px 6px;border-radius:10px;font-size:.66rem;margin:1px;white-space:nowrap;background:var(--blue-l);color:var(--blue-d)}
-.tag.g{background:var(--green-l);color:#166534}.tag.r{background:var(--red-l);color:#991b1b}.tag.a{background:var(--amber-l);color:#92400e}
+/* ── Risk banner ── */
+.risk{display:flex;align-items:center;gap:10px;padding:10px 16px;border-radius:var(--radius-sm);margin-bottom:16px;font-size:.82rem;font-weight:600}
+.risk.safe{background:var(--green-l);color:var(--green-d)}
+.risk.caution{background:var(--amber-l);color:#92400e}
+.risk.danger{background:var(--red-l);color:#991b1b}
 
-/* Scenario comparison */
-.cmp-table-wrap{overflow-x:auto;margin-top:10px}
-.cmp-table{width:100%;border-collapse:collapse;font-size:.8rem}
-.cmp-table th{background:var(--gray-1);padding:7px 10px;text-align:left;font-weight:700;border-bottom:2px solid var(--gray-2);white-space:nowrap}
-.cmp-table td{padding:7px 10px;border-bottom:1px solid var(--gray-2);white-space:nowrap}
-.cmp-table tr:hover td{background:var(--blue-l)}
-.cmp-table .metric{color:var(--gray-5);font-size:.75rem}
+/* ── Asset life ── */
+.al-bar{background:var(--blue-ll);border:1px solid var(--blue-l);border-radius:var(--radius-sm);padding:12px 18px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+.al-v{font-size:1.4rem;font-weight:800;color:var(--blue-d)}
 
-/* Custom events list */
-.ev-list{margin-top:10px;display:flex;flex-direction:column;gap:6px}
-.ev-item{display:flex;align-items:center;gap:8px;background:var(--gray-0);padding:8px 12px;border-radius:8px;border:1px solid var(--gray-2);font-size:.8rem;flex-wrap:wrap}
-.ev-item .ev-info{flex:1}
-.ev-item .ev-badge{background:var(--blue-l);color:var(--blue-d);padding:2px 8px;border-radius:6px;font-size:.7rem;font-weight:600}
-.ev-item .ev-badge.inc{background:var(--green-l);color:var(--green)}
+/* ── Gamification ── */
+.badge-grid{display:flex;gap:8px;flex-wrap:wrap}
+.badge{text-align:center;padding:10px 12px;border-radius:var(--radius-sm);font-size:.7rem;font-weight:700;min-width:70px}
+.badge.earned{background:linear-gradient(135deg,#fef3c7,#fde68a);color:#92400e;border:1px solid #fcd34d}
+.badge.locked{background:var(--gray-1);color:var(--gray-3);border:1px solid var(--gray-2);filter:grayscale(1)}
+.badge .b-ico{font-size:1.5rem;display:block;margin-bottom:3px}
 
-/* Note */
-.note{font-size:.71rem;color:var(--gray-5);background:var(--gray-0);border-left:3px solid var(--blue);padding:6px 10px;border-radius:0 6px 6px 0;margin-top:8px;line-height:1.65}
+/* ── Tag ── */
+.tag{display:inline-block;padding:2px 7px;border-radius:10px;font-size:.65rem;font-weight:700;margin:1px;white-space:nowrap}
+.tag.b{background:var(--blue-l);color:var(--blue-d)}
+.tag.g{background:var(--green-l);color:var(--green-d)}
+.tag.r{background:var(--red-l);color:#991b1b}
+.tag.a{background:var(--amber-l);color:#92400e}
 
-/* Import area */
-.import-area{border:2px dashed var(--gray-2);border-radius:8px;padding:12px;text-align:center;color:var(--gray-5);font-size:.8rem;cursor:pointer;transition:border-color .2s}
-.import-area:hover{border-color:var(--blue);color:var(--blue)}
+/* ── Live bar ── */
+.live-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:var(--gray-1);border-radius:var(--radius-sm);padding:10px 14px;margin:10px 0;font-size:.8rem}
+.lb-t{font-weight:700;color:var(--dark2)}
+.li{display:flex;align-items:center;gap:3px}
+.lk{color:var(--gray-5)}.lv{font-weight:700}
+.lv.pos{color:var(--green)}.lv.neg{color:var(--red)}
 
-@media(max-width:640px){
-  .wrap{padding:8px 10px}
-  .sc-grid{grid-template-columns:repeat(2,1fr)}
-  .fg,.fg2,.fg3{grid-template-columns:repeat(2,1fr)}
-  header h1{font-size:1.2rem}
-}
-@media print{.card:first-of-type,.btn-row,#actions{display:none}body{background:#fff}}
+/* ── Misc ── */
+.note{font-size:.73rem;color:var(--gray-5);background:var(--gray-1);border-left:3px solid var(--blue);padding:8px 12px;border-radius:0 var(--radius-sm) var(--radius-sm) 0;margin-top:10px;line-height:1.7}
+.empty-state{text-align:center;color:var(--gray-5);padding:40px 20px;font-size:.88rem}
+.empty-state .e-ico{font-size:2.5rem;margin-bottom:10px}
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;align-items:center;justify-content:center}
+.modal-bg.open{display:flex}
+.modal{background:#fff;border-radius:var(--radius);padding:24px;width:min(420px,94vw);box-shadow:var(--shadow-md)}
+.modal h3{font-size:1rem;color:var(--dark2);margin-bottom:14px;font-weight:700}
+.section-title{font-size:1.1rem;font-weight:800;color:var(--dark2);margin-bottom:16px;display:flex;align-items:center;gap:8px}
+.collapsible .c-body{display:block}
+.collapsible.closed .c-body{display:none}
+.ev-item{display:flex;align-items:center;gap:10px;padding:9px 13px;border:1px solid var(--gray-2);border-radius:var(--radius-sm);margin-bottom:6px;font-size:.8rem;background:var(--bg);flex-wrap:wrap}
+.ev-info{flex:1}
+@media(max-width:600px){.mc-grid{grid-template-columns:repeat(2,1fr)}.fg,.fg2,.fg3{grid-template-columns:repeat(2,1fr)}}
 </style>
 </head>
 <body>
-<div class="wrap">
 
-<header>
-  <h1>ライフプランシミュレーター</h1>
-  <p>複数シナリオ比較 ／ 資産寿命表示 ／ 危険度判定 ／ カスタムイベント対応</p>
-  <div class="h-badge" id="h-status">読み込み中...</div>
-</header>
-
-<!-- ===== 設定パネル ===== -->
-<div class="card">
-  <h2>⚙️ 設定パネル</h2>
-  <div class="tab-nav">
-    <button class="tb on" onclick="showTab('fam',this)">👨‍👩‍👧 家族情報</button>
-    <button class="tb" onclick="showTab('inc',this)">💴 収入</button>
-    <button class="tb" onclick="showTab('var',this)">🛒 生活費</button>
-    <button class="tb" onclick="showTab('fix',this)">🔒 固定費・住宅</button>
-    <button class="tb" onclick="showTab('edu',this)">📚 教育</button>
-    <button class="tb" onclick="showTab('cev',this)">📅 カスタムイベント</button>
-    <button class="tb" onclick="showTab('fut',this)">📊 将来・老後</button>
+<!-- ══ SIDEBAR ══ -->
+<nav id="sidebar">
+  <div class="sb-logo">
+    <h1>🌟 ライフプランOS</h1>
+    <p id="sb-date">読み込み中...</p>
   </div>
-
-  <!-- 家族情報 -->
-  <div id="tc-fam" class="tp on">
-    <div class="sl">現在年（自動取得）</div>
-    <div class="fg2">
-      <div class="field"><label>現在年（西暦）</label><input type="number" id="f_year" oninput="live()"><div class="hint">毎回自動で今年の西暦が入ります</div></div>
-    </div>
-    <div class="sl">家族の生年 — 毎年開くと自動で年齢が更新されます</div>
-    <div class="fg2">
-      <div class="field"><label>本人 生年</label><input type="number" id="f_uby" value="1993" oninput="live()"><div class="hint">例：1993年生まれ → 今年の年齢が自動計算</div></div>
-      <div class="field"><label>妻 生年</label><input type="number" id="f_wby" value="1996" oninput="live()"></div>
-      <div class="field"><label>長女 生年</label><input type="number" id="f_c1by" value="2026" oninput="live()"></div>
-      <div class="field"><label>次子 生年（予定含む）</label><input type="number" id="f_c2by" value="2028" oninput="live()"><div class="hint">まだ生まれていなければ予定年を入力</div></div>
-    </div>
-    <div class="sl">定年・退職年齢</div>
-    <div class="fg2">
-      <div class="field"><label>本人 定年年齢</label><input type="number" id="f_retage" value="65" min="50" max="75" oninput="live()"></div>
-      <div class="field"><label>妻 退職年齢</label><input type="number" id="f_wretage" value="62" min="40" max="75" oninput="live()"></div>
-    </div>
+  <div class="sb-nav">
+    <div class="sbn active" onclick="nav('dashboard')" data-page="dashboard"><span class="ico">🏠</span>ダッシュボード</div>
+    <div class="sbn" onclick="nav('goals')" data-page="goals"><span class="ico">🎯</span>目標管理</div>
+    <div class="sbn" onclick="nav('sim')" data-page="sim"><span class="ico">💹</span>シミュレーター</div>
+    <div class="sbn" onclick="nav('coach')" data-page="coach"><span class="ico">🤖</span>AIコーチ</div>
+    <div class="sbn" onclick="nav('settings')" data-page="settings"><span class="ico">⚙️</span>設定</div>
   </div>
+  <div class="sb-xp">
+    <div class="xp-label">LEVEL &amp; XP</div>
+    <div class="xp-level" id="sb-level">Lv.1 ライフプラン初心者</div>
+    <div class="xp-bar-bg"><div class="xp-bar" id="xp-bar" style="width:0%"></div></div>
+  </div>
+</nav>
 
-  <!-- 収入 -->
-  <div id="tc-inc" class="tp">
-    <div class="sl">本人（公務員）</div>
-    <div class="fg">
-      <div class="field"><label>月収・手取り（円）</label><input type="number" id="u_mon" value="320000" oninput="live()"></div>
-      <div class="field"><label>ボーナス年間合計・手取り（円）</label><input type="number" id="u_bon" value="1460000" oninput="live()"></div>
-      <div class="field"><label>年収上昇率（%/年）</label><input type="number" id="u_grow" value="1.0" step="0.1" min="0" max="5" oninput="live()"></div>
+<!-- ══ MAIN ══ -->
+<div id="main">
+<div id="app">
+
+  <!-- ════ DASHBOARD ════ -->
+  <div id="page-dashboard" class="page active">
+    <div class="section-title">🏠 ダッシュボード</div>
+    <div class="mc-grid" id="db-metrics"></div>
+    <div id="db-albar"></div>
+    <div id="db-risk"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+      <div style="grid-column:1/-1">
+        <div class="card">
+          <div class="card-h"><h2>📈 総資産推移</h2></div>
+          <div class="chart-wrap"><canvas id="db-chart"></canvas></div>
+        </div>
+      </div>
+      <div id="db-goals-card"></div>
+      <div id="db-action-card"></div>
     </div>
-    <div class="sl">各種手当（月額・円）</div>
-    <div class="fg2">
-      <div class="field"><label>住居手当</label><input type="number" id="u_house_allow" value="27000" oninput="live()"><div class="hint">賃貸の場合最大27,000円</div></div>
-      <div class="field"><label>扶養手当（子1人あたり）</label><input type="number" id="u_dep_allow" value="10000" oninput="live()"></div>
-      <div class="field"><label>その他手当</label><input type="number" id="u_other_allow" value="0" oninput="live()"></div>
-    </div>
-    <div class="sl">再任用設定（定年後）</div>
-    <div class="fg2">
-      <div class="field"><label>再任用 月収・手取り（円）</label><input type="number" id="u_reemploy_m" value="0"><div class="hint">0の場合は再任用なし</div></div>
-      <div class="field"><label>再任用 期間（年）</label><input type="number" id="u_reemploy_y" value="0" min="0" max="10"></div>
-    </div>
-    <div class="sl">妻</div>
-    <div class="fg">
-      <div class="field"><label>復職後 月収・手取り（円）</label><input type="number" id="w_mon" value="100000" oninput="live()"></div>
-      <div class="field"><label>復職後 ボーナス年間合計・手取り（円）</label><input type="number" id="w_bon" value="300000" oninput="live()"></div>
-      <div class="field"><label>妻 復職予定年（西暦）</label><input type="number" id="w_ret" value="2031" min="2026" max="2050" oninput="live()"><div class="hint">次子が3歳：2031年</div></div>
+    <div class="card">
+      <div class="card-h"><h2>🏅 バッジ・実績</h2></div>
+      <div class="badge-grid" id="db-badges"></div>
     </div>
   </div>
 
-  <!-- 生活費 -->
-  <div id="tc-var" class="tp">
-    <div class="sl">インフレ設定</div>
-    <div class="fg2">
-      <div class="field"><label>物価上昇率（%/年）</label><input type="number" id="infl" value="2.0" step="0.1" min="0" max="5" oninput="live()"><div class="hint">生活費・教育費・医療費などに反映。初期値2%</div></div>
+  <!-- ════ GOALS ════ -->
+  <div id="page-goals" class="page">
+    <div class="section-title">🎯 目標管理</div>
+    <div class="card">
+      <div class="card-h">
+        <h2>ライフゴール一覧</h2>
+        <button class="btn sm" onclick="openGoalModal()">＋ 目標を追加</button>
+      </div>
+      <div id="goals-list"></div>
     </div>
-    <div class="sl">毎月の変動費（円/月）</div>
-    <div class="fg2">
-      <div class="field"><label>食費・日用品</label><input type="number" id="e_food" value="70000" oninput="live()"></div>
-      <div class="field"><label>光熱費（電気・ガス・水道）</label><input type="number" id="e_util" value="15000" oninput="live()"></div>
-      <div class="field"><label>交際費・外食・娯楽</label><input type="number" id="e_ent" value="20000" oninput="live()"></div>
-      <div class="field"><label>衣服・美容・理髪</label><input type="number" id="e_cloth" value="10000" oninput="live()"></div>
-      <div class="field"><label>小遣い（本人）</label><input type="number" id="e_aself" value="20000" oninput="live()"></div>
-      <div class="field"><label>小遣い（妻）</label><input type="number" id="e_awife" value="15000" oninput="live()"></div>
-      <div class="field"><label>子育て雑費・おもちゃ等</label><input type="number" id="e_kids" value="10000" oninput="live()"></div>
-      <div class="field"><label>雑費・その他</label><input type="number" id="e_misc" value="10000" oninput="live()"></div>
+    <div class="note">※ 達成率は「現在の総資産 ÷ 目標金額」で計算されます。期限が近い目標はアクション提案にも反映されます。</div>
+  </div>
+
+  <!-- ════ SIMULATOR ════ -->
+  <div id="page-sim" class="page">
+    <div class="section-title">💹 シミュレーター</div>
+    <div class="card">
+      <div class="card-h"><h2>⚙️ シミュレーション設定</h2></div>
+      <div class="tab-nav">
+        <button class="tb on" onclick="showTab('fam',this)">👨‍👩‍👧 家族</button>
+        <button class="tb" onclick="showTab('inc',this)">💴 収入</button>
+        <button class="tb" onclick="showTab('var',this)">🛒 生活費</button>
+        <button class="tb" onclick="showTab('fix',this)">🔒 固定費</button>
+        <button class="tb" onclick="showTab('edu',this)">📚 教育</button>
+        <button class="tb" onclick="showTab('cev',this)">📅 イベント</button>
+        <button class="tb" onclick="showTab('fut',this)">📊 将来</button>
+      </div>
+
+      <div id="tc-fam" class="tp on">
+        <div class="sl">家族情報</div>
+        <div class="fg2">
+          <div class="field"><label>現在年</label><input type="number" id="f_year" oninput="live()"><div class="hint">毎回自動入力</div></div>
+          <div class="field"><label>本人 生年</label><input type="number" id="f_uby" value="1993" oninput="live()"></div>
+          <div class="field"><label>妻 生年</label><input type="number" id="f_wby" value="1996" oninput="live()"></div>
+          <div class="field"><label>長女 生年</label><input type="number" id="f_c1by" value="2026" oninput="live()"></div>
+          <div class="field"><label>次子 生年</label><input type="number" id="f_c2by" value="2028" oninput="live()"></div>
+        </div>
+        <div class="sl">退職年齢</div>
+        <div class="fg2">
+          <div class="field"><label>本人 定年年齢</label><input type="number" id="f_retage" value="65" oninput="live()"></div>
+          <div class="field"><label>妻 退職年齢</label><input type="number" id="f_wretage" value="62" oninput="live()"></div>
+        </div>
+      </div>
+
+      <div id="tc-inc" class="tp">
+        <div class="sl">本人収入（公務員）</div>
+        <div class="fg2">
+          <div class="field"><label>月収・手取り（円）</label><input type="number" id="u_mon" value="320000" oninput="live()"></div>
+          <div class="field"><label>ボーナス年間合計（円）</label><input type="number" id="u_bon" value="1460000" oninput="live()"></div>
+          <div class="field"><label>年収上昇率（%）</label><input type="number" id="u_grow" value="1.0" step="0.1" oninput="live()"></div>
+        </div>
+        <div class="sl">各種手当（月額・円）</div>
+        <div class="fg2">
+          <div class="field"><label>住居手当</label><input type="number" id="u_house_allow" value="27000" oninput="live()"></div>
+          <div class="field"><label>扶養手当（子1人あたり）</label><input type="number" id="u_dep_allow" value="10000" oninput="live()"></div>
+          <div class="field"><label>その他手当</label><input type="number" id="u_other_allow" value="0" oninput="live()"></div>
+        </div>
+        <div class="sl">再任用（定年後）</div>
+        <div class="fg2">
+          <div class="field"><label>再任用 月収（円）</label><input type="number" id="u_reemploy_m" value="0"><div class="hint">0＝なし</div></div>
+          <div class="field"><label>再任用 期間（年）</label><input type="number" id="u_reemploy_y" value="0"></div>
+        </div>
+        <div class="sl">妻収入</div>
+        <div class="fg2">
+          <div class="field"><label>復職後 月収（円）</label><input type="number" id="w_mon" value="100000" oninput="live()"></div>
+          <div class="field"><label>復職後 ボーナス（円）</label><input type="number" id="w_bon" value="300000" oninput="live()"></div>
+          <div class="field"><label>妻 復職予定年</label><input type="number" id="w_ret" value="2031" oninput="live()"></div>
+        </div>
+      </div>
+
+      <div id="tc-var" class="tp">
+        <div class="sl">インフレ設定</div>
+        <div class="fg2">
+          <div class="field"><label>物価上昇率（%/年）</label><input type="number" id="infl" value="2.0" step="0.1" oninput="live()"><div class="hint">初期値2%。生活費・教育費等に反映</div></div>
+        </div>
+        <div class="sl">毎月の変動費（円/月）</div>
+        <div class="fg2">
+          <div class="field"><label>食費・日用品</label><input type="number" id="e_food" value="70000" oninput="live()"></div>
+          <div class="field"><label>光熱費</label><input type="number" id="e_util" value="15000" oninput="live()"></div>
+          <div class="field"><label>交際費・外食・娯楽</label><input type="number" id="e_ent" value="20000" oninput="live()"></div>
+          <div class="field"><label>衣服・美容</label><input type="number" id="e_cloth" value="10000" oninput="live()"></div>
+          <div class="field"><label>小遣い（本人）</label><input type="number" id="e_aself" value="20000" oninput="live()"></div>
+          <div class="field"><label>小遣い（妻）</label><input type="number" id="e_awife" value="15000" oninput="live()"></div>
+          <div class="field"><label>子育て雑費</label><input type="number" id="e_kids" value="10000" oninput="live()"></div>
+          <div class="field"><label>雑費・その他</label><input type="number" id="e_misc" value="10000" oninput="live()"></div>
+        </div>
+        <div class="sl">旅行・レジャー（万円/年）</div>
+        <div class="fg2">
+          <div class="field"><label>乳幼児期</label><input type="number" id="t_baby" value="20"></div>
+          <div class="field"><label>学齢期</label><input type="number" id="t_school" value="30"></div>
+          <div class="field"><label>子独立後</label><input type="number" id="t_empty" value="45"></div>
+          <div class="field"><label>老後（65歳〜）</label><input type="number" id="t_retire" value="35"></div>
+        </div>
+      </div>
+
+      <div id="tc-fix" class="tp">
+        <div class="sl">毎月の固定費（円/月）</div>
+        <div class="fg2">
+          <div class="field"><label>保険料</label><input type="number" id="f_ins" value="20000" oninput="live()"></div>
+          <div class="field"><label>通信費</label><input type="number" id="f_tel" value="10000" oninput="live()"></div>
+          <div class="field"><label>車維持費</label><input type="number" id="f_car" value="20000" oninput="live()"></div>
+          <div class="field"><label>習い事・サブスク</label><input type="number" id="f_sub" value="10000" oninput="live()"></div>
+          <div class="field"><label>その他固定費</label><input type="number" id="f_oth" value="6000" oninput="live()"></div>
+        </div>
+        <div class="sl">現在の負債</div>
+        <div class="fg2">
+          <div class="field"><label>車ローン 残高（万円）</label><input type="number" id="f_carloan" value="250"></div>
+          <div class="field"><label>車ローン 月額（円）</label><input type="number" id="f_carloan_m" value="13000"></div>
+          <div class="field"><label>車ローン ボーナス払い/年（円）</label><input type="number" id="f_carloan_b" value="260000"></div>
+        </div>
+        <div class="sl">住居</div>
+        <div class="fg2">
+          <div class="field"><label>家賃（円/月）</label><input type="number" id="h_rent" value="84000" oninput="live()"></div>
+          <div class="field"><label>住宅購入予定年</label><input type="number" id="h_yr" value="2033"></div>
+          <div class="field"><label>住宅価格（万円）</label><input type="number" id="h_prc" value="5000"></div>
+          <div class="field"><label>頭金（万円）</label><input type="number" id="h_dp" value="500"></div>
+          <div class="field"><label>ローン金利（%）</label><input type="number" id="h_rate" value="0.7" step="0.1"></div>
+          <div class="field"><label>ローン期間（年）</label><input type="number" id="h_per" value="35"></div>
+          <div class="field"><label>管理費等（円/月）</label><input type="number" id="h_mgmt" value="20000"></div>
+        </div>
+      </div>
+
+      <div id="tc-edu" class="tp">
+        <div class="sl">長女（子①）の教育方針</div>
+        <div class="fg2">
+          <div class="field"><label>小学校</label><select id="c1_el"><option value="32" selected>公立（32万/年）</option><option value="168">私立（168万/年）</option></select></div>
+          <div class="field"><label>中学校</label><select id="c1_mid"><option value="48" selected>公立</option><option value="134">私立</option></select></div>
+          <div class="field"><label>高校</label><select id="c1_hi"><option value="51" selected>公立</option><option value="105">私立</option></select></div>
+          <div class="field"><label>大学</label><select id="c1_uni"><option value="54|28" selected>国公立（54万/年）</option><option value="95|40">私立文系（95万/年）</option><option value="130|40">私立理系（130万/年）</option></select></div>
+          <div class="field"><label>大学 一人暮らし</label><select id="c1_dorm"><option value="0" selected>なし</option><option value="72">あり（+72万/年）</option></select></div>
+          <div class="field"><label>習い事・塾（円/月）</label><input type="number" id="c1_extra" value="0"></div>
+        </div>
+        <div class="sl">次子（子②）の教育方針</div>
+        <div class="fg2">
+          <div class="field"><label>小学校</label><select id="c2_el"><option value="32" selected>公立</option><option value="168">私立</option></select></div>
+          <div class="field"><label>中学校</label><select id="c2_mid"><option value="48" selected>公立</option><option value="134">私立</option></select></div>
+          <div class="field"><label>高校</label><select id="c2_hi"><option value="51" selected>公立</option><option value="105">私立</option></select></div>
+          <div class="field"><label>大学</label><select id="c2_uni"><option value="54|28" selected>国公立</option><option value="95|40">私立文系</option><option value="130|40">私立理系</option></select></div>
+          <div class="field"><label>大学 一人暮らし</label><select id="c2_dorm"><option value="0" selected>なし</option><option value="72">あり</option></select></div>
+          <div class="field"><label>習い事・塾（円/月）</label><input type="number" id="c2_extra" value="0"></div>
+        </div>
+      </div>
+
+      <div id="tc-cev" class="tp">
+        <div class="sl">カスタムライフイベントを追加</div>
+        <div class="fg3">
+          <div class="field"><label>発生年（西暦）</label><input type="number" id="nev_yr" placeholder="2035"></div>
+          <div class="field"><label>イベント名</label><input type="text" id="nev_name" placeholder="例：車購入、相続"></div>
+          <div class="field"><label>金額（万円）</label><input type="number" id="nev_amt" placeholder="300"></div>
+          <div class="field"><label>種別</label><select id="nev_type"><option value="expense">支出</option><option value="income">収入</option></select></div>
+          <div class="field"><label>繰り返し</label><select id="nev_rec"><option value="0">一度だけ</option><option value="1">毎年</option></select></div>
+          <div class="field"><label>終了年（毎年の場合）</label><input type="number" id="nev_end" placeholder="例：2045"></div>
+        </div>
+        <div class="btn-row"><button class="btn sm" onclick="addCustomEvent()">＋ 追加</button></div>
+        <div id="ev-list" style="margin-top:12px"></div>
+      </div>
+
+      <div id="tc-fut" class="tp">
+        <div class="sl">現在の資産</div>
+        <div class="fg2">
+          <div class="field"><label>現金・預金（万円）</label><input type="number" id="a_cash" value="200"></div>
+          <div class="field"><label>預金 金利（%/年）</label><input type="number" id="a_cashrate" value="0.1" step="0.01"></div>
+          <div class="field"><label>投資資産（万円）</label><input type="number" id="a_invest" value="100"></div>
+          <div class="field"><label>投資 利回り（%/年）</label><input type="number" id="a_investrate" value="5.0" step="0.1"></div>
+        </div>
+        <div class="sl">老後</div>
+        <div class="fg2">
+          <div class="field"><label>退職金（万円）</label><input type="number" id="r_sev" value="2000"></div>
+          <div class="field"><label>年金 夫婦合計（万円/年）</label><input type="number" id="r_pen" value="240"></div>
+        </div>
+      </div>
+
+      <div class="live-bar">
+        <span class="lb-t">月次概算</span>
+        <div class="li"><span class="lk">月収</span><span class="lv" id="lb-inc">−</span></div>
+        <span style="color:var(--gray-2)">|</span>
+        <div class="li"><span class="lk">月支出</span><span class="lv" id="lb-exp">−</span></div>
+        <span style="color:var(--gray-2)">|</span>
+        <div class="li"><span class="lk">月収支</span><span class="lv" id="lb-bal">−</span></div>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn" onclick="runAndRefresh()">▶ 再計算・更新</button>
+        <button class="btn-o" onclick="openScenarioModal()">💾 シナリオ保存</button>
+        <button class="btn-o" onclick="exportExcel()">📥 Excel</button>
+        <button class="btn-o" onclick="exportCSV()">📥 CSV</button>
+        <button class="btn-o" onclick="exportJSON()">📤 データ保存</button>
+        <label class="btn-o" style="cursor:pointer">📁 データ読込<input type="file" accept=".json" style="display:none" onchange="importJSON(this)"></label>
+      </div>
     </div>
-    <div class="sl">旅行・レジャー（万円/年）</div>
-    <div class="fg2">
-      <div class="field"><label>乳幼児期（子が6歳未満）</label><input type="number" id="t_baby" value="20"></div>
-      <div class="field"><label>学齢期（子が6〜17歳）</label><input type="number" id="t_school" value="30"></div>
-      <div class="field"><label>子独立後（子が22歳以降）</label><input type="number" id="t_empty" value="45"></div>
-      <div class="field"><label>老後（65歳以降）</label><input type="number" id="t_retire" value="35"></div>
+
+    <!-- 結果 -->
+    <div id="sim-results" style="display:none">
+      <div class="mc-grid" id="sim-metrics"></div>
+      <div id="sim-albar"></div>
+      <div id="sim-risk"></div>
+
+      <!-- シナリオ比較 -->
+      <div class="card collapsible closed" id="scenario-card">
+        <div class="card-h" style="cursor:pointer" onclick="toggleC('scenario-card')">
+          <h2>📊 シナリオ比較 <span style="font-size:.7rem;color:var(--gray-5);font-weight:400">▲クリックで開閉</span></h2>
+        </div>
+        <div class="c-body">
+          <div id="scenario-list-area"><p style="color:var(--gray-5);font-size:.82rem">シナリオを保存すると比較表が表示されます。</p></div>
+          <div id="scenario-cmp-table"></div>
+        </div>
+      </div>
+
+      <!-- 退職時期 -->
+      <div class="card collapsible closed" id="retire-card">
+        <div class="card-h" style="cursor:pointer" onclick="toggleC('retire-card')"><h2>🏃 退職時期シミュレーション</h2></div>
+        <div class="c-body">
+          <div class="fg2" style="margin-bottom:10px">
+            <div class="field"><label>退職年齢①</label><input type="number" id="ret_a" value="60"></div>
+            <div class="field"><label>退職年齢②</label><input type="number" id="ret_b" value="62"></div>
+            <div class="field"><label>退職年齢③</label><input type="number" id="ret_c" value="65"></div>
+            <div class="field"><label>退職年齢④</label><input type="number" id="ret_d" value="67"></div>
+          </div>
+          <button class="btn sm" onclick="runRetirementCmp()">比較する</button>
+          <div id="retire-cmp-table" style="margin-top:10px"></div>
+        </div>
+      </div>
+
+      <!-- グラフ -->
+      <div class="card">
+        <div class="card-h"><h2>📈 グラフ</h2></div>
+        <div class="chart-tabs">
+          <button class="ctb on" onclick="showCtab('asset',this)">総資産</button>
+          <button class="ctb" onclick="showCtab('balance',this)">収支</button>
+          <button class="ctb" onclick="showCtab('breakdown',this)">資産内訳</button>
+          <button class="ctb" onclick="showCtab('expense',this)">支出割合</button>
+        </div>
+        <div id="cp-asset"     class="cp on"><div class="chart-wrap"><canvas id="ch-asset"></canvas></div></div>
+        <div id="cp-balance"   class="cp">   <div class="chart-wrap"><canvas id="ch-balance"></canvas></div></div>
+        <div id="cp-breakdown" class="cp">   <div class="chart-wrap"><canvas id="ch-breakdown"></canvas></div></div>
+        <div id="cp-expense"   class="cp">   <div class="chart-wrap"><canvas id="ch-expense"></canvas></div></div>
+      </div>
+
+      <!-- ライフイベント表 -->
+      <div class="card">
+        <div class="card-h"><h2>📅 ライフイベント表</h2></div>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr><th>西暦</th><th>本人</th><th>妻</th><th>長女</th><th>次子</th><th style="text-align:left;padding-left:8px">ライフイベント</th></tr></thead>
+            <tbody id="lt-body"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- CF表 -->
+      <div class="card">
+        <div class="card-h"><h2>💰 キャッシュフロー表（万円）</h2></div>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr>
+              <th>危険度</th><th>西暦</th><th>年齢</th>
+              <th>収入合計</th><th>変動費</th><th>固定費</th>
+              <th>住居費</th><th>保育費</th><th>教育費</th>
+              <th>その他</th><th>支出合計</th>
+              <th>年収支</th><th>現金残</th><th>投資残</th><th>総資産</th>
+            </tr></thead>
+            <tbody id="cf-body"></tbody>
+          </table>
+        </div>
+        <div class="note">危険度：🟢安全 / 🟡注意 / 🔴要対策。収入欄にカーソルで内訳表示。</div>
+      </div>
     </div>
   </div>
 
-  <!-- 固定費・住宅 -->
-  <div id="tc-fix" class="tp">
-    <div class="sl">毎月の固定費（円/月）</div>
-    <div class="fg2">
-      <div class="field"><label>生命・医療保険料</label><input type="number" id="f_ins" value="20000" oninput="live()"></div>
-      <div class="field"><label>通信費（スマホ・ネット）</label><input type="number" id="f_tel" value="10000" oninput="live()"></div>
-      <div class="field"><label>車維持費（ガソリン・駐車・任意保険）</label><input type="number" id="f_car" value="20000" oninput="live()"></div>
-      <div class="field"><label>習い事・サブスク</label><input type="number" id="f_sub" value="10000" oninput="live()"></div>
-      <div class="field"><label>その他固定費</label><input type="number" id="f_oth" value="6000" oninput="live()"></div>
+  <!-- ════ COACH ════ -->
+  <div id="page-coach" class="page">
+    <div class="section-title">🤖 AIコーチ</div>
+    <div class="card">
+      <div class="card-h"><h2>よく聞かれる質問</h2></div>
+      <div class="chat-qs">
+        <button class="cq" onclick="askCoach('節約できる項目は？')">節約できる項目は？</button>
+        <button class="cq" onclick="askCoach('投資をもっと増やすべき？')">投資を増やすべき？</button>
+        <button class="cq" onclick="askCoach('住宅購入の状況を教えて')">住宅購入の状況は？</button>
+        <button class="cq" onclick="askCoach('老後の見通しは？')">老後の見通しは？</button>
+        <button class="cq" onclick="askCoach('今すぐやるべきことは？')">今すぐやるべきことは？</button>
+        <button class="cq" onclick="askCoach('NISAやiDeCoの活用方法は？')">NISA・iDeCoの活用は？</button>
+      </div>
+      <div class="chat-area" id="chat-area">
+        <div class="msg ai"><div class="ai-name">🤖 AIコーチ</div>こんにちは！ライフプランのご相談に乗ります。まず「シミュレーター」で「▶ 再計算・更新」を実行してから話しかけてください。上のよく聞かれる質問ボタンか、下のフォームで質問できます。</div>
+      </div>
+      <div class="chat-input-row">
+        <input type="text" class="chat-input" id="chat-input" placeholder="質問を入力... 例：毎月いくら貯蓄すれば目標達成できる？" onkeydown="if(event.key==='Enter')sendChat()">
+        <button class="btn" onclick="sendChat()">送信</button>
+      </div>
     </div>
-    <div class="sl">現在の負債</div>
-    <div class="fg2">
-      <div class="field"><label>車ローン 残高（万円）</label><input type="number" id="f_carloan" value="250"><div class="hint">月1.3万＋ボーナス払いで完済</div></div>
-      <div class="field"><label>車ローン 月額返済（円）</label><input type="number" id="f_carloan_m" value="13000"></div>
-      <div class="field"><label>車ローン ボーナス払い 年間（円）</label><input type="number" id="f_carloan_b" value="260000"></div>
+    <div class="note">※ このAIコーチはシミュレーション結果をもとにしたルールベースのアドバイスです。投資には元本割れのリスクがあります。重要な判断はファイナンシャルプランナーへご相談ください。</div>
+  </div>
+
+  <!-- ════ SETTINGS ════ -->
+  <div id="page-settings" class="page">
+    <div class="section-title">⚙️ 設定</div>
+    <div class="card">
+      <div class="card-h"><h2>プロフィール</h2></div>
+      <div class="fg2">
+        <div class="field"><label>あなたの名前（任意）</label><input type="text" id="s_name" placeholder="例：田中太郎" oninput="saveProfileName()"></div>
+      </div>
     </div>
-    <div class="sl">現在の住居</div>
-    <div class="fg2">
-      <div class="field"><label>家賃（円/月）</label><input type="number" id="h_rent" value="84000" oninput="live()"></div>
+    <div class="card">
+      <div class="card-h"><h2>🏅 バッジ・実績（全一覧）</h2></div>
+      <div class="badge-grid" id="all-badges"></div>
     </div>
-    <div class="sl">住宅購入計画</div>
-    <div class="fg2">
-      <div class="field"><label>購入予定年（西暦）</label><input type="number" id="h_yr" value="2033" min="2026" max="2060"></div>
-      <div class="field"><label>住宅価格（万円）</label><input type="number" id="h_prc" value="5000" min="0"></div>
-      <div class="field"><label>頭金（万円）</label><input type="number" id="h_dp" value="500" min="0"></div>
-      <div class="field"><label>住宅ローン金利（%）</label><input type="number" id="h_rate" value="0.7" step="0.1" min="0" max="10"></div>
-      <div class="field"><label>ローン期間（年）</label><input type="number" id="h_per" value="35" min="5" max="50"></div>
-      <div class="field"><label>管理費・修繕積立金（円/月）</label><input type="number" id="h_mgmt" value="20000"><div class="hint">購入後毎月発生</div></div>
+    <div class="card">
+      <div class="card-h"><h2>⚠️ データ管理</h2></div>
+      <div class="btn-row">
+        <button class="btn r" onclick="if(confirm('全データを初期化しますか？'))resetAll()">🗑️ データ初期化</button>
+      </div>
+      <div class="note" style="margin-top:10px">全設定・シナリオ・目標・カスタムイベントを初期状態に戻します。</div>
     </div>
   </div>
 
-  <!-- 教育（子どもごと） -->
-  <div id="tc-edu" class="tp">
-    <div class="sl">長女（子①）の教育方針</div>
-    <div class="fg2">
-      <div class="field"><label>小学校</label>
-        <select id="c1_el"><option value="32" selected>公立（32万円/年）</option><option value="168">私立（168万円/年）</option></select>
-      </div>
-      <div class="field"><label>中学校</label>
-        <select id="c1_mid"><option value="48" selected>公立（48万円/年）</option><option value="134">私立（134万円/年）</option></select>
-      </div>
-      <div class="field"><label>高校</label>
-        <select id="c1_hi"><option value="51" selected>公立（51万円/年）</option><option value="105">私立（105万円/年）</option></select>
-      </div>
-      <div class="field"><label>大学</label>
-        <select id="c1_uni">
-          <option value="54|28" selected>国公立（54万円/年）</option>
-          <option value="95|40">私立文系（95万円/年）</option>
-          <option value="130|40">私立理系（130万円/年）</option>
-        </select>
-      </div>
-      <div class="field"><label>大学 一人暮らし</label>
-        <select id="c1_dorm"><option value="0" selected>なし</option><option value="72">あり（+72万円/年）</option></select>
-      </div>
-      <div class="field"><label>留学費用（万円）</label><input type="number" id="c1_study" value="0"><div class="hint">大学期間中の合計金額</div></div>
-      <div class="field"><label>習い事・塾（円/月）</label><input type="number" id="c1_extra" value="0"><div class="hint">幼児〜高校生まで毎月加算</div></div>
-    </div>
-    <div class="sl">次子（子②）の教育方針</div>
-    <div class="fg2">
-      <div class="field"><label>小学校</label>
-        <select id="c2_el"><option value="32" selected>公立（32万円/年）</option><option value="168">私立（168万円/年）</option></select>
-      </div>
-      <div class="field"><label>中学校</label>
-        <select id="c2_mid"><option value="48" selected>公立（48万円/年）</option><option value="134">私立（134万円/年）</option></select>
-      </div>
-      <div class="field"><label>高校</label>
-        <select id="c2_hi"><option value="51" selected>公立（51万円/年）</option><option value="105">私立（105万円/年）</option></select>
-      </div>
-      <div class="field"><label>大学</label>
-        <select id="c2_uni">
-          <option value="54|28" selected>国公立（54万円/年）</option>
-          <option value="95|40">私立文系（95万円/年）</option>
-          <option value="130|40">私立理系（130万円/年）</option>
-        </select>
-      </div>
-      <div class="field"><label>大学 一人暮らし</label>
-        <select id="c2_dorm"><option value="0" selected>なし</option><option value="72">あり（+72万円/年）</option></select>
-      </div>
-      <div class="field"><label>留学費用（万円）</label><input type="number" id="c2_study" value="0"></div>
-      <div class="field"><label>習い事・塾（円/月）</label><input type="number" id="c2_extra" value="0"></div>
-    </div>
-  </div>
-
-  <!-- カスタムイベント -->
-  <div id="tc-cev" class="tp">
-    <div class="sl">任意イベントの追加（例：リフォーム・相続・副業収入・海外旅行など）</div>
-    <div class="fg3" id="new-ev-form">
-      <div class="field"><label>発生年（西暦）</label><input type="number" id="nev_yr" placeholder="2035"></div>
-      <div class="field"><label>イベント名</label><input type="text" id="nev_name" placeholder="例：車購入、相続、リフォーム"></div>
-      <div class="field"><label>金額（万円）</label><input type="number" id="nev_amt" placeholder="例：300"></div>
-      <div class="field"><label>種別</label>
-        <select id="nev_type"><option value="expense">支出</option><option value="income">収入</option></select>
-      </div>
-      <div class="field"><label>繰り返し</label>
-        <select id="nev_rec"><option value="0">一度だけ</option><option value="1">毎年発生</option></select>
-      </div>
-      <div class="field"><label>終了年（繰り返しの場合）</label><input type="number" id="nev_end" placeholder="例：2045（空白で終身）"></div>
-    </div>
-    <div class="btn-row" style="margin-top:8px">
-      <button class="btn" onclick="addCustomEvent()">＋ イベントを追加</button>
-    </div>
-    <div class="ev-list" id="ev-list"></div>
-    <div class="note">※ 追加したイベントは「再計算」ボタンを押すとキャッシュフローに反映されます。データはブラウザに自動保存されます。</div>
-  </div>
-
-  <!-- 将来・老後 -->
-  <div id="tc-fut" class="tp">
-    <div class="sl">現在の資産（実際の金額に変更してください）</div>
-    <div class="fg2">
-      <div class="field"><label>現金・預金（万円）</label><input type="number" id="a_cash" value="200" min="0"><div class="hint">普通・定期預金など</div></div>
-      <div class="field"><label>現金・預金 金利（%/年）</label><input type="number" id="a_cashrate" value="0.1" step="0.01" min="0"><div class="hint">例：定期預金 0.1〜0.3%</div></div>
-      <div class="field"><label>株式・投資信託など（万円）</label><input type="number" id="a_invest" value="100" min="0"><div class="hint">NISA・iDeCo・株式など</div></div>
-      <div class="field"><label>投資 期待利回り（%/年）</label><input type="number" id="a_investrate" value="5.0" step="0.1" min="0"><div class="hint">例：インデックス投資 4〜7%</div></div>
-    </div>
-    <div class="sl">老後・退職</div>
-    <div class="fg2">
-      <div class="field"><label>退職金（万円）</label><input type="number" id="r_sev" value="2000" min="0"></div>
-      <div class="field"><label>公的年金 夫婦合計（万円/年）</label><input type="number" id="r_pen" value="240" min="0"><div class="hint">共済+国民年金の受取見込み</div></div>
-    </div>
-  </div>
-
-  <!-- ライブ収支バー -->
-  <div class="live-bar">
-    <span class="lb-t">現在の月次概算</span>
-    <div class="li"><span class="lk">月収入</span><span class="lv" id="lb-inc">−</span></div>
-    <span class="sep">|</span>
-    <div class="li"><span class="lk">月支出（住居込）</span><span class="lv" id="lb-exp">−</span></div>
-    <span class="sep">|</span>
-    <div class="li"><span class="lk">月収支</span><span class="lv" id="lb-bal">−</span></div>
-  </div>
-
-  <div class="btn-row" id="actions">
-    <button class="btn" onclick="run()">▶ 再計算・更新</button>
-    <button class="btn-o p" onclick="openSaveScenario()">💾 シナリオ保存</button>
-    <button class="btn-o" onclick="exportExcel()">📥 Excel出力</button>
-    <button class="btn-o g" onclick="exportCSV()">📥 CSV出力</button>
-    <button class="btn-o" onclick="exportJSON()">📤 データ保存（JSON）</button>
-    <label class="btn-o" style="cursor:pointer">📁 データ読込（JSON）<input type="file" accept=".json" style="display:none" onchange="importJSON(this)"></label>
-  </div>
-
-  <div class="note" style="margin-top:8px">
-    ※ 「シナリオ保存」で現在の設定を名前付きで保存し、複数プランを比較できます。データ保存でJSON形式でエクスポート・別端末でインポート可能です。
-  </div>
-</div><!-- /settings -->
-
-<!-- サマリー -->
-<div class="sc-grid" id="summary"></div>
-
-<!-- 資産寿命バー -->
-<div class="asset-life-bar" id="asset-life-bar" style="display:none">
-  <span class="al-label">📊 資産寿命</span>
-  <span class="al-value" id="al-val">−</span>
-  <span class="al-detail" id="al-detail"></span>
+</div>
 </div>
 
-<!-- 危険度バナー -->
-<div id="risk-banner"></div>
+<!-- ══ MOBILE BOTTOM NAV ══ -->
+<nav id="bottom-nav">
+  <button class="bni active" onclick="nav('dashboard')" data-page="dashboard"><span class="ico">🏠</span>ホーム</button>
+  <button class="bni" onclick="nav('goals')" data-page="goals"><span class="ico">🎯</span>目標</button>
+  <button class="bni" onclick="nav('sim')" data-page="sim"><span class="ico">💹</span>シミュ</button>
+  <button class="bni" onclick="nav('coach')" data-page="coach"><span class="ico">🤖</span>コーチ</button>
+  <button class="bni" onclick="nav('settings')" data-page="settings"><span class="ico">⚙️</span>設定</button>
+</nav>
 
-<!-- ===== シナリオ比較 ===== -->
-<div class="card collapsible closed" id="scenario-card">
-  <h2 onclick="toggleCollapse('scenario-card')">📊 シナリオ比較</h2>
-  <div class="c-body">
-    <div id="scenario-list-area">
-      <p style="color:var(--gray-5);font-size:.82rem">「シナリオ保存」ボタンで現在の設定を保存すると比較表が表示されます。</p>
+<!-- ══ MODALS ══ -->
+<div class="modal-bg" id="modal-goal">
+  <div class="modal">
+    <h3>🎯 ライフゴールを追加</h3>
+    <div class="fg" style="gap:10px;margin-bottom:14px">
+      <div class="field"><label>目標名</label><input type="text" id="g_name" placeholder="例：貯金1000万円達成"></div>
+      <div class="field"><label>目標金額（万円）</label><input type="number" id="g_amount" placeholder="1000"></div>
+      <div class="field"><label>達成期限（西暦）</label><input type="number" id="g_deadline" placeholder="2033"></div>
+      <div class="field"><label>カテゴリ</label>
+        <select id="g_category"><option value="asset">💰 資産</option><option value="career">💼 キャリア</option><option value="life">🏠 生活</option></select></div>
+      <div class="field"><label>優先度</label>
+        <select id="g_priority"><option value="high">🔴 高</option><option value="medium" selected>🟡 中</option><option value="low">🟢 低</option></select></div>
+      <div class="field" style="grid-column:1/-1"><label>メモ（任意）</label><input type="text" id="g_note" placeholder="目標の背景・理由など"></div>
     </div>
-    <div id="scenario-cmp-table"></div>
-  </div>
-</div>
-
-<!-- ===== 退職時期シミュレーション ===== -->
-<div class="card collapsible closed" id="retire-card">
-  <h2 onclick="toggleCollapse('retire-card')">🏃 退職時期シミュレーション</h2>
-  <div class="c-body">
-    <div class="fg2" style="margin-bottom:10px">
-      <div class="field"><label>比較する退職年齢①</label><input type="number" id="ret_a" value="60" min="50" max="75"></div>
-      <div class="field"><label>比較する退職年齢②</label><input type="number" id="ret_b" value="62" min="50" max="75"></div>
-      <div class="field"><label>比較する退職年齢③</label><input type="number" id="ret_c" value="65" min="50" max="75"></div>
-      <div class="field"><label>比較する退職年齢④</label><input type="number" id="ret_d" value="67" min="50" max="75"></div>
+    <div class="btn-row">
+      <button class="btn" onclick="saveGoal()">保存</button>
+      <button class="btn-o r" onclick="closeModal('modal-goal')">キャンセル</button>
     </div>
-    <button class="btn" onclick="runRetirementCmp()">退職時期を比較する</button>
-    <div id="retire-cmp-table" style="margin-top:10px"></div>
   </div>
 </div>
 
-<!-- ===== ライフイベント表 ===== -->
-<div class="card">
-  <h2>📅 ライフイベント表</h2>
-  <div class="tbl-wrap">
-    <table>
-      <thead><tr>
-        <th>西暦</th><th>本人</th><th>妻</th>
-        <th>長女（子①）</th><th>次子（子②）</th>
-        <th style="min-width:230px;text-align:left;padding-left:8px">ライフイベント</th>
-      </tr></thead>
-      <tbody id="lt-body"></tbody>
-    </table>
-  </div>
-</div>
-
-<!-- ===== キャッシュフロー表 ===== -->
-<div class="card">
-  <h2>💰 キャッシュフロー表（単位：万円）</h2>
-  <div class="tbl-wrap">
-    <table>
-      <thead><tr>
-        <th>危険度</th><th>西暦</th><th>本人</th>
-        <th>収入<br>合計</th><th>生活費<br>変動</th><th>生活費<br>固定</th>
-        <th>住居費</th><th>保育費</th><th>教育費</th>
-        <th>その他<br>特別費</th><th>支出<br>合計</th>
-        <th>年間<br>収支</th><th>現金<br>残高</th><th>投資<br>残高</th><th>総資産</th>
-      </tr></thead>
-      <tbody id="cf-body"></tbody>
-    </table>
-  </div>
-  <div class="note">
-    ※ 万円単位。危険度：🟢安全 / 🟡注意（赤字・資産減少傾向） / 🔴要対策（赤字かつ資産500万円未満）。収入欄にカーソルで内訳表示。
-  </div>
-</div>
-
-<!-- ===== グラフ ===== -->
-<div class="card">
-  <h2>📈 グラフ</h2>
-  <div class="chart-tabs">
-    <button class="ctb on" onclick="showChartTab('asset',this)">総資産推移</button>
-    <button class="ctb" onclick="showChartTab('balance',this)">年間収支</button>
-    <button class="ctb" onclick="showChartTab('breakdown',this)">資産内訳</button>
-    <button class="ctb" onclick="showChartTab('expense',this)">支出割合（現在）</button>
-  </div>
-  <div id="cp-asset"    class="cp on"><div class="chart-wrap"><canvas id="ch-asset"></canvas></div></div>
-  <div id="cp-balance"  class="cp">   <div class="chart-wrap"><canvas id="ch-balance"></canvas></div></div>
-  <div id="cp-breakdown"class="cp">   <div class="chart-wrap"><canvas id="ch-breakdown"></canvas></div></div>
-  <div id="cp-expense"  class="cp">   <div class="chart-wrap"><canvas id="ch-expense"></canvas></div></div>
-</div>
-
-<!-- シナリオ保存モーダル（簡易） -->
-<div id="modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:1000;align-items:center;justify-content:center">
-  <div style="background:#fff;border-radius:12px;padding:24px;min-width:300px;box-shadow:0 8px 32px rgba(0,0,0,.2)">
-    <h3 style="margin-bottom:12px;color:var(--blue-d)">💾 シナリオを保存</h3>
-    <div class="field"><label>シナリオ名</label><input type="text" id="modal-name" placeholder="例：標準プラン、住宅購入プラン"></div>
-    <div class="btn-row" style="margin-top:12px">
+<div class="modal-bg" id="modal-scenario">
+  <div class="modal">
+    <h3>💾 シナリオを保存</h3>
+    <div class="field" style="margin-bottom:14px"><label>シナリオ名</label><input type="text" id="sc_name" placeholder="例：標準プラン、住宅購入プラン"></div>
+    <div class="btn-row">
       <button class="btn" onclick="saveScenario()">保存</button>
-      <button class="btn-o r" onclick="closeModal()">キャンセル</button>
+      <button class="btn-o r" onclick="closeModal('modal-scenario')">キャンセル</button>
     </div>
   </div>
 </div>
 
-</div><!-- /wrap -->
 <script>
+// ══════════════════════════════════════════════════════
+// CONSTANTS
+// ══════════════════════════════════════════════════════
+const LIFE_END_AGE = 90;
+const BADGE_DEFS = [
+  {id:'first_run',  ico:'🚀',name:'ファーストラン',   desc:'初めて計算実行'},
+  {id:'goal_set',   ico:'🎯',name:'目標設定完了',     desc:'初めて目標を設定'},
+  {id:'goal_50',    ico:'⭐', name:'折り返し',          desc:'目標達成率50%'},
+  {id:'goal_100',   ico:'🏆',name:'目標達成！',        desc:'目標を100%達成'},
+  {id:'scenario_2', ico:'📊',name:'シナリオ比較家',   desc:'2つ以上シナリオ保存'},
+  {id:'safe_90',    ico:'🛡️', name:'安全航行',         desc:'90歳まで資産プラス'},
+  {id:'invest_guru',ico:'📈',name:'投資の達人',        desc:'投資利回り7%以上設定'},
+  {id:'custom_ev',  ico:'📅',name:'イベントマスター', desc:'カスタムイベントを追加'},
+];
+const LEVELS = [
+  {min:0,   name:'ライフプラン初心者'},
+  {min:100, name:'プランナー見習い'},
+  {min:300, name:'マネープランナー'},
+  {min:600, name:'資産形成中'},
+  {min:1000,name:'ウェルスビルダー'},
+  {min:1500,name:'ライフプロ'},
+  {min:2200,name:'ファイナンシャルマスター'},
+  {min:3000,name:'人生設計の達人'},
+];
+
 // ══════════════════════════════════════════════════════
 // STATE
 // ══════════════════════════════════════════════════════
-const LIFE_END_AGE = 90;
-let currentRows   = null;
-let currentP      = null;
-let scenarios     = {};       // { name: { p, metrics } }
-let customEvents  = [];       // [{ id, year, name, amt, type, rec, endYear }]
-let chartObjs     = {};
+const DEF_STATE = {
+  name:'', goals:[], customEvents:[], scenarios:{}, sim:null,
+  gamification:{xp:0,level:1,badges:[],lastLogin:''},
+};
+let state = JSON.parse(JSON.stringify(DEF_STATE));
+let chartObjs = {};
+let currentP = null;
+
+// ══════════════════════════════════════════════════════
+// PERSISTENCE
+// ══════════════════════════════════════════════════════
+function saveState(){try{localStorage.setItem('lifeplan_os',JSON.stringify(state));}catch(e){}}
+function loadState(){
+  try{
+    const s=localStorage.getItem('lifeplan_os');
+    if(s){const p=JSON.parse(s);state={...DEF_STATE,...p};state.gamification={...DEF_STATE.gamification,...(p.gamification||{})};}
+  }catch(e){}
+}
+
+// ══════════════════════════════════════════════════════
+// ROUTER
+// ══════════════════════════════════════════════════════
+function nav(page){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('[data-page]').forEach(b=>b.classList.remove('active'));
+  document.getElementById('page-'+page).classList.add('active');
+  document.querySelectorAll('[data-page="'+page+'"]').forEach(b=>b.classList.add('active'));
+  window.location.hash='#/'+page;
+  if(page==='dashboard') refreshDashboard();
+  if(page==='goals') renderGoals();
+  if(page==='coach'&&state.sim) coachAutoAnalysis();
+  if(page==='settings') renderSettings();
+}
 
 // ══════════════════════════════════════════════════════
 // UTILITIES
 // ══════════════════════════════════════════════════════
-const w   = v => Math.round(v / 10000);
-const mw  = v => Math.round(v / 1000) / 10;
+const w   = v => Math.round(v/10000);
+const mw  = v => Math.round(v/1000)/10;
 const fmt = v => Number(v).toLocaleString();
-function g(id){ const e=document.getElementById(id); return e ? (e.tagName==='SELECT'?e.value:(parseFloat(e.value)||0)) : 0; }
-function gs(id){ const e=document.getElementById(id); return e ? e.value : ''; }
+function g(id){const e=document.getElementById(id);return e?(e.tagName==='SELECT'?e.value:(parseFloat(e.value)||0)):0;}
+function gs(id){const e=document.getElementById(id);return e?e.value:'';}
 
-function annualMortgage(principal, rateP, years){
+function annualMortgage(principal,rateP,years){
   if(principal<=0||years<=0) return 0;
-  const r=(rateP/100)/12, n=years*12;
+  const r=(rateP/100)/12,n=years*12;
   if(r===0) return principal/years;
   return (principal*r*Math.pow(1+r,n)/(Math.pow(1+r,n)-1))*12;
 }
 
-function eduChild(age, c){
-  const extraAnnual = (c.extra||0)*12;
-  const uni=c.uni||0, uni0=c.uni0||0, dorm=(c.dorm||0)*10000, study=(c.study||0)*10000;
-  if(age>=3  && age<=5 ) return 22000+extraAnnual;
-  if(age>=6  && age<=11) return c.el*10000+extraAnnual;
-  if(age>=12 && age<=14) return c.mid*10000+extraAnnual;
-  if(age>=15 && age<=17) return c.hi*10000+extraAnnual;
-  if(age===18)            return (uni+uni0)*10000+dorm+study;
-  if(age>=19 && age<=21) return uni*10000+dorm;
+function eduChild(age,c){
+  const extra=(c.extra||0)*12;
+  const uni=c.uni||0,uni0=c.uni0||0,dorm=(c.dorm||0)*10000;
+  if(age>=3&&age<=5)  return 22000+extra;
+  if(age>=6&&age<=11) return c.el*10000+extra;
+  if(age>=12&&age<=14)return c.mid*10000+extra;
+  if(age>=15&&age<=17)return c.hi*10000+extra;
+  if(age===18)        return (uni+uni0)*10000+dorm;
+  if(age>=19&&age<=21)return uni*10000+dorm;
   return 0;
 }
 
 function stageLabel(age){
   if(age<0) return '−';
-  if(age===0) return '0歳（誕生）';
-  if(age<=2)  return `${age}歳（乳幼児）`;
-  if(age<=5)  return `${age}歳（保育園）`;
-  if(age<=11) return `${age}歳（小学生）`;
-  if(age<=14) return `${age}歳（中学生）`;
-  if(age<=17) return `${age}歳（高校生）`;
-  if(age<=21) return `${age}歳（大学生）`;
-  return `${age}歳（社会人）`;
-}
-
-function lifeEvents(yr, ua, c1a, c2a, p){
-  const ev=[];
-  const a=(c,t)=>ev.push([c,t]);
-  if(yr===p.Y0)          a('', 'プラン開始');
-  if(c1a===0)            a('g','長女・誕生');
-  if(c2a===0)            a('g','次子・誕生');
-  if(yr===p.wret)        a('', '妻・職場復帰');
-  if(c1a===3)            a('', '長女・保育園入園');
-  if(c2a===3)            a('', '次子・保育園入園');
-  if(c1a===6)            a('', '長女・小学校入学');
-  if(c2a===6)            a('', '次子・小学校入学');
-  if(c1a===12)           a('', '長女・中学入学');
-  if(c2a===12)           a('', '次子・中学入学');
-  if(c1a===15)           a('', '長女・高校入学');
-  if(c2a===15)           a('', '次子・高校入学');
-  if(c1a===18)           a('a','長女・大学入学');
-  if(c2a===18)           a('a','次子・大学入学');
-  if(c1a===22)           a('g','長女・独立');
-  if(c2a===22)           a('g','次子・独立');
-  if(yr===p.hyr)         a('a',`マンション購入（${fmt(p.hprc)}万円）`);
-  if(yr===p.hyr+p.hper)  a('g','住宅ローン完済');
-  if(yr===p.RET)         a('g','本人・定年退職 ／ 年金受給開始');
-  if(p.reemployY>0 && yr===p.RET+p.reemployY) a('','再任用終了');
-  if(ua===75)            a('a','後期高齢者医療へ');
-  if(ua===LIFE_END_AGE)  a('r','プラン終了');
-  const carDone=p.Y0+p.carLoanYears+2;
-  if([carDone,carDone+10,carDone+20].includes(yr)&&ua<75) a('a','車の買い替え');
-  // カスタムイベント
-  for(const ev2 of p.customEvents){
-    const inRange=ev2.rec?(yr>=ev2.year&&yr<=(ev2.endYear||p.YEND)):yr===ev2.year;
-    if(inRange) a(ev2.type==='income'?'g':'a', ev2.name+(ev2.rec?' (毎年)':''));
-  }
-  return ev;
+  if(age===0) return '0歳';
+  if(age<=2) return age+'歳（乳幼児）';
+  if(age<=5) return age+'歳（保育園）';
+  if(age<=11)return age+'歳（小学生）';
+  if(age<=14)return age+'歳（中学生）';
+  if(age<=17)return age+'歳（高校生）';
+  if(age<=21)return age+'歳（大学生）';
+  return age+'歳（社会人）';
 }
 
 function riskLevel(r){
@@ -586,52 +737,37 @@ function getP(){
   const carAnn=g('f_carloan_m')*12+g('f_carloan_b');
   const carLoanYears=carAnn>0?Math.ceil(g('f_carloan')*10000/carAnn):0;
   const Y0=g('f_year')||new Date().getFullYear();
-  const uBY=g('f_uby'), wBY=g('f_wby'), c1BY=g('f_c1by'), c2BY=g('f_c2by');
-  const retAge=g('f_retage'), wRetAge=g('f_wretage');
-
-  // 教育（子どもごと）
-  const parseUni=id=>{const v=(gs(id)||'54|28').split('|');return{uni:+v[0],uni0:+v[1]};};
-  const u1=parseUni('c1_uni'), u2=parseUni('c2_uni');
-  const c1edu={el:g('c1_el'),mid:g('c1_mid'),hi:g('c1_hi'),uni:u1.uni,uni0:u1.uni0,dorm:g('c1_dorm'),study:g('c1_study'),extra:g('c1_extra')};
-  const c2edu={el:g('c2_el'),mid:g('c2_mid'),hi:g('c2_hi'),uni:u2.uni,uni0:u2.uni0,dorm:g('c2_dorm'),study:g('c2_study'),extra:g('c2_extra')};
-
+  const uBY=g('f_uby'),wBY=g('f_wby'),c1BY=g('f_c1by'),c2BY=g('f_c2by');
+  const pu=v=>{const a=(v||'54|28').split('|');return{uni:+a[0],uni0:+a[1]};};
+  const u1=pu(gs('c1_uni')),u2=pu(gs('c2_uni'));
   return{
     Y0,uBY,wBY,c1BY,c2BY,
-    UA0:Y0-uBY, WA0:Y0-wBY,
-    RET:uBY+retAge, WRET:wBY+wRetAge,
+    UA0:Y0-uBY,WA0:Y0-wBY,
+    RET:uBY+g('f_retage'),WRET:wBY+g('f_wretage'),
     YEND:uBY+LIFE_END_AGE,
-    // 収入
-    uMon:g('u_mon'), uBon:g('u_bon'), uGrow:g('u_grow')/100,
-    hAllow:g('u_house_allow'), depAllow:g('u_dep_allow'), otherAllow:g('u_other_allow'),
-    reemployM:g('u_reemploy_m'), reemployY:g('u_reemploy_y'),
-    wMon:g('w_mon'), wBon:g('w_bon'), wret:g('w_ret'),
-    // インフレ
+    uMon:g('u_mon'),uBon:g('u_bon'),uGrow:g('u_grow')/100,
+    hAllow:g('u_house_allow'),depAllow:g('u_dep_allow'),otherAllow:g('u_other_allow'),
+    reemployM:g('u_reemploy_m'),reemployY:g('u_reemploy_y'),
+    wMon:g('w_mon'),wBon:g('w_bon'),wret:g('w_ret'),
     inflRate:g('infl')/100,
-    // 変動費（月額）
     food:g('e_food'),util:g('e_util'),ent:g('e_ent'),cloth:g('e_cloth'),
     aself:g('e_aself'),awife:g('e_awife'),kids:g('e_kids'),misc:g('e_misc'),
-    // 旅行
     tBaby:g('t_baby'),tSchool:g('t_school'),tEmpty:g('t_empty'),tRetire:g('t_retire'),
-    // 固定費（月額）
     ins:g('f_ins'),tel:g('f_tel'),carM:g('f_car'),sub:g('f_sub'),oth:g('f_oth'),
-    carLoanAnn:carAnn, carLoanYears,
-    // 住宅
+    carLoanAnn:carAnn,carLoanYears,
     rent:g('h_rent'),hyr:g('h_yr'),hprc:g('h_prc'),hdp:g('h_dp')*10000,
     hrate:g('h_rate'),hper:g('h_per'),hmgmt:g('h_mgmt'),
-    // 教育
-    c1edu, c2edu,
-    // 資産
-    cashAmt:g('a_cash')*10000, cashRate:g('a_cashrate')/100,
-    investAmt:g('a_invest')*10000, investRate:g('a_investrate')/100,
-    // 老後
-    sev:g('r_sev')*10000, pen:g('r_pen')*10000,
-    // カスタムイベント
-    customEvents:[...customEvents]
+    c1edu:{el:g('c1_el'),mid:g('c1_mid'),hi:g('c1_hi'),uni:u1.uni,uni0:u1.uni0,dorm:g('c1_dorm'),extra:g('c1_extra')},
+    c2edu:{el:g('c2_el'),mid:g('c2_mid'),hi:g('c2_hi'),uni:u2.uni,uni0:u2.uni0,dorm:g('c2_dorm'),extra:g('c2_extra')},
+    cashAmt:g('a_cash')*10000,cashRate:g('a_cashrate')/100,
+    investAmt:g('a_invest')*10000,investRate:g('a_investrate')/100,
+    sev:g('r_sev')*10000,pen:g('r_pen')*10000,
+    customEvents:[...state.customEvents]
   };
 }
 
 // ══════════════════════════════════════════════════════
-// CORE CALCULATION（pure function）
+// CALCULATION ENGINE（pure function）
 // ══════════════════════════════════════════════════════
 function calculate(p){
   const loan=Math.max(0,p.hprc*10000-p.hdp);
@@ -639,278 +775,324 @@ function calculate(p){
   const carDoneY=p.Y0+p.carLoanYears+2;
   const carRepYrs=[carDoneY,carDoneY+10,carDoneY+20];
   const rows=[];
-  let cash=p.cashAmt, invest=p.investAmt;
+  let cash=p.cashAmt,invest=p.investAmt;
 
   for(let yr=p.Y0;yr<=p.YEND;yr++){
-    const ua=p.UA0+(yr-p.Y0);
-    const wa=p.WA0+(yr-p.Y0);
-    const c1a=yr-p.c1BY;
-    const c2a=yr-p.c2BY;
-    const dy=yr-p.Y0;
-    const inf=Math.pow(1+p.inflRate,dy);
-
-    // ── 収入 ──
-    let uInc=0,wInc=0,pen=0,sev=0,reemploy=0;
-    const depChildren=(c1a>=0&&c1a<18?1:0)+(c2a>=0&&c2a<18?1:0);
-    const allowTotal=(p.hAllow+p.depAllow*depChildren+p.otherAllow)*12;
-
-    if(yr<p.RET){
-      uInc=(p.uMon*12+p.uBon)*Math.pow(1+p.uGrow,dy)+allowTotal;
-    }
-    if(p.reemployM>0&&yr>=p.RET&&yr<p.RET+p.reemployY){
-      reemploy=p.reemployM*12;
-    }
-    if(yr>=p.wret&&yr<p.WRET){
-      const wy=yr-p.wret;
-      wInc=(p.wMon*12+p.wBon)*Math.pow(1+p.uGrow*0.5,wy);
-    }
+    const ua=p.UA0+(yr-p.Y0),wa=p.WA0+(yr-p.Y0);
+    const c1a=yr-p.c1BY,c2a=yr-p.c2BY;
+    const dy=yr-p.Y0,inf=Math.pow(1+p.inflRate,dy);
+    const depCh=(c1a>=0&&c1a<18?1:0)+(c2a>=0&&c2a<18?1:0);
+    const allowTotal=(p.hAllow+p.depAllow*depCh+p.otherAllow)*12;
+    let uInc=0,wInc=0,pen=0,sev=0,reemploy=0,custInc=0,custExp=0;
+    if(yr<p.RET) uInc=(p.uMon*12+p.uBon)*Math.pow(1+p.uGrow,dy)+allowTotal;
+    if(p.reemployM>0&&yr>=p.RET&&yr<p.RET+p.reemployY) reemploy=p.reemployM*12;
+    if(yr>=p.wret&&yr<p.WRET) wInc=(p.wMon*12+p.wBon)*Math.pow(1+p.uGrow*0.5,yr-p.wret);
     if(yr>=p.RET) pen=p.pen;
     if(yr===p.RET) sev=p.sev;
-
-    // カスタム収入
-    let custInc=0;
     for(const ev of p.customEvents){
-      if(ev.type!=='income') continue;
       const inR=ev.rec?(yr>=ev.year&&yr<=(ev.endYear||p.YEND)):yr===ev.year;
-      if(inR) custInc+=ev.amt*10000;
+      if(!inR) continue;
+      if(ev.type==='income') custInc+=ev.amt*10000; else custExp+=ev.amt*10000;
     }
     const totalInc=uInc+wInc+pen+sev+reemploy+custInc;
-
-    // ── 支出 ──
-    const monthlyVar=p.food+p.util+p.ent+p.cloth+p.aself+p.awife+p.kids+p.misc;
-    const varExp=monthlyVar*12*inf;
-    const monthlyFix=p.ins+p.tel+p.carM+p.sub+p.oth;
-    const fixExp=monthlyFix*12*inf;
-
-    // 住居費
-    let housing=0;
-    if(yr<p.hyr){
-      housing=p.rent*12;
-    } else if(yr<p.hyr+p.hper){
-      housing=mgage+p.hmgmt*12;
-    } else {
-      housing=p.hmgmt*12;
-    }
-    const dpCost=(yr===p.hyr)?(p.hdp+p.hprc*10000*0.03):0;
-
-    // 車ローン
-    const carLoan=(yr<p.Y0+p.carLoanYears)?p.carLoanAnn:0;
-
-    // 保育費（0〜2歳：6万/月）
+    const varExp=(p.food+p.util+p.ent+p.cloth+p.aself+p.awife+p.kids+p.misc)*12*inf;
+    const fixExp=(p.ins+p.tel+p.carM+p.sub+p.oth)*12*inf;
+    const housing=yr<p.hyr?p.rent*12:(yr<p.hyr+p.hper?mgage+p.hmgmt*12:p.hmgmt*12);
+    const dpCost=yr===p.hyr?(p.hdp+p.hprc*10000*0.03):0;
+    const carLoan=yr<p.Y0+p.carLoanYears?p.carLoanAnn:0;
     let childcare=0;
     if(c1a>=0&&c1a<=2) childcare+=720000;
     if(c2a>=0&&c2a<=2) childcare+=720000;
-
-    // 教育費（子どもごと）
     let edu=0;
     if(c1a>=0) edu+=eduChild(c1a,p.c1edu);
     if(c2a>=0) edu+=eduChild(c2a,p.c2edu);
-
-    // 旅行
-    let trv;
-    if(yr>=p.RET)                                  trv=p.tRetire;
-    else if(c1a>=22&&(c2a<0||c2a>=22))             trv=p.tEmpty;
-    else if(c1a>=6||c2a>=6)                        trv=p.tSchool;
-    else                                            trv=p.tBaby;
-    trv*=10000;
-
-    // 特別費
-    let special=0;
-    if(carRepYrs.includes(yr)&&ua<75) special+=2000000;
-    if(c1a===20) special+=200000;
-    if(c2a===20) special+=200000;
-
-    // 医療・介護
+    const trv=(yr>=p.RET?p.tRetire:(c1a>=22&&(c2a<0||c2a>=22)?p.tEmpty:(c1a>=6||c2a>=6?p.tSchool:p.tBaby)))*10000;
     let medical=0;
     if(ua>=70) medical+=300000*inf;
     if(ua>=80) medical+=500000*inf;
-
-    // カスタム支出
-    let custExp=0;
-    for(const ev of p.customEvents){
-      if(ev.type!=='expense') continue;
-      const inR=ev.rec?(yr>=ev.year&&yr<=(ev.endYear||p.YEND)):yr===ev.year;
-      if(inR) custExp+=ev.amt*10000;
-    }
-
-    const otherExp=dpCost+carLoan+trv+special+medical+custExp;
+    let special=0;
+    if(carRepYrs.includes(yr)&&ua<75) special+=2000000;
+    if(c1a===20||c2a===20) special+=200000;
+    const otherExp=dpCost+carLoan+trv+medical+special+custExp;
     const totalExp=varExp+fixExp+housing+childcare+edu+otherExp;
     const balance=totalInc-totalExp;
-
-    // 資産更新
     const investReturn=invest*p.investRate;
     invest*=(1+p.investRate);
     cash=(cash+balance)*(1+p.cashRate);
-    const totalAsset=cash+invest;
-
-    const evList=lifeEvents(yr,ua,c1a,c2a,p);
-    rows.push({yr,ua,wa,c1a,c2a,
-      totalInc,uInc,wInc,pen,sev,reemploy,custInc,
-      varExp,fixExp,housing,childcare,edu,otherExp,
-      totalExp,balance,cash,invest,totalAsset,investReturn,
-      evList,hasEv:evList.length>0});
+    rows.push({yr,ua,wa,c1a,c2a,totalInc,uInc,wInc,pen,sev,reemploy,custInc,
+      varExp,fixExp,housing,childcare,edu,otherExp,totalExp,balance,
+      cash,invest,totalAsset:cash+invest,investReturn});
   }
   return rows;
 }
 
 function getMetrics(rows,p){
-  const hit=r=>r.totalAsset<0;
-  const depRow=rows.find(hit);
-  const assetLife=depRow?depRow.ua-1:`${LIFE_END_AGE}歳以降`;
-  const r65=rows.find(r=>r.ua===65);
-  const r85=rows.find(r=>r.ua===85);
+  const dep=rows.find(r=>r.totalAsset<0);
+  const r65=rows.find(r=>r.ua===65),r85=rows.find(r=>r.ua===85);
   const worst=rows.reduce((m,r)=>r.balance<m.balance?r:m,rows[0]);
   return{
-    assetLife,
-    asset65:r65?r65.totalAsset:null,
-    asset85:r85?r85.totalAsset:null,
+    assetLife:dep?dep.ua-1:`${LIFE_END_AGE}歳以降`,
+    asset65:r65?r65.totalAsset:null,asset85:r85?r85.totalAsset:null,
     totalBalance:rows.reduce((s,r)=>s+r.balance,0),
-    worstYr:worst.yr, worstBal:worst.balance,
+    worstYr:worst.yr,worstBal:worst.balance,
     finalAsset:rows[rows.length-1].totalAsset,
+    peakAsset:Math.max(...rows.map(r=>r.totalAsset)),
+    peakAge:rows.reduce((m,r)=>r.totalAsset>m.totalAsset?r:m,rows[0]).ua,
   };
 }
 
 // ══════════════════════════════════════════════════════
-// RUN（main entry）
+// ACTION ENGINE（rule-based proposals）
 // ══════════════════════════════════════════════════════
-function run(){
-  currentP=getP();
-  currentRows=calculate(currentP);
-  const metrics=getMetrics(currentRows,currentP);
-  drawSummary(currentRows,metrics);
-  drawAssetLife(metrics,currentP);
-  drawRiskBanner(currentRows);
-  drawLifeTable(currentRows);
-  drawCFTable(currentRows);
-  drawCharts(currentRows,currentP);
-  saveToLS();
-}
+function actionEngine(rows,p,goals){
+  const proposals=[];
+  const metrics=getMetrics(rows,p);
+  const mInc=(p.uMon*12+p.uBon)/12;
+  const mExp=p.food+p.util+p.ent+p.cloth+p.aself+p.awife+p.kids+p.misc+p.ins+p.tel+p.carM+p.sub+p.oth+p.rent;
+  const savRate=mInc>0?(mInc-mExp)/mInc:0;
+  const emerMo=mExp>0?p.cashAmt/mExp:99;
+  const invRatio=(p.cashAmt+p.investAmt)>0?p.investAmt/(p.cashAmt+p.investAmt):0;
 
-// ══════════════════════════════════════════════════════
-// LIVE BALANCE BAR
-// ══════════════════════════════════════════════════════
-function live(){
-  const Y0=g('f_year')||new Date().getFullYear();
-  const uBY=g('f_uby'),wBY=g('f_wby'),c1BY=g('f_c1by'),c2BY=g('f_c2by');
-  const c1a=Y0-c1BY,c2a=Y0-c2BY;
-  const c2txt=c2a>=0?`次子${c2a}歳`:`次子${c2BY}年予定`;
-  document.getElementById('h-status').textContent=
-    `${Y0}年 ／ 本人${Y0-uBY}歳・妻${Y0-wBY}歳・長女${c1a}歳・${c2txt}`;
-
-  const depCh=(c1a>=0&&c1a<18?1:0)+(c2a>=0&&c2a<18?1:0);
-  const allowM=g('u_house_allow')+g('u_dep_allow')*depCh+g('u_other_allow');
-  const monthlyInc=(g('u_mon')*12+g('u_bon'))/12+allowM;
-  const monthlyVar=g('e_food')+g('e_util')+g('e_ent')+g('e_cloth')+g('e_aself')+g('e_awife')+g('e_kids')+g('e_misc');
-  const monthlyFix=g('f_ins')+g('f_tel')+g('f_car')+g('f_sub')+g('f_oth');
-  const totalExp=monthlyVar+monthlyFix+g('h_rent');
-  const bal=monthlyInc-totalExp;
-  document.getElementById('lb-inc').textContent=mw(monthlyInc)+'万円';
-  document.getElementById('lb-exp').textContent=mw(totalExp)+'万円';
-  const el=document.getElementById('lb-bal');
-  el.textContent=(bal>=0?'+':'')+mw(bal)+'万円';
-  el.className='lv '+(bal>=0?'pos':'neg');
-}
-
-// ══════════════════════════════════════════════════════
-// RENDER FUNCTIONS
-// ══════════════════════════════════════════════════════
-function drawSummary(rows,metrics){
-  const finalTotal=rows[rows.length-1].totalAsset;
-  const maxTotal=Math.max(...rows.map(r=>r.totalAsset));
-  const maxRow=rows.find(r=>r.totalAsset===maxTotal);
-  const defs=rows.filter(r=>r.balance<0).length;
-  const fc=finalTotal>10000000?'g':finalTotal>0?'':'r';
-  const dc=defs>15?'r':defs>8?'a':'g';
-  document.getElementById('summary').innerHTML=`
-    <div class="sc ${fc}">
-      <div class="sc-l">90歳時点の総資産</div>
-      <div class="sc-v">${fmt(w(finalTotal))}万円</div>
-      <div class="sc-s">現金${fmt(w(rows[rows.length-1].cash))}万 ／ 投資${fmt(w(rows[rows.length-1].invest))}万</div>
-    </div>
-    <div class="sc">
-      <div class="sc-l">ピーク時の総資産</div>
-      <div class="sc-v">${fmt(w(maxTotal))}万円</div>
-      <div class="sc-s">${maxRow.yr}年（本人${maxRow.ua}歳）</div>
-    </div>
-    <div class="sc a">
-      <div class="sc-l">65歳時点の総資産</div>
-      <div class="sc-v">${metrics.asset65!==null?fmt(w(metrics.asset65))+'万円':'−'}</div>
-      <div class="sc-s">85歳時点：${metrics.asset85!==null?fmt(w(metrics.asset85))+'万円':'−'}</div>
-    </div>
-    <div class="sc ${dc}">
-      <div class="sc-l">年間赤字の年数</div>
-      <div class="sc-v">${defs}年</div>
-      <div class="sc-s">全${rows.length}年中</div>
-    </div>`;
-}
-
-function drawAssetLife(metrics,p){
-  const bar=document.getElementById('asset-life-bar');
-  bar.style.display='flex';
-  document.getElementById('al-val').textContent=
-    typeof metrics.assetLife==='number'?`${metrics.assetLife}歳まで資産維持可能`:metrics.assetLife;
-  const dep=typeof metrics.assetLife==='number';
-  document.getElementById('al-detail').textContent=
-    dep?`（${metrics.assetLife}歳時点で資産が枯渇する見込み）`:'（計画期間中は資産がプラスで推移）';
-}
-
-function drawRiskBanner(rows){
-  const banner=document.getElementById('risk-banner');
-  const reds=rows.filter(r=>riskLevel(r)==='red');
-  const ambers=rows.filter(r=>riskLevel(r)==='amber');
-  banner.style.display='flex';
-  if(reds.length>5){
-    banner.className='danger';
-    banner.innerHTML=`🔴 <strong>要対策：</strong>${reds.length}年間で年間赤字かつ資産500万円未満の時期があります。支出削減や収入増加を検討してください。`;
-  } else if(ambers.length>8){
-    banner.className='caution';
-    banner.innerHTML=`🟡 <strong>注意：</strong>${ambers.length}年間で資産減少傾向または年間赤字の時期があります。`;
-  } else {
-    banner.className='safe';
-    banner.innerHTML=`🟢 <strong>安全：</strong>計画期間中の資産は概ね良好に推移しています。`;
+  if(typeof metrics.assetLife==='number'&&metrics.assetLife<85){
+    const yrs=85-metrics.assetLife;
+    const mNeed=Math.ceil(yrs*12*200000/Math.max(1,(p.RET-p.Y0)*12)/10000);
+    proposals.push({priority:1,icon:'🔴',title:`${metrics.assetLife}歳で資産が枯渇する見込みです`,
+      detail:`このまま続けると${metrics.assetLife}歳時点で資産がマイナスになります。`,
+      actions:[`毎月約${mNeed}万円以上の追加積立が必要です`,
+        `投資利回り（現在${(p.investRate*100).toFixed(1)}%）の見直しも効果的です`,
+        '老後の生活費を現在より10〜15%削減する計画を立てましょう']});
   }
+  if(savRate<0.10){
+    proposals.push({priority:2,icon:'🟡',title:`貯蓄率が低い状態です（現在${Math.max(0,Math.round(savRate*100))}%）`,
+      detail:'推奨は手取り収入の15〜20%以上の貯蓄です。',
+      actions:['変動費（食費・娯楽費）の見直しをしてみましょう',
+        `毎月${Math.ceil(mInc*0.15/10000)}万円を先取り貯蓄する仕組みを作りましょう`]});
+  }
+  if(emerMo<6){
+    proposals.push({priority:2,icon:'🟡',title:'緊急予備費が不足しています',
+      detail:`現在の現金は生活費の${Math.round(emerMo*10)/10}ヶ月分です（推奨：6ヶ月以上）。`,
+      actions:[`目標：${Math.ceil(mExp*6/10000)}万円以上の現金を維持`,
+        '毎月の余剰資金を先にこちらに積み立ててください']});
+  }
+  if(invRatio<0.3&&p.UA0<50){
+    proposals.push({priority:3,icon:'🟢',title:'投資比率の引き上げを検討しましょう',
+      detail:`現在の投資比率は${Math.round(invRatio*100)}%です。40代以下なら40〜60%が目安です。`,
+      actions:['NISAの年間枠（最大360万円）を活用しましょう',
+        'iDeCo（公務員は月1.2万円まで全額控除）も有効です']});
+  }
+  for(const gl of (goals||[])){
+    if(gl.category!=='asset'||!gl.deadline||!gl.amount) continue;
+    const yLeft=gl.deadline-p.Y0;
+    if(yLeft<=0) continue;
+    const gap=gl.amount-w(p.cashAmt+p.investAmt);
+    if(gap>0){
+      proposals.push({priority:3,icon:'🎯',title:`目標「${gl.name}」まで残り${gap}万円`,
+        detail:`${yLeft}年後（${gl.deadline}年）に達成するには月${Math.ceil(gap/yLeft/12)}万円の積立が必要です。`,
+        actions:[`毎月${Math.ceil(gap/yLeft/12)}万円を目標専用口座に積立てましょう`]});
+    }
+  }
+  return proposals.sort((a,b)=>a.priority-b.priority);
+}
+
+// ══════════════════════════════════════════════════════
+// GAMIFICATION
+// ══════════════════════════════════════════════════════
+function getLevelInfo(xp){
+  let lv=LEVELS[0];
+  for(const l of LEVELS) if(xp>=l.min) lv=l;
+  const idx=LEVELS.indexOf(lv);
+  const next=LEVELS[idx+1];
+  return{name:lv.name,lvNum:idx+1,prog:next?Math.round((xp-lv.min)/(next.min-lv.min)*100):100};
+}
+function grantXP(n){state.gamification.xp=(state.gamification.xp||0)+n;saveState();updateXPDisplay();}
+function grantBadge(id){
+  if(state.gamification.badges.includes(id)) return;
+  state.gamification.badges.push(id);grantXP(50);saveState();
+}
+function checkBadges(rows,p){
+  if(rows) grantBadge('first_run');
+  if(p&&p.investRate>=0.07) grantBadge('invest_guru');
+  if(state.customEvents.length>0) grantBadge('custom_ev');
+  if(state.goals.length>0) grantBadge('goal_set');
+  if(Object.keys(state.scenarios).length>=2) grantBadge('scenario_2');
+  if(rows){
+    const m=getMetrics(rows,p);
+    if(typeof m.assetLife==='string') grantBadge('safe_90');
+    const cur=p?w(p.cashAmt+p.investAmt):0;
+    for(const gl of state.goals){
+      if(!gl.amount) continue;
+      const pct=cur/gl.amount;
+      if(pct>=0.5) grantBadge('goal_50');
+      if(pct>=1.0) grantBadge('goal_100');
+    }
+  }
+}
+function updateXPDisplay(){
+  const li=getLevelInfo(state.gamification.xp||0);
+  const el=document.getElementById('sb-level');if(el) el.textContent=`Lv.${li.lvNum} ${li.name}`;
+  const bar=document.getElementById('xp-bar');if(bar) bar.style.width=li.prog+'%';
+}
+
+// ══════════════════════════════════════════════════════
+// RUN
+// ══════════════════════════════════════════════════════
+function runAndRefresh(){
+  currentP=getP();
+  const rows=calculate(currentP);
+  const metrics=getMetrics(rows,currentP);
+  state.sim={rows,p:currentP,metrics};
+  grantXP(10);checkBadges(rows,currentP);saveState();
+  drawSimResults(rows,currentP,metrics);
+  refreshDashboard();
+}
+
+// ══════════════════════════════════════════════════════
+// DASHBOARD
+// ══════════════════════════════════════════════════════
+function refreshDashboard(){
+  if(!state.sim){
+    document.getElementById('db-metrics').innerHTML=`<div style="grid-column:1/-1"><div class="empty-state"><div class="e-ico">💹</div>まずシミュレーターで計算を実行すると<br>ダッシュボードにデータが表示されます。<br><br><button class="btn" onclick="nav('sim')">シミュレーターへ →</button></div></div>`;
+    document.getElementById('db-albar').innerHTML='';document.getElementById('db-risk').innerHTML='';
+    document.getElementById('db-goals-card').innerHTML='';document.getElementById('db-action-card').innerHTML='';
+    renderBadges('db-badges');return;
+  }
+  const {rows,p,metrics}=state.sim;
+  const last=rows[rows.length-1];
+  const reds=rows.filter(r=>riskLevel(r)==='red').length;
+  const ambs=rows.filter(r=>riskLevel(r)==='amber').length;
+  const fc=last.totalAsset>10000000?'green':last.totalAsset>0?'blue':'red';
+  const dc=reds>5?'red':ambs>8?'amber':'green';
+  document.getElementById('db-metrics').innerHTML=`
+    <div class="mc ${fc}" data-ico="💰"><div class="mc-l">90歳時点の総資産</div><div class="mc-v">${fmt(w(last.totalAsset))}万円</div><div class="mc-s">現金${fmt(w(last.cash))}万 ／ 投資${fmt(w(last.invest))}万</div></div>
+    <div class="mc blue" data-ico="📊"><div class="mc-l">ピーク総資産</div><div class="mc-v">${fmt(w(metrics.peakAsset))}万円</div><div class="mc-s">本人${metrics.peakAge}歳時点</div></div>
+    <div class="mc amber" data-ico="📅"><div class="mc-l">65歳時点の総資産</div><div class="mc-v">${metrics.asset65!==null?fmt(w(metrics.asset65))+'万円':'−'}</div><div class="mc-s">85歳：${metrics.asset85!==null?fmt(w(metrics.asset85))+'万円':'−'}</div></div>
+    <div class="mc ${dc}" data-ico="⚠️"><div class="mc-l">年間赤字の年数</div><div class="mc-v">${rows.filter(r=>r.balance<0).length}年</div><div class="mc-s">全${rows.length}年中</div></div>`;
+
+  document.getElementById('db-albar').innerHTML=`
+    <div class="al-bar">
+      <span style="font-size:1.4rem">📊</span>
+      <div><div style="font-size:.7rem;font-weight:700;color:var(--blue-d)">資産寿命</div>
+      <div class="al-v">${typeof metrics.assetLife==='number'?metrics.assetLife+'歳まで維持可能':metrics.assetLife}</div></div>
+      <div style="font-size:.75rem;color:var(--blue-d);opacity:.8">${typeof metrics.assetLife==='number'?'計画期間中に資産が枯渇する見込みです':'計画期間（90歳）まで資産がプラスで推移します'}</div>
+    </div>`;
+
+  const rl=reds>5?'danger':ambs>8?'caution':'safe';
+  const ri=reds>5?'🔴':ambs>8?'🟡':'🟢';
+  const rt=reds>5?`要対策：${reds}年間で資産500万円未満かつ赤字の時期があります`:ambs>8?`注意：${ambs}年間で収支マイナスまたは資産減少傾向があります`:'安全：計画期間中の資産は概ね良好に推移しています';
+  document.getElementById('db-risk').innerHTML=`<div class="risk ${rl}">${ri} <strong>${rt}</strong></div>`;
+
+  destroyChart('db');
+  const ctx=document.getElementById('db-chart').getContext('2d');
+  chartObjs.db=new Chart(ctx,{
+    data:{labels:rows.map(r=>r.yr),datasets:[
+      {type:'line',label:'総資産（万円）',data:rows.map(r=>w(r.totalAsset)),borderColor:'#3b82f6',backgroundColor:'rgba(59,130,246,.08)',fill:true,tension:.35,pointRadius:0,yAxisID:'y'},
+      {type:'line',label:'投資（万円）',data:rows.map(r=>w(r.invest)),borderColor:'#8b5cf6',tension:.35,pointRadius:0,borderDash:[4,3],yAxisID:'y'},
+      {type:'bar',label:'年収支（万円）',data:rows.map(r=>w(r.balance)),backgroundColor:rows.map(r=>r.balance>=0?'rgba(16,185,129,.4)':'rgba(239,68,68,.4)'),yAxisID:'y2'},
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{position:'top',labels:{font:{size:10}}},tooltip:{callbacks:{label:c=>c.dataset.label+': '+c.parsed.y.toLocaleString()+'万円'}}},
+      scales:{x:{ticks:{maxTicksLimit:14,maxRotation:45,font:{size:9}}},
+        y:{position:'left',title:{display:true,text:'資産（万円）',font:{size:9}},grid:{color:'rgba(0,0,0,.04)'}},
+        y2:{position:'right',title:{display:true,text:'収支（万円）',font:{size:9}},grid:{drawOnChartArea:false}}}}});
+
+  const proposals=actionEngine(rows,p,state.goals);
+  const curAmt=w(p.cashAmt+p.investAmt);
+  const goalsHtml=state.goals.length?state.goals.slice(0,3).map(gl=>{
+    const pct=gl.amount>0?Math.min(100,Math.round(curAmt/gl.amount*100)):0;
+    const col=pct>=100?'#10b981':pct>=50?'#3b82f6':'#f59e0b';
+    return`<div style="margin-bottom:10px">
+      <div style="display:flex;justify-content:space-between;font-size:.82rem;margin-bottom:4px"><strong>${gl.name}</strong><span style="color:var(--gray-5)">${pct}%</span></div>
+      <div class="goal-prog-bar"><div class="goal-prog-fill" style="width:${pct}%;background:${col}"></div></div>
+      <div style="font-size:.7rem;color:var(--gray-5);margin-top:2px">${gl.deadline}年目標 / ${gl.amount}万円</div>
+    </div>`;
+  }).join(''):`<div class="empty-state" style="padding:20px"><div class="e-ico" style="font-size:1.5rem">🎯</div>目標を設定してみましょう<br><button class="btn sm" style="margin-top:8px" onclick="nav('goals')">目標管理へ</button></div>`;
+  document.getElementById('db-goals-card').innerHTML=`<div class="card"><div class="card-h"><h2>🎯 目標進捗</h2><a onclick="nav('goals')" style="font-size:.75rem;color:var(--blue);cursor:pointer">すべて見る →</a></div>${goalsHtml}</div>`;
+
+  const actHtml=proposals.slice(0,2).map(pr=>`
+    <div class="proposal p${pr.priority}">
+      <div class="prop-ico">${pr.icon}</div>
+      <div class="prop-body"><div class="prop-title">${pr.title}</div><div class="prop-detail">${pr.detail}</div>
+      <ul class="prop-actions">${pr.actions.slice(0,2).map(a=>`<li>${a}</li>`).join('')}</ul></div>
+    </div>`).join('')||'<div style="color:var(--gray-5);font-size:.82rem;padding:10px">現在の計画は概ね良好です！🎉</div>';
+  document.getElementById('db-action-card').innerHTML=`<div class="card"><div class="card-h"><h2>💡 アクション提案</h2><a onclick="nav('coach')" style="font-size:.75rem;color:var(--blue);cursor:pointer">コーチに相談 →</a></div>${actHtml}</div>`;
+
+  renderBadges('db-badges');updateXPDisplay();
+}
+
+// ══════════════════════════════════════════════════════
+// SIMULATOR RENDER
+// ══════════════════════════════════════════════════════
+function drawSimResults(rows,p,metrics){
+  document.getElementById('sim-results').style.display='block';
+  const last=rows[rows.length-1];
+  const fc=last.totalAsset>10000000?'green':last.totalAsset>0?'blue':'red';
+  document.getElementById('sim-metrics').innerHTML=`
+    <div class="mc ${fc}" data-ico="💰"><div class="mc-l">90歳時点の総資産</div><div class="mc-v">${fmt(w(last.totalAsset))}万円</div><div class="mc-s">現金${fmt(w(last.cash))}万 ／ 投資${fmt(w(last.invest))}万</div></div>
+    <div class="mc blue" data-ico="📊"><div class="mc-l">ピーク総資産</div><div class="mc-v">${fmt(w(metrics.peakAsset))}万円</div><div class="mc-s">本人${metrics.peakAge}歳時点</div></div>
+    <div class="mc amber" data-ico="📅"><div class="mc-l">65歳時資産</div><div class="mc-v">${metrics.asset65!==null?fmt(w(metrics.asset65))+'万円':'−'}</div><div class="mc-s">85歳：${metrics.asset85!==null?fmt(w(metrics.asset85))+'万円':'−'}</div></div>`;
+  document.getElementById('sim-albar').innerHTML=`
+    <div class="al-bar"><span style="font-size:1.2rem">📊</span>
+      <span style="font-size:.7rem;font-weight:700;color:var(--blue-d)">資産寿命：</span>
+      <span class="al-v">${typeof metrics.assetLife==='number'?metrics.assetLife+'歳まで維持可能':metrics.assetLife}</span>
+    </div>`;
+  const reds=rows.filter(r=>riskLevel(r)==='red').length;
+  const ambs=rows.filter(r=>riskLevel(r)==='amber').length;
+  const rl=reds>5?'danger':ambs>8?'caution':'safe';
+  const ri=reds>5?'🔴':ambs>8?'🟡':'🟢';
+  document.getElementById('sim-risk').innerHTML=`<div class="risk ${rl}">${ri} <strong>${reds>5?`要対策：${reds}年間で要注意時期あり`:ambs>8?`注意：${ambs}年間で収支マイナスまたは資産減少傾向あり`:'安全：計画期間中の資産は概ね良好です'}</strong></div>`;
+  drawLifeTable(rows);drawCFTable(rows);drawCharts(rows,p);renderScenarioList();
+}
+
+function lifeEventsOf(yr,ua,c1a,c2a,p){
+  const ev=[];const a=(c,t)=>ev.push([c,t]);
+  if(c1a===0) a('g','長女・誕生');if(c2a===0) a('g','次子・誕生');
+  if(yr===p.wret) a('','妻・復職');
+  if(c1a===6) a('','長女・小学校');if(c2a===6) a('','次子・小学校');
+  if(c1a===12) a('','長女・中学');if(c2a===12) a('','次子・中学');
+  if(c1a===18) a('a','長女・大学入学');if(c2a===18) a('a','次子・大学入学');
+  if(c1a===22) a('g','長女・独立');if(c2a===22) a('g','次子・独立');
+  if(yr===p.hyr) a('a',`マンション購入（${p.hprc}万円）`);
+  if(yr===p.hyr+p.hper) a('g','住宅ローン完済');
+  if(yr===p.RET) a('g','本人・定年退職 ／ 年金受給開始');
+  if(ua===LIFE_END_AGE) a('r','プラン終了');
+  for(const ev2 of p.customEvents){
+    const inR=ev2.rec?(yr>=ev2.year&&yr<=(ev2.endYear||p.YEND)):yr===ev2.year;
+    if(inR) a(ev2.type==='income'?'g':'a',ev2.name+(ev2.rec?' (毎年)':''));
+  }
+  return ev;
 }
 
 function drawLifeTable(rows){
-  const tbody=document.getElementById('lt-body');
+  const tbody=document.getElementById('lt-body');if(!tbody) return;
   tbody.innerHTML='';
   rows.forEach(r=>{
-    const tr=document.createElement('tr');
-    if(r.hasEv) tr.classList.add('ev');
-    const evHtml=r.evList.length
-      ?r.evList.map(([c,t])=>`<span class="tag ${c}">${t}</span>`).join('')
-      :'<span style="color:var(--gray-5)">−</span>';
-    tr.innerHTML=`
-      <td class="c">${r.yr}</td><td class="c">${r.ua}歳</td><td class="c">${r.wa}歳</td>
-      <td class="c">${stageLabel(r.c1a)}</td>
-      <td class="c">${r.c2a>=0?stageLabel(r.c2a):'−'}</td>
-      <td class="l" style="padding-left:8px">${evHtml}</td>`;
+    const evs=lifeEventsOf(r.yr,r.ua,r.c1a,r.c2a,currentP);
+    const tr=document.createElement('tr');if(evs.length) tr.classList.add('ev');
+    tr.innerHTML=`<td class="c">${r.yr}</td><td class="c">${r.ua}歳</td><td class="c">${r.wa}歳</td>
+      <td class="c">${stageLabel(r.c1a)}</td><td class="c">${r.c2a>=0?stageLabel(r.c2a):'−'}</td>
+      <td class="l" style="padding-left:8px">${evs.length?evs.map(([c,t])=>`<span class="tag ${c}">${t}</span>`).join(''):'<span style="color:var(--gray-3)">−</span>'}</td>`;
     tbody.appendChild(tr);
   });
 }
 
 function drawCFTable(rows){
-  const tbody=document.getElementById('cf-body');
+  const tbody=document.getElementById('cf-body');if(!tbody) return;
   tbody.innerHTML='';
   rows.forEach(r=>{
-    const tr=document.createElement('tr');
-    if(r.ua>=65) tr.classList.add('ret');
+    const tr=document.createElement('tr');if(r.ua>=65) tr.classList.add('ret');
     const rl=riskLevel(r);
     const ri=rl==='red'?'🔴':rl==='amber'?'🟡':'🟢';
     const bc=r.balance>=0?'pos':'neg';
     const sc=r.totalAsset<0?'neg':r.totalAsset<5000000?'wrn':'pos';
-    const tip=`本人:${fmt(w(r.uInc))}万${r.wInc?` 妻:${fmt(w(r.wInc))}万`:''}${r.pen?` 年金:${fmt(w(r.pen))}万`:''}${r.sev?` 退職金:${fmt(w(r.sev))}万`:''}${r.reemploy?` 再任用:${fmt(w(r.reemploy))}万`:''}${r.custInc?` カスタム:${fmt(w(r.custInc))}万`:''}`;
-    const atip=`現金:${fmt(w(r.cash))}万 ／ 投資:${fmt(w(r.invest))}万（投資収益+${fmt(w(r.investReturn))}万）`;
-    tr.innerHTML=`
-      <td class="c ri">${ri}</td>
-      <td class="c">${r.yr}</td><td class="c">${r.ua}歳</td>
+    const tip=`本人:${fmt(w(r.uInc))}万${r.wInc?` 妻:${fmt(w(r.wInc))}万`:''}${r.pen?` 年金:${fmt(w(r.pen))}万`:''}${r.sev?` 退職金:${fmt(w(r.sev))}万`:''}`;
+    tr.innerHTML=`<td class="c">${ri}</td><td class="c">${r.yr}</td><td class="c">${r.ua}歳</td>
       <td title="${tip}"><strong>${fmt(w(r.totalInc))}</strong></td>
       <td>${fmt(w(r.varExp))}</td><td>${fmt(w(r.fixExp))}</td>
       <td>${fmt(w(r.housing))}</td><td>${fmt(w(r.childcare))}</td><td>${fmt(w(r.edu))}</td>
       <td>${fmt(w(r.otherExp))}</td><td>${fmt(w(r.totalExp))}</td>
       <td class="${bc}">${w(r.balance)>=0?'+':''}${fmt(w(r.balance))}</td>
       <td>${fmt(w(r.cash))}</td><td>${fmt(w(r.invest))}</td>
-      <td class="${sc}" title="${atip}"><strong>${fmt(w(r.totalAsset))}</strong></td>`;
+      <td class="${sc}"><strong>${fmt(w(r.totalAsset))}</strong></td>`;
     tbody.appendChild(tr);
   });
 }
@@ -918,233 +1100,216 @@ function drawCFTable(rows){
 // ══════════════════════════════════════════════════════
 // CHARTS
 // ══════════════════════════════════════════════════════
-function destroyChart(key){
-  if(chartObjs[key]){chartObjs[key].destroy();delete chartObjs[key];}
-}
+function destroyChart(key){if(chartObjs[key]){chartObjs[key].destroy();delete chartObjs[key];}}
 
 function drawCharts(rows,p){
-  drawAssetChart(rows);
-  drawBalanceChart(rows);
-  drawBreakdownChart(rows,p);
-  drawExpensePie(rows,p);
-}
+  ['asset','balance','breakdown','expense'].forEach(k=>destroyChart(k));
+  const labels=rows.map(r=>`${r.yr}(${r.ua}歳)`);
+  const xOpts={ticks:{maxTicksLimit:14,maxRotation:45,font:{size:9}}};
 
-function drawAssetChart(rows){
-  destroyChart('asset');
-  const ctx=document.getElementById('ch-asset').getContext('2d');
-  chartObjs.asset=new Chart(ctx,{
-    data:{
-      labels:rows.map(r=>`${r.yr}(${r.ua}歳)`),
-      datasets:[
-        {type:'line',label:'総資産（万円）',data:rows.map(r=>w(r.totalAsset)),
-          borderColor:'#3b82f6',backgroundColor:'rgba(59,130,246,.07)',fill:true,tension:.35,pointRadius:0,yAxisID:'yL',order:0},
-        {type:'line',label:'うち投資資産（万円）',data:rows.map(r=>w(r.invest)),
-          borderColor:'#7c3aed',backgroundColor:'transparent',tension:.35,pointRadius:0,borderDash:[4,3],yAxisID:'yL',order:0},
-        {type:'bar',label:'年間収入（万円）',data:rows.map(r=>w(r.totalInc)),
-          backgroundColor:'rgba(34,197,94,.45)',yAxisID:'yR',order:1},
-        {type:'bar',label:'年間支出（万円）',data:rows.map(r=>w(r.totalExp)),
-          backgroundColor:'rgba(239,68,68,.4)',yAxisID:'yR',order:1}
-      ]
-    },
-    options:chartOpts('総資産（万円）','年間収支（万円）')
-  });
-}
+  chartObjs.asset=new Chart(document.getElementById('ch-asset').getContext('2d'),{
+    data:{labels,datasets:[
+      {type:'line',label:'総資産（万円）',data:rows.map(r=>w(r.totalAsset)),borderColor:'#3b82f6',backgroundColor:'rgba(59,130,246,.07)',fill:true,tension:.35,pointRadius:0,yAxisID:'yL'},
+      {type:'line',label:'投資（万円）',data:rows.map(r=>w(r.invest)),borderColor:'#8b5cf6',tension:.35,pointRadius:0,borderDash:[4,3],yAxisID:'yL'},
+      {type:'bar',label:'年収入（万円）',data:rows.map(r=>w(r.totalInc)),backgroundColor:'rgba(16,185,129,.4)',yAxisID:'yR'},
+      {type:'bar',label:'年支出（万円）',data:rows.map(r=>w(r.totalExp)),backgroundColor:'rgba(239,68,68,.35)',yAxisID:'yR'}
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'top',labels:{font:{size:10}}},tooltip:{callbacks:{label:c=>c.dataset.label+': '+(c.parsed.y||0).toLocaleString()+'万円'}}},
+      scales:{x:xOpts,yL:{position:'left',title:{display:true,text:'資産（万円）',font:{size:9}},grid:{color:'rgba(0,0,0,.04)'}},yR:{position:'right',title:{display:true,text:'収支（万円）',font:{size:9}},grid:{drawOnChartArea:false}}}}});
 
-function drawBalanceChart(rows){
-  destroyChart('balance');
-  const ctx=document.getElementById('ch-balance').getContext('2d');
-  chartObjs.balance=new Chart(ctx,{
-    data:{
-      labels:rows.map(r=>`${r.yr}(${r.ua}歳)`),
-      datasets:[
-        {type:'bar',label:'年間収支（万円）',data:rows.map(r=>w(r.balance)),
-          backgroundColor:rows.map(r=>r.balance>=0?'rgba(34,197,94,.6)':'rgba(239,68,68,.6)'),yAxisID:'yL'}
-      ]
-    },
-    options:chartOpts('年間収支（万円）','')
-  });
-}
+  chartObjs.balance=new Chart(document.getElementById('ch-balance').getContext('2d'),{
+    data:{labels,datasets:[{type:'bar',label:'年間収支（万円）',data:rows.map(r=>w(r.balance)),backgroundColor:rows.map(r=>r.balance>=0?'rgba(16,185,129,.6)':'rgba(239,68,68,.6)')}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'top',labels:{font:{size:10}}}},scales:{x:xOpts,y:{title:{display:true,text:'年間収支（万円）',font:{size:9}},grid:{color:'rgba(0,0,0,.04)'}}}}});
 
-function drawBreakdownChart(rows,p){
-  destroyChart('breakdown');
-  const ctx=document.getElementById('ch-breakdown').getContext('2d');
-  const houseAsset=rows.map(r=>r.yr>=p.hyr?w(p.hprc*10000):0);
-  chartObjs.breakdown=new Chart(ctx,{
-    data:{
-      labels:rows.map(r=>`${r.yr}(${r.ua}歳)`),
-      datasets:[
-        {type:'line',label:'現金残高（万円）',data:rows.map(r=>w(r.cash)),
-          borderColor:'#3b82f6',backgroundColor:'rgba(59,130,246,.15)',fill:true,tension:.35,pointRadius:0,yAxisID:'yL'},
-        {type:'line',label:'投資残高（万円）',data:rows.map(r=>w(r.invest)),
-          borderColor:'#7c3aed',backgroundColor:'rgba(124,58,237,.1)',fill:true,tension:.35,pointRadius:0,yAxisID:'yL'},
-        {type:'line',label:'住宅資産（購入額）',data:houseAsset,
-          borderColor:'#d97706',backgroundColor:'rgba(217,119,6,.08)',fill:true,tension:.35,pointRadius:0,yAxisID:'yL',borderDash:[5,4]}
-      ]
-    },
-    options:chartOpts('資産残高（万円）','')
-  });
-}
+  chartObjs.breakdown=new Chart(document.getElementById('ch-breakdown').getContext('2d'),{
+    data:{labels,datasets:[
+      {type:'line',label:'現金（万円）',data:rows.map(r=>w(r.cash)),borderColor:'#3b82f6',backgroundColor:'rgba(59,130,246,.12)',fill:true,tension:.35,pointRadius:0},
+      {type:'line',label:'投資（万円）',data:rows.map(r=>w(r.invest)),borderColor:'#8b5cf6',backgroundColor:'rgba(139,92,246,.1)',fill:true,tension:.35,pointRadius:0},
+      {type:'line',label:'住宅（取得額）',data:rows.map(r=>r.yr>=p.hyr?w(p.hprc*10000):0),borderColor:'#f59e0b',tension:.35,pointRadius:0,borderDash:[5,4]}
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'top',labels:{font:{size:10}}}},scales:{x:xOpts,y:{title:{display:true,text:'残高（万円）',font:{size:9}},grid:{color:'rgba(0,0,0,.04)'}}}}});
 
-function drawExpensePie(rows,p){
-  destroyChart('expense');
   const mid=rows[Math.floor(rows.length/2)]||rows[0];
-  if(!mid) return;
-  const ctx=document.getElementById('ch-expense').getContext('2d');
-  chartObjs.expense=new Chart(ctx,{
+  if(mid) chartObjs.expense=new Chart(document.getElementById('ch-expense').getContext('2d'),{
     type:'doughnut',
-    data:{
-      labels:['生活費(変動)','生活費(固定)','住居費','保育費','教育費','旅行・特別費'],
-      datasets:[{
-        data:[w(mid.varExp),w(mid.fixExp),w(mid.housing),w(mid.childcare),w(mid.edu),w(mid.otherExp)],
-        backgroundColor:['#3b82f6','#8b5cf6','#f59e0b','#10b981','#ef4444','#6b7280']
-      }]
-    },
-    options:{responsive:true,maintainAspectRatio:false,
-      plugins:{legend:{position:'right'},
-        title:{display:true,text:`${mid.yr}年（本人${mid.ua}歳）の支出割合`}}}
-  });
-}
-
-function chartOpts(leftLabel,rightLabel){
-  return{
-    responsive:true,maintainAspectRatio:false,
-    plugins:{legend:{position:'top',labels:{font:{size:11}}},
-      tooltip:{callbacks:{label:c=>`${c.dataset.label}: ${c.parsed.y.toLocaleString()}万円`}}},
-    scales:{
-      x:{ticks:{maxTicksLimit:16,maxRotation:45,font:{size:9}}},
-      yL:{type:'linear',position:'left',title:{display:!!leftLabel,text:leftLabel,font:{size:10}},grid:{color:'rgba(0,0,0,.05)'}},
-      ...(rightLabel?{yR:{type:'linear',position:'right',title:{display:true,text:rightLabel,font:{size:10}},grid:{drawOnChartArea:false}}}:{})
-    }
-  };
+    data:{labels:['生活費(変動)','生活費(固定)','住居費','保育費','教育費','旅行・特別費'],datasets:[{data:[w(mid.varExp),w(mid.fixExp),w(mid.housing),w(mid.childcare),w(mid.edu),w(mid.otherExp)],backgroundColor:['#3b82f6','#8b5cf6','#f59e0b','#10b981','#ef4444','#6b7280']}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'right',labels:{font:{size:10}}},title:{display:true,text:`${mid.yr}年（本人${mid.ua}歳）の支出割合`}}}});
 }
 
 // ══════════════════════════════════════════════════════
-// SCENARIOS
+// SCENARIO
 // ══════════════════════════════════════════════════════
-function openSaveScenario(){
-  document.getElementById('modal').style.display='flex';
-  document.getElementById('modal-name').focus();
-}
-function closeModal(){
-  document.getElementById('modal').style.display='none';
-}
-
+function openScenarioModal(){document.getElementById('modal-scenario').classList.add('open');}
 function saveScenario(){
-  const name=document.getElementById('modal-name').value.trim();
+  const name=document.getElementById('sc_name').value.trim();
   if(!name){alert('シナリオ名を入力してください');return;}
-  if(!currentRows){run();}
-  const p=currentP;
-  const metrics=getMetrics(currentRows,p);
-  scenarios[name]={metrics};
-  closeModal();
-  document.getElementById('modal-name').value='';
-  saveToLS();
-  renderScenarioList();
-  // 比較パネルを開く
-  const card=document.getElementById('scenario-card');
-  card.classList.remove('closed');
+  if(!state.sim) runAndRefresh();
+  state.scenarios[name]={metrics:state.sim.metrics};
+  closeModal('modal-scenario');document.getElementById('sc_name').value='';
+  grantXP(20);checkBadges(state.sim.rows,state.sim.p);saveState();renderScenarioList();
 }
-
-function deleteScenario(name){
-  delete scenarios[name];
-  saveToLS();
-  renderScenarioList();
-}
+function deleteScenario(n){delete state.scenarios[n];saveState();renderScenarioList();}
 
 function renderScenarioList(){
   const area=document.getElementById('scenario-list-area');
-  const names=Object.keys(scenarios);
-  if(names.length===0){
-    area.innerHTML='<p style="color:var(--gray-5);font-size:.82rem">シナリオがまだ保存されていません。</p>';
-    document.getElementById('scenario-cmp-table').innerHTML='';
-    return;
-  }
-  area.innerHTML=`
-    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">
-      ${names.map(n=>`
-        <div style="background:var(--blue-l);color:var(--blue-d);padding:4px 10px;border-radius:20px;font-size:.78rem;font-weight:600;display:flex;align-items:center;gap:6px">
-          ${n}
-          <button onclick="deleteScenario('${n}')" style="background:none;border:none;cursor:pointer;color:var(--blue-d);font-size:.9rem;line-height:1">✕</button>
-        </div>`).join('')}
-    </div>`;
-
-  // 比較表
-  const metrics_keys=[
-    ['assetLife','資産寿命'],
-    ['asset65','65歳時点資産'],
-    ['asset85','85歳時点資産'],
-    ['finalAsset','90歳時点資産'],
-    ['totalBalance','生涯収支合計'],
-    ['worstBal','最大赤字額'],
-    ['worstYr','最大赤字年'],
-  ];
-  const rows=metrics_keys.map(([key,label])=>{
-    const cells=names.map(n=>{
-      const v=scenarios[n].metrics[key];
-      if(v===null||v===undefined) return '−';
-      if(key==='assetLife') return typeof v==='number'?`${v}歳`:v;
-      if(key==='worstYr') return `${v}年`;
-      return fmt(w(v))+'万円';
-    });
-    return`<tr><td class="metric" style="font-weight:600;padding:6px 10px;white-space:nowrap">${label}</td>${cells.map(c=>`<td style="padding:6px 10px;text-align:right">${c}</td>`).join('')}</tr>`;
-  }).join('');
-
-  document.getElementById('scenario-cmp-table').innerHTML=`
-    <div class="cmp-table-wrap">
-      <table class="cmp-table">
-        <thead><tr>
-          <th>比較項目</th>
-          ${names.map(n=>`<th>${n}</th>`).join('')}
-        </tr></thead>
-        <tbody>${rows}</tbody>
-      </table>
-    </div>`;
+  const cmp=document.getElementById('scenario-cmp-table');
+  if(!area) return;
+  const names=Object.keys(state.scenarios);
+  if(!names.length){area.innerHTML='<p style="color:var(--gray-5);font-size:.82rem">シナリオがまだ保存されていません。</p>';if(cmp) cmp.innerHTML='';return;}
+  area.innerHTML=`<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">${names.map(n=>`<div style="background:var(--blue-l);color:var(--blue-d);padding:4px 10px;border-radius:20px;font-size:.78rem;font-weight:600;display:flex;align-items:center;gap:6px">${n}<button onclick="deleteScenario('${n}')" style="background:none;border:none;cursor:pointer;color:var(--blue-d)">✕</button></div>`).join('')}</div>`;
+  const keys=[['assetLife','資産寿命'],['asset65','65歳時資産'],['asset85','85歳時資産'],['finalAsset','90歳時資産'],['totalBalance','生涯収支'],['worstBal','最大赤字額'],['worstYr','最大赤字年']];
+  if(cmp) cmp.innerHTML=`<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:.8rem"><thead><tr><th style="background:var(--gray-1);padding:7px 10px;text-align:left;font-weight:700;border-bottom:2px solid var(--gray-2)">比較項目</th>${names.map(n=>`<th style="background:var(--gray-1);padding:7px 10px;font-weight:700;border-bottom:2px solid var(--gray-2)">${n}</th>`).join('')}</tr></thead><tbody>${keys.map(([k,l])=>`<tr><td style="font-weight:600;padding:6px 10px;color:var(--gray-5);font-size:.78rem">${l}</td>${names.map(n=>{const v=state.scenarios[n].metrics[k];if(v===null||v===undefined)return'<td style="padding:6px 10px;text-align:right">−</td>';if(k==='assetLife')return`<td style="padding:6px 10px;text-align:right">${typeof v==='number'?v+'歳':v}</td>`;if(k==='worstYr')return`<td style="padding:6px 10px;text-align:right">${v}年</td>`;return`<td style="padding:6px 10px;text-align:right">${fmt(w(v))}万円</td>`;}).join('')}</tr>`).join('')}</tbody></table></div>`;
 }
 
-// ══════════════════════════════════════════════════════
-// RETIREMENT COMPARISON
-// ══════════════════════════════════════════════════════
 function runRetirementCmp(){
-  const p=getP();
+  if(!currentP){alert('先にシミュレーターを実行してください');return;}
   const ages=[g('ret_a'),g('ret_b'),g('ret_c'),g('ret_d')].filter(a=>a>0);
-  const results=ages.map(retAge=>{
-    const pp={...p,RET:p.uBY+retAge};
-    const rows=calculate(pp);
-    const m=getMetrics(rows,pp);
-    return{retAge,m};
-  });
-
-  const metricRows=[
-    ['asset65','65歳時点の総資産'],
-    ['asset85','85歳時点の総資産'],
-    ['finalAsset','90歳時点の総資産'],
-    ['assetLife','資産寿命'],
-    ['totalBalance','生涯収支合計'],
-  ];
-
-  const html=`
-    <div class="cmp-table-wrap">
-      <table class="cmp-table">
-        <thead><tr>
-          <th>比較項目</th>
-          ${results.map(r=>`<th>${r.retAge}歳退職</th>`).join('')}
-        </tr></thead>
-        <tbody>
-          ${metricRows.map(([key,label])=>`
-            <tr>
-              <td class="metric" style="font-weight:600;padding:6px 10px">${label}</td>
-              ${results.map(r=>{
-                const v=r.m[key];
-                if(v===null||v===undefined) return '<td style="padding:6px 10px;text-align:right">−</td>';
-                if(key==='assetLife') return `<td style="padding:6px 10px;text-align:right">${typeof v==='number'?v+'歳':v}</td>`;
-                return`<td style="padding:6px 10px;text-align:right">${fmt(w(v))}万円</td>`;
-              }).join('')}
-            </tr>`).join('')}
-        </tbody>
-      </table>
-    </div>`;
-  document.getElementById('retire-cmp-table').innerHTML=html;
+  const results=ages.map(ra=>{const pp={...currentP,RET:currentP.uBY+ra};return{ra,m:getMetrics(calculate(pp),pp)};});
+  const keys=[['asset65','65歳時資産'],['asset85','85歳時資産'],['finalAsset','90歳時資産'],['assetLife','資産寿命'],['totalBalance','生涯収支']];
+  document.getElementById('retire-cmp-table').innerHTML=`<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:.8rem"><thead><tr><th style="background:var(--gray-1);padding:7px 10px;text-align:left;font-weight:700;border-bottom:2px solid var(--gray-2)">比較項目</th>${results.map(r=>`<th style="background:var(--gray-1);padding:7px 10px;font-weight:700;border-bottom:2px solid var(--gray-2)">${r.ra}歳退職</th>`).join('')}</tr></thead><tbody>${keys.map(([k,l])=>`<tr><td style="font-weight:600;padding:6px 10px;color:var(--gray-5);font-size:.78rem">${l}</td>${results.map(r=>{const v=r.m[k];if(k==='assetLife')return`<td style="padding:6px 10px;text-align:right">${typeof v==='number'?v+'歳':v}</td>`;return`<td style="padding:6px 10px;text-align:right">${v!==null?fmt(w(v))+'万円':'−'}</td>`;}).join('')}</tr>`).join('')}</tbody></table></div>`;
 }
+
+// ══════════════════════════════════════════════════════
+// GOALS
+// ══════════════════════════════════════════════════════
+function openGoalModal(){document.getElementById('modal-goal').classList.add('open');}
+function saveGoal(){
+  const name=document.getElementById('g_name').value.trim();
+  const amount=parseFloat(document.getElementById('g_amount').value)||0;
+  if(!name||!amount){alert('目標名と金額を入力してください');return;}
+  state.goals.push({id:Date.now(),name,amount,deadline:parseInt(document.getElementById('g_deadline').value)||0,category:gs('g_category'),priority:gs('g_priority'),note:gs('g_note')});
+  closeModal('modal-goal');grantXP(30);checkBadges(state.sim?.rows,state.sim?.p);saveState();renderGoals();
+}
+function deleteGoal(id){state.goals=state.goals.filter(g=>g.id!==id);saveState();renderGoals();}
+
+function renderGoals(){
+  const p=currentP||state.sim?.p;const curAmt=p?w(p.cashAmt+p.investAmt):0;
+  const list=document.getElementById('goals-list');if(!list) return;
+  if(!state.goals.length){list.innerHTML='<div class="empty-state"><div class="e-ico">🎯</div>まだ目標が設定されていません。<br>「＋ 目標を追加」から追加してください。</div>';return;}
+  const catL={asset:'💰 資産',career:'💼 キャリア',life:'🏠 生活'};
+  const priL={high:'🔴 高',medium:'🟡 中',low:'🟢 低'};
+  list.innerHTML=state.goals.map(gl=>{
+    const pct=gl.amount>0?Math.min(100,Math.round(curAmt/gl.amount*100)):0;
+    const col=pct>=100?'#10b981':pct>=50?'#3b82f6':'#f59e0b';
+    const yr=new Date().getFullYear();
+    const yLeft=gl.deadline?gl.deadline-yr:null;
+    const needM=yLeft&&yLeft>0&&gl.amount>curAmt?Math.ceil((gl.amount-curAmt)/yLeft/12):0;
+    return`<div class="goal-item">
+      <div class="goal-header">
+        <span class="goal-name">${gl.name}</span>
+        <span class="goal-badge ${gl.category}">${catL[gl.category]||gl.category}</span>
+        <span class="goal-badge ${gl.priority}">${priL[gl.priority]||gl.priority}</span>
+        <button class="btn r sm" onclick="deleteGoal(${gl.id})" style="margin-left:auto">削除</button>
+      </div>
+      <div class="goal-prog-wrap"><div class="goal-prog-bar"><div class="goal-prog-fill" style="width:${pct}%;background:${col}"></div></div><span style="font-size:.8rem;font-weight:700;color:${col};min-width:38px;text-align:right">${pct}%</span></div>
+      <div class="goal-info">
+        <span>目標: <strong>${fmt(gl.amount)}万円</strong></span>
+        <span>現在: <strong>${fmt(curAmt)}万円</strong></span>
+        ${gl.deadline?`<span>期限: <strong>${gl.deadline}年</strong>${yLeft?` (残${yLeft}年)`:''}</span>`:''}
+        ${needM?`<span style="color:var(--amber)">月<strong>${needM}万円</strong>の積立が必要</span>`:''}
+      </div>
+      ${gl.note?`<div style="font-size:.72rem;color:var(--gray-5);margin-top:4px">📝 ${gl.note}</div>`:''}
+    </div>`;}).join('');
+}
+
+// ══════════════════════════════════════════════════════
+// AI COACH
+// ══════════════════════════════════════════════════════
+let coachOpened=false;
+function coachAutoAnalysis(){
+  if(coachOpened||!state.sim) return;
+  coachOpened=true;
+  const {rows,p}=state.sim;
+  const m=getMetrics(rows,p);
+  const props=actionEngine(rows,p,state.goals);
+  const mVar=p.food+p.util+p.ent+p.cloth+p.aself+p.awife+p.kids+p.misc;
+  const mFix=p.ins+p.tel+p.carM+p.sub+p.oth;
+  const savRate=Math.round((p.uMon-(mVar+mFix+p.rent))/p.uMon*100);
+  const msg=`📋 現在のプラン分析レポート
+
+💰 資産サマリー
+• 現在の総資産: ${fmt(w(p.cashAmt+p.investAmt))}万円（現金${w(p.cashAmt)}万 ／ 投資${w(p.investAmt)}万）
+• 65歳時の予測資産: ${m.asset65!==null?fmt(w(m.asset65))+'万円':'計算中'}
+• 資産寿命: ${typeof m.assetLife==='number'?m.assetLife+'歳まで':m.assetLife}
+
+📈 月次収支
+• 月収（手取+手当）: 約${mw(p.uMon)}万円
+• 月支出合計: 約${mw(mVar+mFix+p.rent)}万円
+• 貯蓄率: 約${savRate}%
+
+⚡ 最優先課題
+${props.slice(0,2).map((pr,i)=>`${i+1}. ${pr.icon} ${pr.title}`).join('\n')||'現在の計画は概ね良好です！'}
+
+下のよく聞かれる質問や入力フォームで詳しく聞いてください。`;
+  setTimeout(()=>addAIMsg(msg),300);
+}
+
+function addAIMsg(text){
+  const area=document.getElementById('chat-area');if(!area) return;
+  const div=document.createElement('div');div.className='msg ai';
+  div.innerHTML=`<div class="ai-name">🤖 AIコーチ</div>${text.replace(/\n/g,'<br>')}`;
+  area.appendChild(div);area.scrollTop=area.scrollHeight;
+}
+function addUserMsg(text){
+  const area=document.getElementById('chat-area');if(!area) return;
+  const div=document.createElement('div');div.className='msg user';div.textContent=text;
+  area.appendChild(div);area.scrollTop=area.scrollHeight;
+}
+function askCoach(q){addUserMsg(q);setTimeout(()=>addAIMsg(coachResponse(q)),400);}
+function sendChat(){
+  const inp=document.getElementById('chat-input');const q=inp.value.trim();
+  if(!q) return;inp.value='';addUserMsg(q);setTimeout(()=>addAIMsg(coachResponse(q)),400);
+}
+
+function coachResponse(q){
+  if(!state.sim) return 'まず「シミュレーター」で「▶ 再計算・更新」を実行してください。';
+  const {rows,p}=state.sim;const m=getMetrics(rows,p);
+  const props=actionEngine(rows,p,state.goals);
+  const qL=q.toLowerCase();
+  const mV=p.food+p.util+p.ent+p.cloth+p.aself+p.awife+p.kids+p.misc;
+  const mF=p.ins+p.tel+p.carM+p.sub+p.oth;
+
+  if(qL.includes('節約')||qL.includes('削減')||qL.includes('支出')){
+    const big=[['食費・日用品',p.food],['娯楽・外食',p.ent],['小遣い',p.aself+p.awife],['子育て雑費',p.kids]].sort((a,b)=>b[1]-a[1]);
+    return `現在の月支出：\n• 変動費合計: 月${mw(mV)}万円\n• 固定費合計: 月${mw(mF)}万円\n• 住居費: 月${mw(p.rent)}万円\n\n削減インパクトが大きい順：\n${big.map((it,i)=>`${i+1}. ${it[0]}: 月${mw(it[1])}万円 → 10〜20%削減で月${mw(it[1]*0.15)}万円の節約`).join('\n')}\n\n月2万円削減できると30年間で約720万円分の差になります（複利効果除く）。`;
+  }
+  if(qL.includes('投資')||qL.includes('nisa')||qL.includes('ideco')||qL.includes('積立')){
+    const a5=Math.round(p.investAmt*Math.pow(1+p.investRate,5)/10000);
+    return `現在の投資状況：\n• 投資資産: ${w(p.investAmt)}万円（利回り${(p.investRate*100).toFixed(1)}%）\n• 5年後予測: 約${fmt(a5)}万円\n\nおすすめ制度：\n1. 新NISA（つみたて投資枠） 年間120万円まで非課税\n2. 新NISA（成長投資枠） 年間240万円まで非課税\n3. iDeCo 公務員は月1.2万円まで全額所得控除\n   → 税負担軽減で年約3万円程度の節税効果\n\n現在の投資比率: ${Math.round(p.investAmt/(p.cashAmt+p.investAmt||1)*100)}%（40代以下の目安: 40〜60%）`;
+  }
+  if(qL.includes('住宅')||qL.includes('マンション')||qL.includes('ローン')){
+    const loan=Math.max(0,p.hprc*10000-p.hdp);const annual=annualMortgage(loan,p.hrate,p.hper);
+    return `住宅購入プラン：\n• 購入予定: ${p.hyr}年（本人${p.hyr-p.uBY}歳）\n• 物件価格: ${p.hprc}万円\n• 頭金: ${w(p.hdp)}万円（${Math.round(p.hdp/(p.hprc*10000)*100)}%）\n• ローン: ${Math.round(loan/10000)}万円 @ ${p.hrate}%\n• 月額返済: 約${mw(annual/12)}万円\n\n【チェック】\n・頭金${Math.round(p.hdp/(p.hprc*10000)*100)>=20?'◎20%以上でOK':'▲20%以上が理想'}\n・年間返済額 vs 年収: ${annual/(p.uMon*12+p.uBon)*100<25?'◎25%未満でOK':'▲やや高め'}\n・購入後は管理費・修繕費（月${mw(p.hmgmt)}万円）も毎月発生`;
+  }
+  if(qL.includes('老後')||qL.includes('退職')||qL.includes('年金')){
+    const r65=rows.find(r=>r.ua===65),r85=rows.find(r=>r.ua===85);
+    return `老後の見通し：\n• 定年退職: ${p.RET}年（本人${p.RET-p.uBY}歳）\n• 退職金: ${w(p.sev)}万円\n• 年金（夫婦合計）: 月約${mw(p.pen/12)}万円\n\n資産推移：\n• 退職時（65歳）: ${r65?fmt(w(r65.totalAsset))+'万円':'−'}\n• 85歳時点: ${r85?fmt(w(r85.totalAsset))+'万円':'−'}\n• 資産寿命: ${typeof m.assetLife==='number'?m.assetLife+'歳まで':m.assetLife}\n\n公務員メリット：共済年金（現在は厚生年金統合）で民間より年金額が多い傾向です。ねんきん定期便で実際の見込み額を確認しましょう。`;
+  }
+  if(qL.includes('今すぐ')||qL.includes('優先')||qL.includes('やるべき')){
+    if(!props.length) return '現在の計画は良好です！引き続きシミュレーションを更新し続けましょう。';
+    return `今すぐやるべきこと（優先順位）：\n\n${props.slice(0,3).map((pr,i)=>`${i+1}. ${pr.icon} ${pr.title}\n   → ${pr.actions[0]}`).join('\n\n')}\n\n「節約」「投資」「住宅」「老後」などのキーワードでもっと詳しく聞けます。`;
+  }
+  const top=props[0];
+  return top?`最優先課題: ${top.icon} ${top.title}\n\n${top.detail}\n\nアクション：\n${top.actions.map((a,i)=>`${i+1}. ${a}`).join('\n')}\n\n「節約」「投資」「住宅」「老後」「NISA」などで詳しく聞けます。`:'現在の計画は概ね良好です！\n「節約」「投資」「住宅」「老後」「NISA」で詳しく聞いてください。';
+}
+
+// ══════════════════════════════════════════════════════
+// BADGES
+// ══════════════════════════════════════════════════════
+function renderBadges(id){
+  const el=document.getElementById(id);if(!el) return;
+  el.innerHTML=BADGE_DEFS.map(b=>{
+    const e=state.gamification.badges.includes(b.id);
+    return`<div class="badge ${e?'earned':'locked'}" title="${b.desc}"><span class="b-ico">${b.ico}</span>${b.name}</div>`;
+  }).join('');
+}
+
+// ══════════════════════════════════════════════════════
+// SETTINGS
+// ══════════════════════════════════════════════════════
+function saveProfileName(){state.name=gs('s_name');saveState();}
+function renderSettings(){const e=document.getElementById('s_name');if(e) e.value=state.name||'';renderBadges('all-badges');}
+function resetAll(){state=JSON.parse(JSON.stringify(DEF_STATE));saveState();location.reload();}
 
 // ══════════════════════════════════════════════════════
 // CUSTOM EVENTS
@@ -1153,152 +1318,78 @@ function addCustomEvent(){
   const yr=parseInt(document.getElementById('nev_yr').value);
   const name=document.getElementById('nev_name').value.trim();
   const amt=parseFloat(document.getElementById('nev_amt').value)||0;
-  const type=document.getElementById('nev_type').value;
-  const rec=document.getElementById('nev_rec').value==='1';
-  const endYear=parseInt(document.getElementById('nev_end').value)||null;
-
-  if(!yr||!name||!amt){alert('年・イベント名・金額を入力してください');return;}
-  customEvents.push({id:Date.now(),year:yr,name,amt,type,rec,endYear});
-  // フォームリセット
-  ['nev_yr','nev_name','nev_amt','nev_end'].forEach(id=>{document.getElementById(id).value='';});
-  document.getElementById('nev_type').value='expense';
-  document.getElementById('nev_rec').value='0';
-  renderCustomEvents();
-  saveToLS();
+  if(!yr||!name||!amt){alert('年・名前・金額を入力してください');return;}
+  state.customEvents.push({id:Date.now(),year:yr,name,amt,type:document.getElementById('nev_type').value,rec:document.getElementById('nev_rec').value==='1',endYear:parseInt(document.getElementById('nev_end').value)||null});
+  ['nev_yr','nev_name','nev_amt','nev_end'].forEach(id=>{const e=document.getElementById(id);if(e) e.value='';});
+  grantBadge('custom_ev');grantXP(10);saveState();renderCustomEventsList();
 }
-
-function deleteCustomEvent(id){
-  customEvents=customEvents.filter(e=>e.id!==id);
-  renderCustomEvents();
-  saveToLS();
-}
-
-function renderCustomEvents(){
-  const list=document.getElementById('ev-list');
-  if(customEvents.length===0){list.innerHTML='<p style="color:var(--gray-5);font-size:.8rem;margin-top:8px">イベントはまだ追加されていません。</p>';return;}
-  list.innerHTML=customEvents.map(ev=>`
-    <div class="ev-item">
-      <div class="ev-info">
-        <strong>${ev.year}年${ev.rec?(ev.endYear?`〜${ev.endYear}年（毎年）`:'〜（毎年）'):''}</strong>　${ev.name}
-        　<span class="ev-badge ${ev.type==='income'?'inc':''}">${ev.type==='income'?'収入':'支出'}</span>
-        　<strong>${fmt(ev.amt)}万円</strong>
-      </div>
-      <button class="btn-o r btn-sm" onclick="deleteCustomEvent(${ev.id})">削除</button>
-    </div>`).join('');
+function deleteCustomEvent(id){state.customEvents=state.customEvents.filter(e=>e.id!==id);saveState();renderCustomEventsList();}
+function renderCustomEventsList(){
+  const list=document.getElementById('ev-list');if(!list) return;
+  if(!state.customEvents.length){list.innerHTML='<p style="color:var(--gray-5);font-size:.8rem">イベントはまだありません。</p>';return;}
+  list.innerHTML=state.customEvents.map(ev=>`
+    <div class="ev-item"><div class="ev-info"><strong>${ev.year}年${ev.rec?(ev.endYear?`〜${ev.endYear}年（毎年）`:'〜（毎年）'):''}</strong>　${ev.name}
+    <span class="tag ${ev.type==='income'?'g':'a'}">${ev.type==='income'?'収入':'支出'}</span><strong>${fmt(ev.amt)}万円</strong></div>
+    <button class="btn r sm" onclick="deleteCustomEvent(${ev.id})">削除</button></div>`).join('');
 }
 
 // ══════════════════════════════════════════════════════
-// PERSISTENCE
+// EXPORT
 // ══════════════════════════════════════════════════════
-function saveToLS(){
-  try{
-    localStorage.setItem('lp_scenarios',JSON.stringify(scenarios));
-    localStorage.setItem('lp_custom',JSON.stringify(customEvents));
-  }catch(e){}
-}
+function buildLifeArr(rows){return[['西暦','本人','妻','長女','次子','ライフイベント'],...rows.map(r=>{const evs=lifeEventsOf(r.yr,r.ua,r.c1a,r.c2a,currentP);return[r.yr,r.ua+'歳',r.wa+'歳',stageLabel(r.c1a),r.c2a>=0?stageLabel(r.c2a):'−',evs.map(([,t])=>t).join(' ／ ')];})]];}
+function buildCFArr(rows){return[['西暦','本人','収入合計','変動費','固定費','住居費','保育費','教育費','その他','支出合計','年収支','現金残','投資残','総資産'],...rows.map(r=>[r.yr,r.ua,w(r.totalInc),w(r.varExp),w(r.fixExp),w(r.housing),w(r.childcare),w(r.edu),w(r.otherExp),w(r.totalExp),w(r.balance),w(r.cash),w(r.invest),w(r.totalAsset)])];}
 
-function loadFromLS(){
-  try{
-    const sc=localStorage.getItem('lp_scenarios');
-    if(sc) Object.assign(scenarios,JSON.parse(sc));
-    const ev=localStorage.getItem('lp_custom');
-    if(ev) customEvents=[...JSON.parse(ev)];
-  }catch(e){}
+function exportExcel(){
+  if(!state.sim){alert('先に再計算してください');return;}
+  const wb=XLSX.utils.book_new();
+  const ws1=XLSX.utils.aoa_to_sheet(buildLifeArr(state.sim.rows));ws1['!cols']=[{wch:6},{wch:9},{wch:9},{wch:18},{wch:18},{wch:55}];
+  XLSX.utils.book_append_sheet(wb,ws1,'ライフイベント');
+  const ws2=XLSX.utils.aoa_to_sheet(buildCFArr(state.sim.rows));ws2['!cols']=[{wch:6},{wch:9},...Array(12).fill({wch:10})];
+  XLSX.utils.book_append_sheet(wb,ws2,'キャッシュフロー');
+  const d=new Date();XLSX.writeFile(wb,`ライフプランOS_${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}.xlsx`);
 }
-
+function exportCSV(){
+  if(!state.sim){alert('先に再計算してください');return;}
+  const blob=new Blob(['﻿'+buildCFArr(state.sim.rows).map(r=>r.map(c=>String(c).includes(',')?`"${c}"`:c).join(',')).join('\n')],{type:'text/csv;charset=utf-8;'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`lifeplan_${new Date().getFullYear()}.csv`;a.click();
+}
 function exportJSON(){
-  const data={scenarios,customEvents,params:getP(),exportedAt:new Date().toISOString()};
-  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
-  const url=URL.createObjectURL(blob);
-  const a=document.createElement('a');
-  a.href=url;a.download=`lifeplan_${new Date().getFullYear()}.json`;
-  a.click();URL.revokeObjectURL(url);
+  const blob=new Blob([JSON.stringify({state,exportedAt:new Date().toISOString()},null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`lifeplan_${new Date().getFullYear()}.json`;a.click();
 }
-
 function importJSON(input){
   const file=input.files[0];if(!file) return;
   const reader=new FileReader();
   reader.onload=e=>{
     try{
       const data=JSON.parse(e.target.result);
-      if(data.scenarios) Object.assign(scenarios,data.scenarios);
-      if(data.customEvents) customEvents=[...data.customEvents];
-      // パラメータの復元（主要項目）
-      if(data.params){
-        const p=data.params;
-        const setV=(id,v)=>{const el=document.getElementById(id);if(el&&v!==undefined) el.value=v;};
-        setV('f_uby',p.uBY);setV('f_wby',p.wBY);setV('f_c1by',p.c1BY);setV('f_c2by',p.c2BY);
-        setV('u_mon',p.uMon);setV('u_bon',p.uBon);setV('w_mon',p.wMon);setV('w_bon',p.wBon);
-        setV('a_cash',w(p.cashAmt));setV('a_invest',w(p.investAmt));
-        setV('r_sev',w(p.sev));setV('r_pen',w(p.pen));
-        setV('h_yr',p.hyr);setV('h_prc',p.hprc);setV('h_dp',w(p.hdp));
-      }
-      saveToLS();
-      renderCustomEvents();
-      renderScenarioList();
-      live();run();
-      alert('データを読み込みました');
-    }catch(ex){alert('ファイルの読み込みに失敗しました');}
+      if(data.state){state={...DEF_STATE,...data.state,gamification:{...DEF_STATE.gamification,...(data.state.gamification||{})}};}
+      saveState();renderCustomEventsList();renderScenarioList();renderGoals();updateXPDisplay();alert('データを読み込みました');
+    }catch(ex){alert('読み込みに失敗しました');}
     input.value='';
   };
   reader.readAsText(file);
 }
 
 // ══════════════════════════════════════════════════════
-// EXCEL / CSV EXPORT
+// LIVE BAR
 // ══════════════════════════════════════════════════════
-function buildLifeArr(){
-  if(!currentRows) return [];
-  return[
-    ['西暦','本人年齢','妻年齢','長女（子①）','次子（子②）','ライフイベント'],
-    ...currentRows.map(r=>[r.yr,r.ua+'歳',r.wa+'歳',stageLabel(r.c1a),r.c2a>=0?stageLabel(r.c2a):'−',r.evList.map(([,t])=>t).join(' ／ ')])
-  ];
-}
-
-function buildCFArr(){
-  if(!currentRows) return [];
-  return[
-    ['西暦','本人年齢','収入合計','生活費(変動)','生活費(固定)','住居費','保育費','教育費','その他特別費','支出合計','年間収支','現金残高','投資残高','総資産','※万円'],
-    ...currentRows.map(r=>[r.yr,r.ua,w(r.totalInc),w(r.varExp),w(r.fixExp),w(r.housing),w(r.childcare),w(r.edu),w(r.otherExp),w(r.totalExp),w(r.balance),w(r.cash),w(r.invest),w(r.totalAsset),''])
-  ];
-}
-
-function exportExcel(){
-  if(!currentRows){alert('先に「再計算」を押してください');return;}
-  if(typeof XLSX==='undefined'){alert('ライブラリ読み込み中です。少し待ってから再試行してください');return;}
-  const wb=XLSX.utils.book_new();
-  const ws1=XLSX.utils.aoa_to_sheet(buildLifeArr());
-  ws1['!cols']=[{wch:6},{wch:10},{wch:10},{wch:18},{wch:18},{wch:55}];
-  XLSX.utils.book_append_sheet(wb,ws1,'ライフイベント');
-  const ws2=XLSX.utils.aoa_to_sheet(buildCFArr());
-  ws2['!cols']=[{wch:6},{wch:9},...Array(12).fill({wch:11})];
-  XLSX.utils.book_append_sheet(wb,ws2,'キャッシュフロー');
-  const p=currentP;
-  const ws3=XLSX.utils.aoa_to_sheet([
-    ['項目','値'],['出力日時',new Date().toLocaleString('ja-JP')],['現在年',p.Y0],
-    ['本人',`${p.UA0}歳（${p.uBY}年生）`],['妻',`${p.WA0}歳（${p.wBY}年生）`],
-    ['長女生年',`${p.c1BY}年`],['次子生年',`${p.c2BY}年`],
-    ['月収（手取）',`${w(p.uMon)}万円/月`],['ボーナス（年）',`${w(p.uBon)}万円`],
-    ['物価上昇率',`${(p.inflRate*100).toFixed(1)}%`],
-    ['現金・預金',`${w(p.cashAmt)}万円（金利${(p.cashRate*100).toFixed(2)}%）`],
-    ['投資資産',`${w(p.investAmt)}万円（利回り${(p.investRate*100).toFixed(1)}%）`],
-    ['住宅購入',`${p.hyr}年 ${p.hprc}万円`],
-    ['退職金',`${w(p.sev)}万円`],['年金',`${w(p.pen)}万円/年`],
-  ]);
-  ws3['!cols']=[{wch:20},{wch:30}];
-  XLSX.utils.book_append_sheet(wb,ws3,'設定値');
-  const d=new Date();
-  XLSX.writeFile(wb,`ライフプラン_${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}.xlsx`);
-}
-
-function exportCSV(){
-  if(!currentRows){alert('先に「再計算」を押してください');return;}
-  const lines=buildCFArr().map(r=>r.map(c=>String(c).includes(',')?`"${c}"`:c).join(','));
-  const blob=new Blob(['﻿'+lines.join('\n')],{type:'text/csv;charset=utf-8;'});
-  const url=URL.createObjectURL(blob);
-  const a=document.createElement('a');
-  a.href=url;a.download=`ライフプラン_${new Date().getFullYear()}.csv`;
-  a.click();URL.revokeObjectURL(url);
+function live(){
+  const Y0=g('f_year')||new Date().getFullYear();
+  const uBY=g('f_uby'),wBY=g('f_wby'),c1BY=g('f_c1by'),c2BY=g('f_c2by');
+  const c1a=Y0-c1BY,c2a=Y0-c2BY;
+  const depCh=(c1a>=0&&c1a<18?1:0)+(c2a>=0&&c2a<18?1:0);
+  const allowM=g('u_house_allow')+g('u_dep_allow')*depCh+g('u_other_allow');
+  const mI=(g('u_mon')*12+g('u_bon'))/12+allowM;
+  const mV=g('e_food')+g('e_util')+g('e_ent')+g('e_cloth')+g('e_aself')+g('e_awife')+g('e_kids')+g('e_misc');
+  const mF=g('f_ins')+g('f_tel')+g('f_car')+g('f_sub')+g('f_oth');
+  const mE=mV+mF+g('h_rent');const bal=mI-mE;
+  const lbI=document.getElementById('lb-inc');const lbE=document.getElementById('lb-exp');const lbB=document.getElementById('lb-bal');
+  if(lbI) lbI.textContent=mw(mI)+'万円';
+  if(lbE) lbE.textContent=mw(mE)+'万円';
+  if(lbB){lbB.textContent=(bal>=0?'+':'')+mw(bal)+'万円';lbB.className='lv '+(bal>=0?'pos':'neg');}
+  const sb=document.getElementById('sb-date');
+  if(sb) sb.textContent=`${Y0}年 / 本人${Y0-uBY}歳・妻${Y0-wBY}歳`;
 }
 
 // ══════════════════════════════════════════════════════
@@ -1307,31 +1398,32 @@ function exportCSV(){
 function showTab(name,btn){
   document.querySelectorAll('.tp').forEach(e=>e.classList.remove('on'));
   document.querySelectorAll('.tb').forEach(e=>e.classList.remove('on'));
-  document.getElementById('tc-'+name).classList.add('on');
-  btn.classList.add('on');
+  const tp=document.getElementById('tc-'+name);if(tp) tp.classList.add('on');btn.classList.add('on');
 }
-
-function showChartTab(name,btn){
+function showCtab(name,btn){
   document.querySelectorAll('.cp').forEach(e=>e.classList.remove('on'));
   document.querySelectorAll('.ctb').forEach(e=>e.classList.remove('on'));
-  document.getElementById('cp-'+name).classList.add('on');
-  btn.classList.add('on');
+  const cp=document.getElementById('cp-'+name);if(cp) cp.classList.add('on');btn.classList.add('on');
 }
-
-function toggleCollapse(id){
-  document.getElementById(id).classList.toggle('closed');
-}
+function toggleC(id){document.getElementById(id).classList.toggle('closed');}
+function closeModal(id){document.getElementById(id).classList.remove('open');}
+document.addEventListener('keydown',e=>{if(e.key==='Escape') document.querySelectorAll('.modal-bg.open').forEach(m=>m.classList.remove('open'));});
 
 // ══════════════════════════════════════════════════════
 // INIT
 // ══════════════════════════════════════════════════════
 document.addEventListener('DOMContentLoaded',()=>{
+  loadState();
   document.getElementById('f_year').value=new Date().getFullYear();
-  loadFromLS();
-  renderCustomEvents();
-  renderScenarioList();
-  live();
-  run();
+  updateXPDisplay();renderCustomEventsList();renderGoals();live();
+  if(state.sim){currentP=state.sim.p;drawSimResults(state.sim.rows,state.sim.p,state.sim.metrics);}
+  refreshDashboard();
+  const hash=window.location.hash.replace('#/','');
+  const valid=['dashboard','goals','sim','coach','settings'];
+  if(valid.includes(hash)) nav(hash);
+  window.addEventListener('hashchange',()=>{const h=window.location.hash.replace('#/','');if(valid.includes(h)) nav(h);});
+  const today=new Date().toDateString();
+  if(state.gamification.lastLogin!==today){state.gamification.lastLogin=today;grantXP(5);saveState();}
 });
 </script>
 </body>
