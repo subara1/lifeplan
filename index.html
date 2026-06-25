@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ライフプランシミュレーター</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        :root {
+            --blue:   #3b82f6;
+            --blue-d: #1d4ed8;
+            --green:  #16a34a;
+            --red:    #dc2626;
+            --amber:  #d97706;
+            --gray-0: #f9fafb;
+            --gray-1: #f3f4f6;
+            --gray-2: #e5e7eb;
+            --gray-6: #4b5563;
+            --gray-8: #1f2937;
+        }
+        body {
+            font-family: 'Hiragino Sans', 'Yu Gothic UI', 'Meiryo', sans-serif;
+            background: var(--gray-0);
+            color: var(--gray-8);
+            font-size: 13px;
+            line-height: 1.5;
+        }
+        .wrap { max-width: 1440px; margin: 0 auto; padding: 16px 20px; }
+
+        /* Header */
+        header { text-align: center; padding: 20px 0 12px; }
+        header h1 { font-size: 1.6rem; color: var(--blue-d); }
+        header p  { color: var(--gray-6); font-size: 0.85rem; margin-top: 4px; }
+
+        /* Card */
+        .card {
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+            padding: 18px 20px;
+            margin-bottom: 18px;
+        }
+        .card h2 {
+            font-size: 1rem;
+            color: var(--blue-d);
+            border-bottom: 2px solid #dbeafe;
+            padding-bottom: 8px;
+            margin-bottom: 14px;
+        }
+
+        /* Settings */
+        .sg {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 10px;
+            margin-bottom: 14px;
+        }
+        .field { display: flex; flex-direction: column; gap: 3px; }
+        .field label { font-size: 0.73rem; color: var(--gray-6); font-weight: 600; }
+        .field input, .field select {
+            padding: 6px 9px;
+            border: 1.5px solid var(--gray-2);
+            border-radius: 7px;
+            font-size: 0.88rem;
+            font-family: inherit;
+            background: #fff;
+            transition: border-color .2s;
+        }
+        .field input:focus, .field select:focus { outline: none; border-color: var(--blue); }
+        .btn {
+            background: var(--blue);
+            color: #fff;
+            border: none;
+            padding: 9px 22px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 700;
+            font-family: inherit;
+            transition: background .2s;
+        }
+        .btn:hover { background: var(--blue-d); }
+
+        /* Summary cards */
+        .sc-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+            gap: 10px;
+            margin-bottom: 18px;
+        }
+        .sc {
+            background: var(--blue);
+            color: #fff;
+            border-radius: 10px;
+            padding: 12px 14px;
+        }
+        .sc.g { background: var(--green); }
+        .sc.a { background: var(--amber); }
+        .sc.r { background: var(--red); }
+        .sc-label { font-size: 0.7rem; opacity: .9; }
+        .sc-value { font-size: 1.3rem; font-weight: 700; margin: 2px 0; }
+        .sc-sub   { font-size: 0.68rem; opacity: .85; }
+
+        /* Tables */
+        .tbl-wrap { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+        thead th {
+            background: var(--blue-d);
+            color: #fff;
+            padding: 8px 7px;
+            text-align: center;
+            white-space: nowrap;
+            font-weight: 600;
+        }
+        tbody td {
+            padding: 6px 7px;
+            text-align: right;
+            border-bottom: 1px solid var(--gray-2);
+            white-space: nowrap;
+        }
+        tbody td.c { text-align: center; }
+        tbody td.lft { text-align: left; }
+        tbody tr:hover { background: #eff6ff; }
+        tbody tr.ev-row td:first-child { font-weight: 700; color: var(--blue-d); }
+        tbody tr.retire td { background: #f0fdf4; }
+        tbody tr.deficit td { background: #fff1f2; }
+
+        .pos  { color: var(--green); font-weight: 700; }
+        .neg  { color: var(--red);   font-weight: 700; }
+        .warn { color: var(--amber); font-weight: 700; }
+
+        .tag {
+            display: inline-block;
+            padding: 2px 7px;
+            border-radius: 10px;
+            font-size: 0.68rem;
+            margin: 1px;
+            white-space: nowrap;
+            background: #dbeafe; color: #1d4ed8;
+        }
+        .tag.g { background: #dcfce7; color: #166534; }
+        .tag.r { background: #fee2e2; color: #991b1b; }
+        .tag.a { background: #fef3c7; color: #92400e; }
+
+        /* Chart */
+        .chart-wrap { position: relative; height: 360px; }
+
+        /* Note */
+        .note {
+            font-size: 0.74rem;
+            color: var(--gray-6);
+            background: var(--gray-0);
+            border-left: 3px solid var(--blue);
+            padding: 7px 11px;
+            border-radius: 0 6px 6px 0;
+            margin-top: 10px;
+            line-height: 1.6;
+        }
+
+        @media print {
+            .card:first-of-type { display: none; }
+            .btn { display: none; }
+            body { background: #fff; }
+        }
+    </style>
+</head>
+<body>
+<div class="wrap">
+    <header>
+        <h1>ライフプランシミュレーター</h1>
+        <p>作成日：2026年6月 ／ ご本人33歳・奥様30歳・長女0歳（2人目：2028年予定）</p>
+    </header>
+
+    <!-- 設定パネル -->
+    <div class="card">
+        <h2>⚙️ 設定・変更パネル（数値を変えて「再計算」を押してください）</h2>
+        <div class="sg">
+            <div class="field"><label>現在の貯蓄額（万円）</label><input type="number" id="p_sav" value="300" min="0"></div>
+            <div class="field"><label>本人 年収手取り（万円）</label><input type="number" id="p_inc" value="530" min="0"></div>
+            <div class="field"><label>年収上昇率（%/年）</label><input type="number" id="p_grow" value="1.0" step="0.1" min="0" max="5"></div>
+            <div class="field"><label>妻 復職後 年収手取り（万円）</label><input type="number" id="p_winc" value="150" min="0"></div>
+            <div class="field"><label>妻の復職年（西暦）</label><input type="number" id="p_wret" value="2031" min="2026" max="2050"></div>
+            <div class="field"><label>住宅購入予定年（西暦）</label><input type="number" id="p_hyr" value="2033" min="2026" max="2060"></div>
+            <div class="field"><label>住宅価格（万円）</label><input type="number" id="p_hprc" value="5000" min="0"></div>
+            <div class="field"><label>頭金（万円）</label><input type="number" id="p_dp" value="500" min="0"></div>
+            <div class="field"><label>住宅ローン金利（%）</label><input type="number" id="p_mrate" value="0.7" step="0.1" min="0" max="10"></div>
+            <div class="field"><label>ローン期間（年）</label><input type="number" id="p_mper" value="35" min="5" max="50"></div>
+            <div class="field"><label>退職金（万円）</label><input type="number" id="p_sev" value="2000" min="0"></div>
+            <div class="field"><label>公的年金 夫婦合計（万円/年）</label><input type="number" id="p_pen" value="240" min="0"></div>
+            <div class="field">
+                <label>子どもの教育方針</label>
+                <select id="p_edu">
+                    <option value="public" selected>公立中心</option>
+                    <option value="semi">高校から私立</option>
+                    <option value="private">私立中心</option>
+                </select>
+            </div>
+        </div>
+        <button class="btn" onclick="run()">▶ 再計算・更新する</button>
+        <div class="note">
+            ※ 手取り530万円は額面730万円から所得税・住民税・共済掛金を差し引いた推定値。妻の復職は2031年（次子が3歳）をデフォルトに設定。住宅購入年は2033年（本人40歳）を想定。現在の貯蓄額が不明のため300万円を仮置きしています（実際の金額に変更してください）。
+        </div>
+    </div>
+
+    <!-- サマリー -->
+    <div class="sc-grid" id="summary"></div>
+
+    <!-- ライフイベント表 -->
+    <div class="card">
+        <h2>📅 ライフイベント表</h2>
+        <div class="tbl-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>西暦</th><th>本人</th><th>妻</th>
+                        <th>長女（子①）</th><th>次子（子②）</th>
+                        <th style="min-width:220px; text-align:left; padding-left:10px;">ライフイベント</th>
+                    </tr>
+                </thead>
+                <tbody id="lt-body"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- キャッシュフロー表 -->
+    <div class="card">
+        <h2>💰 キャッシュフロー表（単位：万円）</h2>
+        <div class="tbl-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>西暦</th><th>本人</th>
+                        <th>収入<br>合計</th>
+                        <th>生活費<br>固定費</th>
+                        <th>住居費</th>
+                        <th>保育費</th>
+                        <th>教育費</th>
+                        <th>その他<br>特別費</th>
+                        <th>支出<br>合計</th>
+                        <th>年間<br>収支</th>
+                        <th>貯蓄<br>残高</th>
+                    </tr>
+                </thead>
+                <tbody id="cf-body"></tbody>
+            </table>
+        </div>
+        <div class="note">
+            ※ 金額は万円（四捨五入）。赤背景＝年間赤字（貯蓄取り崩し）、緑背景＝定年後。「その他特別費」には車ローン・旅行・レジャー・車買い替え・医療費等を含む。住宅購入年は頭金・諸費用も計上。
+        </div>
+    </div>
+
+    <!-- グラフ -->
+    <div class="card">
+        <h2>📈 貯蓄残高・年間収支の推移</h2>
+        <div class="chart-wrap"><canvas id="myChart"></canvas></div>
+    </div>
+</div>
+
+<script>
+// ─── 固定値 ────────────────────────────────────────────
+const Y0   = 2026;   // 現在年
+const UA0  = 33;     // 本人現在年齢
+const WA0  = 30;     // 妻現在年齢
+const C1B  = 2026;   // 長女誕生年
+const C2B  = 2028;   // 次子誕生年（2年後）
+const RET  = 2058;   // 本人定年（65歳）
+const WRET_DEF = 2058; // 妻定年（62歳）
+const YEND = 2083;   // 計算終了（本人90歳）
+
+// 教育費（万円/年）文科省調査参考
+const EDU_TBL = {
+    public:  { kg:2.2,  el:32,  mid:48,  hi:51,  uni:54,  uni0:28 },
+    semi:    { kg:2.2,  el:32,  mid:48,  hi:105, uni:95,  uni0:40 },
+    private: { kg:2.2,  el:168, mid:134, hi:105, uni:95,  uni0:40 }
+};
+
+// 旅行・レジャー（万円/年）
+const TRV = { baby:20, school:30, empty:45, retire:35 };
+
+let chartObj = null;
+
+// ─── ユーティリティ ────────────────────────────────────
+const w   = v => Math.round(v / 10000);
+const g   = id => { const e = document.getElementById(id); return e.tagName==='SELECT' ? e.value : (parseFloat(e.value)||0); };
+const fmt = v => v.toLocaleString();
+
+function annualMortgage(principal, rateP, years) {
+    if (principal <= 0 || years <= 0) return 0;
+    const r = (rateP / 100) / 12;
+    const n = years * 12;
+    if (r === 0) return principal / years;
+    const m = principal * r * Math.pow(1+r,n) / (Math.pow(1+r,n) - 1);
+    return m * 12;
+}
+
+function eduAnnual(age, type) {
+    const e = EDU_TBL[type] || EDU_TBL.public;
+    if (age >= 3  && age <= 5)  return e.kg  * 10000;
+    if (age >= 6  && age <= 11) return e.el  * 10000;
+    if (age >= 12 && age <= 14) return e.mid * 10000;
+    if (age >= 15 && age <= 17) return e.hi  * 10000;
+    if (age === 18)              return (e.uni + e.uni0) * 10000;
+    if (age >= 19 && age <= 21) return e.uni * 10000;
+    return 0;
+}
+
+function stageLabel(age) {
+    if (age < 0)   return '−';
+    if (age === 0) return '0歳（誕生）';
+    if (age <= 2)  return `${age}歳（乳幼児）`;
+    if (age <= 5)  return `${age}歳（保育園）`;
+    if (age <= 11) return `${age}歳（小学生）`;
+    if (age <= 14) return `${age}歳（中学生）`;
+    if (age <= 17) return `${age}歳（高校生）`;
+    if (age <= 21) return `${age}歳（大学生）`;
+    return `${age}歳（社会人）`;
+}
+
+function lifeEvents(year, ua, c1a, c2a, p) {
+    const ev = [];
+    const add = (cls, txt) => ev.push([cls, txt]);
+    if (year === Y0)              add('', 'プラン開始');
+    if (c1a === 0)                add('g', '長女・誕生');
+    if (c2a === 0)                add('g', '次子・誕生');
+    if (year === p.wret)          add('', '妻・職場復帰');
+    if (c1a === 3)                add('', '長女・保育園入園');
+    if (c2a === 3)                add('', '次子・保育園入園');
+    if (c1a === 6)                add('', '長女・小学校入学');
+    if (c2a === 6)                add('', '次子・小学校入学');
+    if (c1a === 12)               add('', '長女・中学入学');
+    if (c2a === 12)               add('', '次子・中学入学');
+    if (c1a === 15)               add('', '長女・高校入学');
+    if (c2a === 15)               add('', '次子・高校入学');
+    if (c1a === 18)               add('a', '長女・大学入学');
+    if (c2a === 18)               add('a', '次子・大学入学');
+    if (c1a === 22)               add('g', '長女・独立');
+    if (c2a === 22)               add('g', '次子・独立');
+    if (year === p.hyr)           add('a', `マンション購入（${fmt(p.hprc)}万円）`);
+    if (year === p.hyr + p.mper)  add('g', '住宅ローン完済');
+    if (year === RET)             add('g', '本人・定年退職／年金受給開始');
+    if (ua === 75)                add('a', '後期高齢者医療へ');
+    if (ua === 90)                add('r', 'プラン終了');
+    // 車買い替え目安（現ローン完済7年後 + 10年おき）
+    const carDone = Y0 + 7;
+    if ([carDone+1, carDone+11, carDone+21].includes(year) && ua < 75) add('a', '車の買い替え');
+    return ev;
+}
+
+// ─── メイン計算 ─────────────────────────────────────────
+function run() {
+    const p = {
+        sav:   g('p_sav')   * 10000,
+        inc:   g('p_inc')   * 10000,
+        grow:  g('p_grow')  / 100,
+        winc:  g('p_winc')  * 10000,
+        wret:  g('p_wret'),
+        hyr:   g('p_hyr'),
+        hprc:  g('p_hprc'),          // 万円
+        dp:    g('p_dp')    * 10000,
+        mrate: g('p_mrate'),
+        mper:  g('p_mper'),
+        sev:   g('p_sev')   * 10000,
+        pen:   g('p_pen')   * 10000,
+        edu:   g('p_edu')
+    };
+
+    const loan   = Math.max(0, p.hprc * 10000 - p.dp);
+    const mgage  = annualMortgage(loan, p.mrate, p.mper);
+
+    // 車ローン：残250万、年41.6万、約7年
+    const CAR_ANN  = 416000;
+    const CAR_DONE = Y0 + Math.ceil(2500000 / CAR_ANN); // ~2033
+    // 車買い替えコスト発生年
+    const CAR_REP  = [CAR_DONE + 1, CAR_DONE + 11, CAR_DONE + 21];
+
+    const rows = [];
+    let sav = p.sav;
+
+    for (let yr = Y0; yr <= YEND; yr++) {
+        const ua  = UA0 + (yr - Y0);
+        const wa  = WA0 + (yr - Y0);
+        const c1a = yr - C1B;
+        const c2a = yr - C2B;
+        const dy  = yr - Y0;
+
+        // ── 収入 ───────────────────────────────────────
+        let userInc = 0, wifeInc = 0, pension = 0, sevInc = 0;
+
+        if (yr < RET) {
+            userInc = p.inc * Math.pow(1 + p.grow, dy);
+        }
+        if (yr >= p.wret && yr < WRET_DEF) {
+            const wy = yr - p.wret;
+            wifeInc  = p.winc * Math.pow(1 + p.grow * 0.5, wy);
+        }
+        if (yr >= RET) pension = p.pen;
+        if (yr === RET) sevInc  = p.sev;
+
+        const totalInc = userInc + wifeInc + pension + sevInc;
+
+        // ── 支出 ───────────────────────────────────────
+        const inf = Math.pow(1.01, dy); // 1%物価上昇
+
+        // 生活費（変動費180,000 + 固定費除く家賃46,000 = 226,000/月）
+        const living = 226000 * 12 * inf;
+
+        // 住居費
+        let housing = 0;
+        if (yr < p.hyr) {
+            housing = 84000 * 12;
+        } else if (yr < p.hyr + p.mper) {
+            housing = mgage + 240000; // ローン返済 + 管理費・修繕積立金2万/月
+        } else {
+            housing = 240000; // 管理費のみ（ローン完済後）
+        }
+
+        // 購入年：頭金 + 諸費用（物件価格の3%）
+        const dpCost = (yr === p.hyr) ? (p.dp + p.hprc * 10000 * 0.03) : 0;
+
+        // 車ローン（完済まで）
+        const carLoan = (yr < CAR_DONE) ? CAR_ANN : 0;
+
+        // 保育費（0〜2歳：6万/月 = 72万/年 ※3歳から無償化）
+        let childcare = 0;
+        if (c1a >= 0 && c1a <= 2) childcare += 720000;
+        if (c2a >= 0 && c2a <= 2) childcare += 720000;
+
+        // 教育費
+        let edu = 0;
+        if (c1a >= 0) edu += eduAnnual(c1a, p.edu);
+        if (c2a >= 0) edu += eduAnnual(c2a, p.edu);
+
+        // 旅行・レジャー
+        let travel;
+        if (yr >= RET)                                    travel = TRV.retire;
+        else if (c1a >= 22 && (c2a < 0 || c2a >= 22))    travel = TRV.empty;
+        else if (c1a >= 6  ||  c2a >= 6)                 travel = TRV.school;
+        else                                              travel = TRV.baby;
+        travel *= 10000;
+
+        // 車買い替え（200万）・成人祝い（20万）
+        let special = 0;
+        if (CAR_REP.includes(yr) && ua < 75) special += 2000000;
+        if (c1a === 20) special += 200000;
+        if (c2a === 20) special += 200000;
+
+        // 医療・介護費（70歳以降）
+        let medical = 0;
+        if (ua >= 70) medical += 300000;
+        if (ua >= 80) medical += 500000;
+
+        // その他合計（車ローン + 旅行 + 特別 + 医療 + 購入諸費）
+        const other = carLoan + travel + special + medical + dpCost;
+
+        const totalExp = living + housing + childcare + edu + other;
+        const balance  = totalInc - totalExp;
+        sav += balance;
+
+        const evList = lifeEvents(yr, ua, c1a, c2a, p);
+
+        rows.push({
+            yr, ua, wa, c1a, c2a,
+            totalInc, userInc, wifeInc, pension, sevInc,
+            living, housing, childcare, edu, other,
+            totalExp, balance, sav,
+            evList,
+            hasEv: evList.length > 0
+        });
+    }
+
+    drawSummary(rows);
+    drawLifeTable(rows);
+    drawCFTable(rows);
+    drawChart(rows);
+}
+
+// ─── サマリー ───────────────────────────────────────────
+function drawSummary(rows) {
+    const finalSav  = rows[rows.length - 1].sav;
+    const maxSav    = Math.max(...rows.map(r => r.sav));
+    const maxRow    = rows.find(r => r.sav === maxSav);
+    const minSav    = Math.min(...rows.map(r => r.sav));
+    const minRow    = rows.find(r => r.sav === minSav);
+    const deficits  = rows.filter(r => r.balance < 0).length;
+
+    const fc = finalSav > 10000000 ? 'g' : finalSav > 0 ? '' : 'r';
+    const dc = deficits > 15 ? 'r' : deficits > 8 ? 'a' : 'g';
+
+    document.getElementById('summary').innerHTML = `
+        <div class="sc ${fc}">
+            <div class="sc-label">90歳時点の貯蓄残高</div>
+            <div class="sc-value">${fmt(w(finalSav))}万円</div>
+            <div class="sc-sub">${finalSav >= 0 ? '✓ 老後も余裕あり' : '⚠ 資産不足の可能性'}</div>
+        </div>
+        <div class="sc">
+            <div class="sc-label">ピーク時の貯蓄残高</div>
+            <div class="sc-value">${fmt(w(maxSav))}万円</div>
+            <div class="sc-sub">${maxRow.yr}年（本人${maxRow.ua}歳）</div>
+        </div>
+        <div class="sc a">
+            <div class="sc-label">最低貯蓄残高</div>
+            <div class="sc-value">${fmt(w(minSav))}万円</div>
+            <div class="sc-sub">${minRow.yr}年（本人${minRow.ua}歳）</div>
+        </div>
+        <div class="sc ${dc}">
+            <div class="sc-label">年間赤字の年数</div>
+            <div class="sc-value">${deficits}年</div>
+            <div class="sc-sub">全${rows.length}年中</div>
+        </div>
+    `;
+}
+
+// ─── ライフイベント表 ────────────────────────────────────
+function drawLifeTable(rows) {
+    const tbody = document.getElementById('lt-body');
+    tbody.innerHTML = '';
+    rows.forEach(r => {
+        const tr = document.createElement('tr');
+        if (r.hasEv) tr.classList.add('ev-row');
+        const evHtml = r.evList.length
+            ? r.evList.map(([c, t]) => `<span class="tag ${c}">${t}</span>`).join('')
+            : '<span style="color:#9ca3af">−</span>';
+        tr.innerHTML = `
+            <td class="c">${r.yr}</td>
+            <td class="c">${r.ua}歳</td>
+            <td class="c">${r.wa}歳</td>
+            <td class="c">${stageLabel(r.c1a)}</td>
+            <td class="c">${r.c2a >= 0 ? stageLabel(r.c2a) : '−'}</td>
+            <td class="lft" style="padding-left:10px">${evHtml}</td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
+// ─── キャッシュフロー表 ──────────────────────────────────
+function drawCFTable(rows) {
+    const tbody = document.getElementById('cf-body');
+    tbody.innerHTML = '';
+    rows.forEach(r => {
+        const tr = document.createElement('tr');
+        if (r.balance < 0) tr.classList.add('deficit');
+        else if (r.ua >= 65) tr.classList.add('retire');
+
+        const bc = r.balance >= 0 ? 'pos' : 'neg';
+        const sc = r.sav < 0 ? 'neg' : r.sav < 5000000 ? 'warn' : 'pos';
+
+        // 収入内訳ツールチップ
+        const tipInc = [
+            r.userInc  ? `本人:${fmt(w(r.userInc))}万` : '',
+            r.wifeInc  ? `妻:${fmt(w(r.wifeInc))}万`   : '',
+            r.pension  ? `年金:${fmt(w(r.pension))}万`  : '',
+            r.sevInc   ? `退職金:${fmt(w(r.sevInc))}万` : ''
+        ].filter(Boolean).join(' / ');
+
+        tr.innerHTML = `
+            <td class="c">${r.yr}</td>
+            <td class="c">${r.ua}歳</td>
+            <td title="${tipInc}"><strong>${fmt(w(r.totalInc))}</strong></td>
+            <td>${fmt(w(r.living))}</td>
+            <td>${fmt(w(r.housing))}</td>
+            <td>${fmt(w(r.childcare))}</td>
+            <td>${fmt(w(r.edu))}</td>
+            <td>${fmt(w(r.other))}</td>
+            <td>${fmt(w(r.totalExp))}</td>
+            <td class="${bc}">${w(r.balance) >= 0 ? '+' : ''}${fmt(w(r.balance))}</td>
+            <td class="${sc}"><strong>${fmt(w(r.sav))}</strong></td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
+// ─── グラフ ─────────────────────────────────────────────
+function drawChart(rows) {
+    const ctx = document.getElementById('myChart').getContext('2d');
+    if (chartObj) { chartObj.destroy(); chartObj = null; }
+
+    chartObj = new Chart(ctx, {
+        data: {
+            labels: rows.map(r => `${r.yr}(${r.ua}歳)`),
+            datasets: [
+                {
+                    type: 'line',
+                    label: '貯蓄残高（万円）',
+                    data: rows.map(r => w(r.sav)),
+                    borderColor: '#3b82f6',
+                    backgroundColor: 'rgba(59,130,246,0.07)',
+                    fill: true,
+                    tension: 0.35,
+                    pointRadius: 0,
+                    yAxisID: 'yL',
+                    order: 0
+                },
+                {
+                    type: 'bar',
+                    label: '年間収入（万円）',
+                    data: rows.map(r => w(r.totalInc)),
+                    backgroundColor: 'rgba(34,197,94,0.55)',
+                    yAxisID: 'yR',
+                    order: 1
+                },
+                {
+                    type: 'bar',
+                    label: '年間支出（万円）',
+                    data: rows.map(r => w(r.totalExp)),
+                    backgroundColor: 'rgba(239,68,68,0.45)',
+                    yAxisID: 'yR',
+                    order: 1
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'top', labels: { font: { size: 11 } } },
+                tooltip: {
+                    callbacks: { label: c => `${c.dataset.label}: ${c.parsed.y.toLocaleString()}万円` }
+                }
+            },
+            scales: {
+                x: { ticks: { maxTicksLimit: 18, maxRotation: 45, font: { size: 9 } } },
+                yL: {
+                    type: 'linear', position: 'left',
+                    title: { display: true, text: '貯蓄残高（万円）', font: { size: 10 } },
+                    grid: { color: 'rgba(0,0,0,0.06)' }
+                },
+                yR: {
+                    type: 'linear', position: 'right',
+                    title: { display: true, text: '年間収支（万円）', font: { size: 10 } },
+                    grid: { drawOnChartArea: false }
+                }
+            }
+        }
+    });
+}
+
+// 初回実行
+run();
+</script>
+</body>
+</html>
