@@ -146,6 +146,9 @@ body{font-family:'Hiragino Sans','Yu Gothic UI','Meiryo',sans-serif;background:v
 .unit{display:inline-block;margin-left:5px;padding:1px 6px;border-radius:8px;font-size:.62rem;font-weight:700;background:var(--blue-l);color:var(--blue-d);text-transform:none;letter-spacing:0}
 .unit.man{background:var(--amber-l);color:#92400e}
 
+/* ── 支出の目安ヒント ── */
+.refhint{font-size:.66rem;color:var(--green-d);background:var(--green-l);border-radius:6px;padding:2px 7px;margin-top:2px;display:inline-block}
+
 /* ── 重要項目（⭐） ── */
 .field.imp label::before{content:'⭐ '}
 .field.imp input{border-color:var(--amber);background:#fffdf5}
@@ -368,6 +371,9 @@ tbody tr.ret td{background:#f0fdf4}
       </div>
 
       <div id="tc-var" class="tp">
+        <div class="sl">💡 理想の生活費バランス</div>
+        <div class="note" style="margin-bottom:8px">家族構成（家族タブ）と収入（収入タブ）から、FPの家計割合ガイドを元に理想額を自動算出しています。入力を変えるとリアルタイムで更新されます。</div>
+        <div id="ideal-balance"></div>
         <div class="sl">インフレ設定</div>
         <div class="fg2">
           <div class="field"><label>物価上昇率（%/年）</label><input type="number" id="infl" value="2.0" step="0.1" oninput="live()"><div class="hint">初期値2%。生活費・教育費等に反映</div></div>
@@ -1540,6 +1546,131 @@ function importJSON(input){
 // ══════════════════════════════════════════════════════
 // LIVE BAR
 // ══════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════
+// 理想の生活費バランス＆一般的な支出の目安
+// 列: [単身, 夫婦, 夫婦+子1人, 夫婦+子2人以上]（総務省家計調査等を参考にした概算）
+// ══════════════════════════════════════════════════════
+const REF_EXP={
+  e_food:[45000,70000,80000,90000],
+  e_util:[11000,19000,22000,24000],
+  e_ent:[25000,30000,30000,30000],
+  e_cloth:[8000,14000,18000,22000],
+  e_kids:[0,0,10000,15000],
+  e_misc:[10000,15000,18000,20000],
+  f_ins:[10000,20000,25000,30000],
+  f_tel:[7000,12000,15000,18000],
+  f_car:[15000,20000,20000,22000],
+  f_sub:[3000,5000,10000,15000],
+  f_oth:[5000,6000,8000,10000],
+};
+// 手取りに対する理想割合（%）。各列の合計は貯蓄を含めて100
+const IDEAL_PCT={
+  housing:[28,25,25,24],
+  e_food:[16,15,16,17],
+  e_util:[5,5,5,5],
+  e_ent:[6,5,4,4],
+  e_cloth:[3,3,3,3],
+  pocket:[12,10,9,8],
+  e_kids:[0,0,2,3],
+  e_misc:[3,3,3,3],
+  f_ins:[3,4,5,5],
+  f_tel:[4,4,4,4],
+  f_car:[4,4,4,4],
+  f_sub:[2,2,3,4],
+  f_oth:[2,2,2,2],
+  save:[12,18,15,14],
+};
+
+// 現在の家族構成 → 目安テーブルの列番号とラベル
+function famInfo(){
+  const Y0=g('f_year')||new Date().getFullYear();
+  const hasSp=g('f_wby')>1900;
+  // 22歳未満の子を「扶養中の子」として数える
+  let kids=0;
+  for(const id of ['f_c1by','f_c2by']){
+    const by=g(id);
+    if(by>1900&&Y0-by<22) kids++;
+  }
+  const idx=kids===0?(hasSp?1:0):(kids===1?2:3);
+  const label=kids===0?(hasSp?'夫婦':'単身'):`${hasSp?'夫婦':'ひとり親'}+子${kids}人`;
+  return {idx,label,hasSp,Y0};
+}
+
+// 世帯の手取り月収（現時点。配偶者は復職済みの場合のみ加算）
+function netMonthly(){
+  const {hasSp,Y0}=famInfo();
+  const c1a=Y0-g('f_c1by'),c2a=Y0-g('f_c2by');
+  const depCh=(g('f_c1by')>1900&&c1a>=0&&c1a<18?1:0)+(g('f_c2by')>1900&&c2a>=0&&c2a<18?1:0);
+  const allowM=g('u_house_allow')+g('u_dep_allow')*depCh+g('u_other_allow');
+  const uNet=(g('u_mon')*12+g('u_bon'))/12+allowM;
+  const wNet=hasSp&&Y0>=g('w_ret')?(g('w_mon')*12+g('w_bon'))/12:0;
+  return uNet+wNet;
+}
+
+// 各費用入力欄に「一般的な支出の目安」を表示
+function updateRefHints(){
+  const {idx,label}=famInfo();
+  for(const [id,vals] of Object.entries(REF_EXP)){
+    const inp=document.getElementById(id);if(!inp) continue;
+    const field=inp.closest('.field');if(!field) continue;
+    let hint=field.querySelector('.refhint');
+    if(!hint){hint=document.createElement('div');hint.className='refhint';field.appendChild(hint);}
+    hint.textContent=`👥 目安 ${mw(vals[idx])}万円/月（${label}の平均的な水準）`;
+  }
+  // 家賃は手取り比で表示
+  const rentInp=document.getElementById('h_rent');
+  if(rentInp){
+    const field=rentInp.closest('.field');
+    let hint=field.querySelector('.refhint');
+    if(!hint){hint=document.createElement('div');hint.className='refhint';field.appendChild(hint);}
+    hint.textContent=`👥 目安 手取りの25% ≒ ${mw(netMonthly()*0.25)}万円/月`;
+  }
+}
+
+// 理想の生活費バランス表を描画
+function renderIdealBalance(){
+  const box=document.getElementById('ideal-balance');if(!box) return;
+  const {idx,label,hasSp}=famInfo();
+  const net=netMonthly();
+  if(net<=0){box.innerHTML='<p style="color:var(--gray-5);font-size:.8rem">収入タブで月収を入力すると表示されます。</p>';return;}
+  const rows=[
+    ['住居費（家賃）','housing',g('h_rent')],
+    ['食費・日用品','e_food',g('e_food')],
+    ['光熱費','e_util',g('e_util')],
+    ['交際費・外食・娯楽','e_ent',g('e_ent')],
+    ['衣服・美容','e_cloth',g('e_cloth')],
+    ['小遣い（夫婦合計）','pocket',g('e_aself')+(hasSp?g('e_awife'):0)],
+    ['子育て雑費','e_kids',g('e_kids')],
+    ['雑費・その他','e_misc',g('e_misc')],
+    ['保険料','f_ins',g('f_ins')],
+    ['通信費','f_tel',g('f_tel')],
+    ['車維持費','f_car',g('f_car')],
+    ['習い事・サブスク','f_sub',g('f_sub')],
+    ['その他固定費','f_oth',g('f_oth')],
+  ];
+  let curTotal=0;
+  const trs=rows.map(([name,key,cur])=>{
+    curTotal+=cur;
+    const pct=IDEAL_PCT[key][idx];
+    const ideal=net*pct/100;
+    const mark=ideal<=0?(cur>0?'🔴':'−')
+      :cur>ideal*1.2?'🔴':cur>ideal*1.05?'🟡':'🟢';
+    const cls=mark==='🔴'?'neg':mark==='🟡'?'wrn':'pos';
+    return `<tr><td class="l">${name}</td><td>${pct}%</td><td>${mw(ideal)}万円</td><td class="${cls}">${mw(cur)}万円</td><td class="c">${mark}</td></tr>`;
+  }).join('');
+  const savePct=IDEAL_PCT.save[idx];
+  const saveIdeal=net*savePct/100;
+  const saveCur=net-curTotal;
+  const saveMark=saveCur<saveIdeal*0.8?'🔴':saveCur<saveIdeal?'🟡':'🟢';
+  const saveCls=saveMark==='🔴'?'neg':saveMark==='🟡'?'wrn':'pos';
+  box.innerHTML=`<div class="tbl-wrap"><table>
+    <thead><tr><th style="text-align:left">項目</th><th>理想割合</th><th>理想額/月</th><th>現在の入力</th><th>判定</th></tr></thead>
+    <tbody>${trs}
+      <tr style="border-top:2px solid var(--gray-3)"><td class="l"><strong>貯蓄・投資余力</strong></td><td><strong>${savePct}%</strong></td><td><strong>${mw(saveIdeal)}万円</strong></td><td class="${saveCls}"><strong>${mw(saveCur)}万円</strong></td><td class="c">${saveMark}</td></tr>
+    </tbody></table></div>
+    <div class="note">世帯手取り 月${mw(net)}万円 ／ 家族構成「${label}」として算出。🟢=理想内 🟡=やや高め 🔴=見直し推奨。割合はFPでよく使われる家計バランスの目安です。</div>`;
+}
+
 function live(){
   const Y0=g('f_year')||new Date().getFullYear();
   const uBY=g('f_uby'),wBY=g('f_wby'),c1BY=g('f_c1by'),c2BY=g('f_c2by');
@@ -1557,6 +1688,7 @@ function live(){
   const sb=document.getElementById('sb-date');
   const spL=gs('fam_splabel').trim()||'配偶者';
   if(sb) sb.textContent=`${Y0}年 / 本人${Y0-uBY}歳${wBY>1900?`・${spL}${Y0-wBY}歳`:''}`;
+  renderIdealBalance();updateRefHints();
 }
 
 // ══════════════════════════════════════════════════════
