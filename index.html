@@ -57,6 +57,9 @@ body{font-family:'Hiragino Sans','Yu Gothic UI','Meiryo',sans-serif;background:v
   .bni{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#94a3b8;font-size:.6rem;gap:2px;cursor:pointer;transition:color .15s;padding:4px;border:none;background:none;font-family:inherit}
   .bni .ico{font-size:1.3rem}
   .bni.active{color:var(--blue)}
+  /* CF表: モバイルは主要列のみ（西暦/年齢/収入/支出/収支/積立取崩/総資産） */
+  #cf-table :is(th,td):is(:nth-child(1),:nth-child(5),:nth-child(6),:nth-child(7),:nth-child(8),:nth-child(9),:nth-child(10),:nth-child(14),:nth-child(15)){display:none}
+  .ss-chip{margin-left:0}
 }
 
 /* ── Card ── */
@@ -138,6 +141,25 @@ body{font-family:'Hiragino Sans','Yu Gothic UI','Meiryo',sans-serif;background:v
 .field input:focus,.field select:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(59,130,246,.1)}
 .field .hint{font-size:.66rem;color:var(--gray-3)}
 .sl{font-size:.72rem;font-weight:800;color:var(--dark2);margin:14px 0 8px;text-transform:uppercase;letter-spacing:.5px;padding-bottom:4px;border-bottom:1.5px solid var(--blue-l)}
+
+/* ── Unit chips（円/万円の区別を明示） ── */
+.unit{display:inline-block;margin-left:5px;padding:1px 6px;border-radius:8px;font-size:.62rem;font-weight:700;background:var(--blue-l);color:var(--blue-d);text-transform:none;letter-spacing:0}
+.unit.man{background:var(--amber-l);color:#92400e}
+
+/* ── 重要項目（⭐） ── */
+.field.imp label::before{content:'⭐ '}
+.field.imp input{border-color:var(--amber);background:#fffdf5}
+
+/* ── 結果サマリーバー（スクロールしても固定） ── */
+.sim-sum{position:sticky;top:0;z-index:60;display:flex;gap:16px;align-items:center;flex-wrap:wrap;background:rgba(248,250,252,.96);backdrop-filter:blur(4px);padding:10px 16px;border-radius:var(--radius);border:1px solid var(--gray-2);box-shadow:var(--shadow);margin-bottom:12px}
+.ss-item{display:flex;flex-direction:column}
+.ss-l{font-size:.62rem;color:var(--gray-5);font-weight:700}
+.ss-v{font-size:1.05rem;font-weight:800;color:var(--dark2)}
+.ss-v.neg{color:var(--red)}
+.ss-chip{margin-left:auto;padding:4px 12px;border-radius:20px;font-size:.75rem;font-weight:700}
+.ss-chip.safe{background:var(--green-l);color:var(--green-d)}
+.ss-chip.caution{background:var(--amber-l);color:#92400e}
+.ss-chip.danger{background:var(--red-l);color:#991b1b}
 
 /* ── Buttons ── */
 .btn{background:var(--blue);color:#fff;border:none;padding:9px 20px;border-radius:var(--radius-sm);cursor:pointer;font-size:.87rem;font-weight:700;font-family:inherit;transition:all .15s;display:inline-flex;align-items:center;gap:6px}
@@ -286,6 +308,7 @@ tbody tr.ret td{background:#f0fdf4}
     <div class="section-title">💹 シミュレーター</div>
     <div class="card">
       <div class="card-h"><h2>⚙️ シミュレーション設定</h2></div>
+      <div class="note" style="margin-bottom:10px">⭐印の6項目（月収・ボーナス・家賃・現金・投資・積立）を入れるだけで概算できます。他の項目は平均的な初期値が入っています。入力すると自動で再計算されます。</div>
       <div class="tab-nav">
         <button class="tb on" onclick="showTab('fam',this)">👨‍👩‍👧 家族</button>
         <button class="tb" onclick="showTab('inc',this)">💴 収入</button>
@@ -301,22 +324,28 @@ tbody tr.ret td{background:#f0fdf4}
         <div class="fg2">
           <div class="field"><label>現在年</label><input type="number" id="f_year" oninput="live()"><div class="hint">毎回自動入力</div></div>
           <div class="field"><label>本人 生年</label><input type="number" id="f_uby" value="1993" oninput="live()"></div>
-          <div class="field"><label>妻 生年</label><input type="number" id="f_wby" value="1996" oninput="live()"></div>
-          <div class="field"><label>長女 生年</label><input type="number" id="f_c1by" value="2026" oninput="live()"></div>
-          <div class="field"><label>次子 生年</label><input type="number" id="f_c2by" value="2028" oninput="live()"></div>
+          <div class="field"><label><span class="lbl-sp">妻</span> 生年</label><input type="number" id="f_wby" value="1996" oninput="live()"><div class="hint">0＝配偶者なし</div></div>
+          <div class="field"><label><span class="lbl-c1">長女</span> 生年</label><input type="number" id="f_c1by" value="2026" oninput="live()"><div class="hint">0＝いない</div></div>
+          <div class="field"><label><span class="lbl-c2">次子</span> 生年</label><input type="number" id="f_c2by" value="2028" oninput="live()"><div class="hint">0＝いない</div></div>
+        </div>
+        <div class="sl">家族の呼び方（表示に反映されます）</div>
+        <div class="fg2">
+          <div class="field"><label>配偶者の呼び方</label><input type="text" id="fam_splabel" value="妻"></div>
+          <div class="field"><label>子①の呼び方</label><input type="text" id="fam_c1label" value="長女"></div>
+          <div class="field"><label>子②の呼び方</label><input type="text" id="fam_c2label" value="次子"></div>
         </div>
         <div class="sl">退職年齢</div>
         <div class="fg2">
           <div class="field"><label>本人 定年年齢</label><input type="number" id="f_retage" value="65" oninput="live()"></div>
-          <div class="field"><label>妻 退職年齢</label><input type="number" id="f_wretage" value="62" oninput="live()"></div>
+          <div class="field"><label><span class="lbl-sp">妻</span> 退職年齢</label><input type="number" id="f_wretage" value="62" oninput="live()"></div>
         </div>
       </div>
 
       <div id="tc-inc" class="tp">
         <div class="sl">本人収入（公務員）</div>
         <div class="fg2">
-          <div class="field"><label>月収・手取り（円）</label><input type="number" id="u_mon" value="320000" oninput="live()"></div>
-          <div class="field"><label>ボーナス年間合計（円）</label><input type="number" id="u_bon" value="1460000" oninput="live()"></div>
+          <div class="field imp"><label>月収・手取り（円）</label><input type="number" id="u_mon" value="320000" oninput="live()"></div>
+          <div class="field imp"><label>ボーナス年間合計（円）</label><input type="number" id="u_bon" value="1460000" oninput="live()"></div>
           <div class="field"><label>年収上昇率（%）</label><input type="number" id="u_grow" value="1.0" step="0.1" oninput="live()"></div>
         </div>
         <div class="sl">各種手当（月額・円）</div>
@@ -330,11 +359,11 @@ tbody tr.ret td{background:#f0fdf4}
           <div class="field"><label>再任用 月収（円）</label><input type="number" id="u_reemploy_m" value="0"><div class="hint">0＝なし</div></div>
           <div class="field"><label>再任用 期間（年）</label><input type="number" id="u_reemploy_y" value="0"></div>
         </div>
-        <div class="sl">妻収入</div>
+        <div class="sl"><span class="lbl-sp">妻</span>の収入</div>
         <div class="fg2">
           <div class="field"><label>復職後 月収（円）</label><input type="number" id="w_mon" value="100000" oninput="live()"></div>
           <div class="field"><label>復職後 ボーナス（円）</label><input type="number" id="w_bon" value="300000" oninput="live()"></div>
-          <div class="field"><label>妻 復職予定年</label><input type="number" id="w_ret" value="2031" oninput="live()"></div>
+          <div class="field"><label><span class="lbl-sp">妻</span> 復職予定年</label><input type="number" id="w_ret" value="2031" oninput="live()"></div>
         </div>
       </div>
 
@@ -350,7 +379,7 @@ tbody tr.ret td{background:#f0fdf4}
           <div class="field"><label>交際費・外食・娯楽</label><input type="number" id="e_ent" value="20000" oninput="live()"></div>
           <div class="field"><label>衣服・美容</label><input type="number" id="e_cloth" value="10000" oninput="live()"></div>
           <div class="field"><label>小遣い（本人）</label><input type="number" id="e_aself" value="20000" oninput="live()"></div>
-          <div class="field"><label>小遣い（妻）</label><input type="number" id="e_awife" value="15000" oninput="live()"></div>
+          <div class="field"><label>小遣い（<span class="lbl-sp">妻</span>）</label><input type="number" id="e_awife" value="15000" oninput="live()"></div>
           <div class="field"><label>子育て雑費</label><input type="number" id="e_kids" value="10000" oninput="live()"></div>
           <div class="field"><label>雑費・その他</label><input type="number" id="e_misc" value="10000" oninput="live()"></div>
         </div>
@@ -380,7 +409,7 @@ tbody tr.ret td{background:#f0fdf4}
         </div>
         <div class="sl">住居</div>
         <div class="fg2">
-          <div class="field"><label>家賃（円/月）</label><input type="number" id="h_rent" value="84000" oninput="live()"></div>
+          <div class="field imp"><label>家賃（円/月）</label><input type="number" id="h_rent" value="84000" oninput="live()"></div>
           <div class="field"><label>住宅購入予定年</label><input type="number" id="h_yr" value="2033"></div>
           <div class="field"><label>住宅価格（万円）</label><input type="number" id="h_prc" value="5000"></div>
           <div class="field"><label>頭金（万円）</label><input type="number" id="h_dp" value="500"></div>
@@ -391,7 +420,7 @@ tbody tr.ret td{background:#f0fdf4}
       </div>
 
       <div id="tc-edu" class="tp">
-        <div class="sl">長女（子①）の教育方針</div>
+        <div class="sl"><span class="lbl-c1">長女</span>（子①）の教育方針</div>
         <div class="fg2">
           <div class="field"><label>小学校</label><select id="c1_el"><option value="32" selected>公立（32万/年）</option><option value="168">私立（168万/年）</option></select></div>
           <div class="field"><label>中学校</label><select id="c1_mid"><option value="48" selected>公立</option><option value="134">私立</option></select></div>
@@ -400,7 +429,7 @@ tbody tr.ret td{background:#f0fdf4}
           <div class="field"><label>大学 一人暮らし</label><select id="c1_dorm"><option value="0" selected>なし</option><option value="72">あり（+72万/年）</option></select></div>
           <div class="field"><label>習い事・塾（円/月）</label><input type="number" id="c1_extra" value="0"></div>
         </div>
-        <div class="sl">次子（子②）の教育方針</div>
+        <div class="sl"><span class="lbl-c2">次子</span>（子②）の教育方針</div>
         <div class="fg2">
           <div class="field"><label>小学校</label><select id="c2_el"><option value="32" selected>公立</option><option value="168">私立</option></select></div>
           <div class="field"><label>中学校</label><select id="c2_mid"><option value="48" selected>公立</option><option value="134">私立</option></select></div>
@@ -428,11 +457,11 @@ tbody tr.ret td{background:#f0fdf4}
       <div id="tc-fut" class="tp">
         <div class="sl">現在の資産</div>
         <div class="fg2">
-          <div class="field"><label>現金・預金（万円）</label><input type="number" id="a_cash" value="200"></div>
+          <div class="field imp"><label>現金・預金（万円）</label><input type="number" id="a_cash" value="200"></div>
           <div class="field"><label>預金 金利（%/年）</label><input type="number" id="a_cashrate" value="0.1" step="0.01"></div>
-          <div class="field"><label>投資資産（万円）</label><input type="number" id="a_invest" value="100"></div>
+          <div class="field imp"><label>投資資産（万円）</label><input type="number" id="a_invest" value="100"></div>
           <div class="field"><label>投資 利回り（%/年）</label><input type="number" id="a_investrate" value="5.0" step="0.1"></div>
-          <div class="field"><label>毎月の積立投資（円/月）</label><input type="number" id="a_investmon" value="30000"><div class="hint">現役中、現金から投資へ自動積立（NISA等）</div></div>
+          <div class="field imp"><label>毎月の積立投資（円/月）</label><input type="number" id="a_investmon" value="30000"><div class="hint">現役中、現金から投資へ自動積立（NISA等）</div></div>
         </div>
         <div class="note">💡 現金が不足した年は投資資産を自動で取り崩して補填します（残りは運用継続）。</div>
         <div class="sl">退職金</div>
@@ -447,7 +476,7 @@ tbody tr.ret td{background:#f0fdf4}
           <div class="field"><label>厚生年金 加入年数</label><input type="number" id="pn_u_kosei" value="38"></div>
           <div class="field"><label>国民年金 納付年数</label><input type="number" id="pn_u_kiso" value="40"><div class="hint">40年で満額（基礎年金 約81.6万円/年）</div></div>
         </div>
-        <div class="sl">年金・妻</div>
+        <div class="sl">年金・<span class="lbl-sp">妻</span></div>
         <div class="fg2">
           <div class="field"><label>受給開始年齢（60〜75歳）</label><input type="number" id="pn_w_start" value="65" min="60" max="75"></div>
           <div class="field"><label>見込額 直接入力（万円/年）</label><input type="number" id="pn_w_direct" value="0"><div class="hint">0=自動推計</div></div>
@@ -478,6 +507,7 @@ tbody tr.ret td{background:#f0fdf4}
 
     <!-- 結果 -->
     <div id="sim-results" style="display:none">
+      <div id="sim-summary"></div>
       <div class="mc-grid" id="sim-metrics"></div>
       <div id="sim-albar"></div>
       <div id="sim-risk"></div>
@@ -524,21 +554,24 @@ tbody tr.ret td{background:#f0fdf4}
       </div>
 
       <!-- ライフイベント表 -->
-      <div class="card">
-        <div class="card-h"><h2>📅 ライフイベント表</h2></div>
+      <div class="card collapsible closed" id="le-card">
+        <div class="card-h" style="cursor:pointer" onclick="toggleC('le-card')"><h2>📅 ライフイベント表 <span style="font-size:.7rem;color:var(--gray-5);font-weight:400">▲クリックで開閉</span></h2></div>
+        <div class="c-body">
         <div class="tbl-wrap">
           <table>
-            <thead><tr><th>西暦</th><th>本人</th><th>妻</th><th>長女</th><th>次子</th><th style="text-align:left;padding-left:8px">ライフイベント</th></tr></thead>
+            <thead><tr><th>西暦</th><th>本人</th><th class="lbl-sp">妻</th><th class="lbl-c1">長女</th><th class="lbl-c2">次子</th><th style="text-align:left;padding-left:8px">ライフイベント</th></tr></thead>
             <tbody id="lt-body"></tbody>
           </table>
+        </div>
         </div>
       </div>
 
       <!-- CF表 -->
-      <div class="card">
-        <div class="card-h"><h2>💰 キャッシュフロー表（万円）</h2></div>
+      <div class="card collapsible" id="cf-card">
+        <div class="card-h" style="cursor:pointer" onclick="toggleC('cf-card')"><h2>💰 キャッシュフロー表（万円） <span style="font-size:.7rem;color:var(--gray-5);font-weight:400">▲クリックで開閉</span></h2></div>
+        <div class="c-body">
         <div class="tbl-wrap">
-          <table>
+          <table id="cf-table">
             <thead><tr>
               <th>危険度</th><th>西暦</th><th>年齢</th>
               <th>収入合計</th><th>変動費</th><th>固定費</th>
@@ -549,7 +582,8 @@ tbody tr.ret td{background:#f0fdf4}
             <tbody id="cf-body"></tbody>
           </table>
         </div>
-        <div class="note">危険度：🟢安全 / 🟡注意 / 🔴要対策。収入欄にカーソルで内訳表示。</div>
+        <div class="note">危険度：🟢安全 / 🟡注意 / 🔴要対策。収入欄にカーソルで内訳表示。スマホでは主要列のみ表示（全列はPC・CSVで）。</div>
+        </div>
       </div>
     </div>
   </div>
@@ -735,7 +769,38 @@ function nav(page){
 const w   = v => Math.round(v/10000);
 const mw  = v => Math.round(v/1000)/10;
 const fmt = v => Number(v).toLocaleString();
-function g(id){const e=document.getElementById(id);return e?(e.tagName==='SELECT'?e.value:(parseFloat(e.value)||0)):0;}
+function g(id){const e=document.getElementById(id);return e?(e.tagName==='SELECT'?e.value:(parseFloat(String(e.value).replace(/,/g,''))||0)):0;}
+
+// 数値をカンマ区切り文字列に（円建て入力欄の表示用）
+function fmtNum(v){const n=parseFloat(String(v).replace(/,/g,''));return isNaN(n)?'':n.toLocaleString('en-US',{maximumFractionDigits:2});}
+
+// 入力欄の単位（円/万円/%等）をラベルからチップ表示に変換。
+// 円建ての欄はカンマ区切り表示に切り替える（万円チップは色を変えて区別）。
+function initUnits(){
+  document.querySelectorAll('#page-sim .field').forEach(f=>{
+    const lab=f.querySelector('label'),inp=f.querySelector('input');
+    if(!lab||!inp||lab.querySelector('.unit')) return;
+    const m=lab.textContent.match(/^(.*?)（([^）]*)）(.*)$/);
+    if(!m) return;
+    const unit=m[2];
+    if(!/円|%|年|歳/.test(unit)) return;
+    const man=unit.includes('万円');
+    lab.innerHTML=`${m[1]}${m[3]}<span class="unit${man?' man':''}">${unit}</span>`;
+    if(inp.type==='number'&&unit.includes('円')&&!man){
+      inp.type='text';inp.inputMode='numeric';
+      if(inp.value!=='') inp.value=fmtNum(inp.value);
+      inp.addEventListener('focus',()=>{inp.value=String(inp.value).replace(/,/g,'');});
+      inp.addEventListener('blur',()=>{if(inp.value!=='')inp.value=fmtNum(inp.value);});
+    }
+  });
+}
+
+// 家族の呼び方を画面全体に反映
+function applyLabels(p){
+  document.querySelectorAll('.lbl-sp').forEach(e=>e.textContent=p.spLabel);
+  document.querySelectorAll('.lbl-c1').forEach(e=>e.textContent=p.c1Label);
+  document.querySelectorAll('.lbl-c2').forEach(e=>e.textContent=p.c2Label);
+}
 function gs(id){const e=document.getElementById(id);return e?e.value:'';}
 
 // 年金の年額を推計（円）。直接入力があれば優先。繰上げ/繰下げ調整込み。
@@ -800,6 +865,10 @@ function getP(){
   const u1=pu(gs('c1_uni')),u2=pu(gs('c2_uni'));
   return{
     Y0,uBY,wBY,c1BY,c2BY,
+    hasSp:wBY>1900,hasC1:c1BY>1900,hasC2:c2BY>1900,
+    spLabel:gs('fam_splabel').trim()||'配偶者',
+    c1Label:gs('fam_c1label').trim()||'子①',
+    c2Label:gs('fam_c2label').trim()||'子②',
     UA0:Y0-uBY,WA0:Y0-wBY,
     RET:uBY+g('f_retage'),WRET:wBY+g('f_wretage'),
     YEND:uBY+LIFE_END_AGE,
@@ -841,15 +910,15 @@ function calculate(p){
   let cash=p.cashAmt,invest=p.investAmt;
 
   for(let yr=p.Y0;yr<=p.YEND;yr++){
-    const ua=p.UA0+(yr-p.Y0),wa=p.WA0+(yr-p.Y0);
-    const c1a=yr-p.c1BY,c2a=yr-p.c2BY;
+    const ua=p.UA0+(yr-p.Y0),wa=p.hasSp?p.WA0+(yr-p.Y0):-999;
+    const c1a=p.hasC1?yr-p.c1BY:-999,c2a=p.hasC2?yr-p.c2BY:-999;
     const dy=yr-p.Y0,inf=Math.pow(1+p.inflRate,dy);
     const depCh=(c1a>=0&&c1a<18?1:0)+(c2a>=0&&c2a<18?1:0);
     const allowTotal=(p.hAllow+p.depAllow*depCh+p.otherAllow)*12;
     let uInc=0,wInc=0,pen=0,sev=0,reemploy=0,custInc=0,custExp=0;
     if(yr<p.RET) uInc=(p.uMon*12+p.uBon)*Math.pow(1+p.uGrow,dy)+allowTotal;
     if(p.reemployM>0&&yr>=p.RET&&yr<p.RET+p.reemployY) reemploy=p.reemployM*12;
-    if(yr>=p.wret&&yr<p.WRET) wInc=(p.wMon*12+p.wBon)*Math.pow(1+p.uGrow*0.5,yr-p.wret);
+    if(p.hasSp&&yr>=p.wret&&yr<p.WRET) wInc=(p.wMon*12+p.wBon)*Math.pow(1+p.uGrow*0.5,yr-p.wret);
     if(ua>=p.uPenStart) pen+=p.uPenAmt;   // 本人の年金（受給開始年齢から）
     if(wa>=p.wPenStart) pen+=p.wPenAmt;   // 妻の年金（受給開始年齢から）
     if(yr===p.RET) sev=p.sev;
@@ -859,7 +928,7 @@ function calculate(p){
       if(ev.type==='income') custInc+=ev.amt*10000; else custExp+=ev.amt*10000;
     }
     const totalInc=uInc+wInc+pen+sev+reemploy+custInc;
-    const varExp=(p.food+p.util+p.ent+p.cloth+p.aself+p.awife+p.kids+p.misc)*12*inf;
+    const varExp=(p.food+p.util+p.ent+p.cloth+p.aself+(p.hasSp?p.awife:0)+p.kids+p.misc)*12*inf;
     const fixExp=(p.ins+p.tel+p.carM+p.sub+p.oth)*12*inf;
     const housing=yr<p.hyr?p.rent*12:(yr<p.hyr+p.hper?mgage+p.hmgmt*12:p.hmgmt*12);
     const dpCost=yr===p.hyr?(p.hdp+p.hprc*10000*0.03):0;
@@ -1102,8 +1171,23 @@ function refreshDashboard(){
 // ══════════════════════════════════════════════════════
 function drawSimResults(rows,p,metrics){
   document.getElementById('sim-results').style.display='block';
+  applyLabels(p);
   const last=rows[rows.length-1];
   const fc=last.totalAsset>10000000?'green':last.totalAsset>0?'blue':'red';
+  // 結論のサマリーバー（スクロールしても上部に固定）
+  {
+    const reds0=rows.filter(r=>riskLevel(r)==='red').length;
+    const ambs0=rows.filter(r=>riskLevel(r)==='amber').length;
+    const rl0=reds0>5?'danger':ambs0>8?'caution':'safe';
+    const rt0=reds0>5?'🔴 要対策':ambs0>8?'🟡 注意':'🟢 安全';
+    const alTxt=typeof metrics.assetLife==='number'?metrics.assetLife+'歳で枯渇':'90歳まで維持';
+    document.getElementById('sim-summary').innerHTML=`<div class="sim-sum">
+      <div class="ss-item"><span class="ss-l">資産寿命</span><span class="ss-v ${typeof metrics.assetLife==='number'?'neg':''}">${alTxt}</span></div>
+      <div class="ss-item"><span class="ss-l">90歳時点の総資産</span><span class="ss-v ${last.totalAsset<0?'neg':''}">${fmt(w(last.totalAsset))}万円</span></div>
+      <div class="ss-item"><span class="ss-l">65歳時点</span><span class="ss-v">${metrics.asset65!==null?fmt(w(metrics.asset65))+'万円':'−'}</span></div>
+      <span class="ss-chip ${rl0}">${rt0}</span>
+    </div>`;
+  }
   document.getElementById('sim-metrics').innerHTML=`
     <div class="mc ${fc}" data-ico="💰"><div class="mc-l">90歳時点の総資産</div><div class="mc-v">${fmt(w(last.totalAsset))}万円</div><div class="mc-s">現金${fmt(w(last.cash))}万 ／ 投資${fmt(w(last.invest))}万</div></div>
     <div class="mc blue" data-ico="📊"><div class="mc-l">ピーク総資産</div><div class="mc-v">${fmt(w(metrics.peakAsset))}万円</div><div class="mc-s">本人${metrics.peakAge}歳時点</div></div>
@@ -1121,19 +1205,19 @@ function drawSimResults(rows,p,metrics){
   drawLifeTable(rows);drawCFTable(rows);drawCharts(rows,p);renderScenarioList();
 }
 
-function lifeEventsOf(yr,ua,c1a,c2a,p){
+function lifeEventsOf(yr,ua,wa,c1a,c2a,p){
   const ev=[];const a=(c,t)=>ev.push([c,t]);
-  if(c1a===0) a('g','長女・誕生');if(c2a===0) a('g','次子・誕生');
-  if(yr===p.wret) a('','妻・復職');
-  if(c1a===6) a('','長女・小学校');if(c2a===6) a('','次子・小学校');
-  if(c1a===12) a('','長女・中学');if(c2a===12) a('','次子・中学');
-  if(c1a===18) a('a','長女・大学入学');if(c2a===18) a('a','次子・大学入学');
-  if(c1a===22) a('g','長女・独立');if(c2a===22) a('g','次子・独立');
+  if(c1a===0) a('g',`${p.c1Label}・誕生`);if(c2a===0) a('g',`${p.c2Label}・誕生`);
+  if(p.hasSp&&yr===p.wret) a('',`${p.spLabel}・復職`);
+  if(c1a===6) a('',`${p.c1Label}・小学校`);if(c2a===6) a('',`${p.c2Label}・小学校`);
+  if(c1a===12) a('',`${p.c1Label}・中学`);if(c2a===12) a('',`${p.c2Label}・中学`);
+  if(c1a===18) a('a',`${p.c1Label}・大学入学`);if(c2a===18) a('a',`${p.c2Label}・大学入学`);
+  if(c1a===22) a('g',`${p.c1Label}・独立`);if(c2a===22) a('g',`${p.c2Label}・独立`);
   if(yr===p.hyr) a('a',`マンション購入（${p.hprc}万円）`);
   if(yr===p.hyr+p.hper) a('g','住宅ローン完済');
   if(yr===p.RET) a('g','本人・定年退職');
   if(ua===p.uPenStart) a('g',`本人・年金受給開始（約${w(p.uPenAmt)}万円/年）`);
-  if(wa===p.wPenStart) a('g',`妻・年金受給開始（約${w(p.wPenAmt)}万円/年）`);
+  if(p.hasSp&&wa===p.wPenStart) a('g',`${p.spLabel}・年金受給開始（約${w(p.wPenAmt)}万円/年）`);
   if(ua===LIFE_END_AGE) a('r','プラン終了');
   for(const ev2 of p.customEvents){
     const inR=ev2.rec?(yr>=ev2.year&&yr<=(ev2.endYear||p.YEND)):yr===ev2.year;
@@ -1146,9 +1230,9 @@ function drawLifeTable(rows){
   const tbody=document.getElementById('lt-body');if(!tbody) return;
   tbody.innerHTML='';
   rows.forEach(r=>{
-    const evs=lifeEventsOf(r.yr,r.ua,r.c1a,r.c2a,currentP);
+    const evs=lifeEventsOf(r.yr,r.ua,r.wa,r.c1a,r.c2a,currentP);
     const tr=document.createElement('tr');if(evs.length) tr.classList.add('ev');
-    tr.innerHTML=`<td class="c">${r.yr}</td><td class="c">${r.ua}歳</td><td class="c">${r.wa}歳</td>
+    tr.innerHTML=`<td class="c">${r.yr}</td><td class="c">${r.ua}歳</td><td class="c">${r.wa>=0?r.wa+'歳':'−'}</td>
       <td class="c">${stageLabel(r.c1a)}</td><td class="c">${r.c2a>=0?stageLabel(r.c2a):'−'}</td>
       <td class="l" style="padding-left:8px">${evs.length?evs.map(([c,t])=>`<span class="tag ${c}">${t}</span>`).join(''):'<span style="color:var(--gray-3)">−</span>'}</td>`;
     tbody.appendChild(tr);
@@ -1164,7 +1248,7 @@ function drawCFTable(rows){
     const ri=rl==='red'?'🔴':rl==='amber'?'🟡':'🟢';
     const bc=r.balance>=0?'pos':'neg';
     const sc=r.totalAsset<0?'neg':r.totalAsset<5000000?'wrn':'pos';
-    const tip=`本人:${fmt(w(r.uInc))}万${r.wInc?` 妻:${fmt(w(r.wInc))}万`:''}${r.pen?` 年金:${fmt(w(r.pen))}万`:''}${r.sev?` 退職金:${fmt(w(r.sev))}万`:''}`;
+    const tip=`本人:${fmt(w(r.uInc))}万${r.wInc?` ${currentP?.spLabel||'配偶者'}:${fmt(w(r.wInc))}万`:''}${r.pen?` 年金:${fmt(w(r.pen))}万`:''}${r.sev?` 退職金:${fmt(w(r.sev))}万`:''}`;
     tr.innerHTML=`<td class="c">${ri}</td><td class="c">${r.yr}</td><td class="c">${r.ua}歳</td>
       <td title="${tip}"><strong>${fmt(w(r.totalInc))}</strong></td>
       <td>${fmt(w(r.varExp))}</td><td>${fmt(w(r.fixExp))}</td>
@@ -1365,7 +1449,7 @@ function coachResponse(q){
   }
   if(qL.includes('老後')||qL.includes('退職')||qL.includes('年金')){
     const r65=rows.find(r=>r.ua===65),r85=rows.find(r=>r.ua===85);
-    return `老後の見通し：\n• 定年退職: ${p.RET}年（本人${p.RET-p.uBY}歳）\n• 退職金: ${w(p.sev)}万円\n• 年金 本人: 約${w(p.uPenAmt)}万円/年（${p.uPenStart}歳〜）\n• 年金 妻: 約${w(p.wPenAmt)}万円/年（${p.wPenStart}歳〜）\n• 現金が尽きた後は投資資産を自動取り崩しで生活費に充当\n\n資産推移：\n• 退職時（65歳）: ${r65?fmt(w(r65.totalAsset))+'万円':'−'}\n• 85歳時点: ${r85?fmt(w(r85.totalAsset))+'万円':'−'}\n• 資産寿命: ${typeof m.assetLife==='number'?m.assetLife+'歳まで':m.assetLife}\n\n公務員メリット：共済年金（現在は厚生年金統合）で民間より年金額が多い傾向です。ねんきん定期便で実際の見込み額を確認しましょう。`;
+    return `老後の見通し：\n• 定年退職: ${p.RET}年（本人${p.RET-p.uBY}歳）\n• 退職金: ${w(p.sev)}万円\n• 年金 本人: 約${w(p.uPenAmt)}万円/年（${p.uPenStart}歳〜）${p.hasSp?`\n• 年金 ${p.spLabel}: 約${w(p.wPenAmt)}万円/年（${p.wPenStart}歳〜）`:''}\n• 現金が尽きた後は投資資産を自動取り崩しで生活費に充当\n\n資産推移：\n• 退職時（65歳）: ${r65?fmt(w(r65.totalAsset))+'万円':'−'}\n• 85歳時点: ${r85?fmt(w(r85.totalAsset))+'万円':'−'}\n• 資産寿命: ${typeof m.assetLife==='number'?m.assetLife+'歳まで':m.assetLife}\n\n公務員メリット：共済年金（現在は厚生年金統合）で民間より年金額が多い傾向です。ねんきん定期便で実際の見込み額を確認しましょう。`;
   }
   if(qL.includes('今すぐ')||qL.includes('優先')||qL.includes('やるべき')){
     if(!props.length) return '現在の計画は良好です！引き続きシミュレーションを更新し続けましょう。';
@@ -1418,7 +1502,7 @@ function renderCustomEventsList(){
 // ══════════════════════════════════════════════════════
 // EXPORT
 // ══════════════════════════════════════════════════════
-function buildLifeArr(rows){return[['西暦','本人','妻','長女','次子','ライフイベント'],...rows.map(r=>{const evs=lifeEventsOf(r.yr,r.ua,r.c1a,r.c2a,currentP);return[r.yr,r.ua+'歳',r.wa+'歳',stageLabel(r.c1a),r.c2a>=0?stageLabel(r.c2a):'−',evs.map(([,t])=>t).join(' ／ ')];})];}
+function buildLifeArr(rows){const p=currentP;return[['西暦','本人',p.spLabel,p.c1Label,p.c2Label,'ライフイベント'],...rows.map(r=>{const evs=lifeEventsOf(r.yr,r.ua,r.wa,r.c1a,r.c2a,p);return[r.yr,r.ua+'歳',r.wa>=0?r.wa+'歳':'−',stageLabel(r.c1a),r.c2a>=0?stageLabel(r.c2a):'−',evs.map(([,t])=>t).join(' ／ ')];})];}
 function buildCFArr(rows){return[['西暦','本人','収入合計','うち年金','変動費','固定費','住居費','保育費','教育費','その他','支出合計','年収支','積立投資','投資取崩','現金残','投資残','総資産'],...rows.map(r=>[r.yr,r.ua,w(r.totalInc),w(r.pen),w(r.varExp),w(r.fixExp),w(r.housing),w(r.childcare),w(r.edu),w(r.otherExp),w(r.totalExp),w(r.balance),w(r.contribution||0),w(r.withdrawal||0),w(r.cash),w(r.invest),w(r.totalAsset)])];}
 
 function exportExcel(){
@@ -1471,7 +1555,8 @@ function live(){
   if(lbE) lbE.textContent=mw(mE)+'万円';
   if(lbB){lbB.textContent=(bal>=0?'+':'')+mw(bal)+'万円';lbB.className='lv '+(bal>=0?'pos':'neg');}
   const sb=document.getElementById('sb-date');
-  if(sb) sb.textContent=`${Y0}年 / 本人${Y0-uBY}歳・妻${Y0-wBY}歳`;
+  const spL=gs('fam_splabel').trim()||'配偶者';
+  if(sb) sb.textContent=`${Y0}年 / 本人${Y0-uBY}歳${wBY>1900?`・${spL}${Y0-wBY}歳`:''}`;
 }
 
 // ══════════════════════════════════════════════════════
@@ -1497,6 +1582,7 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape') document.querySelec
 document.addEventListener('DOMContentLoaded',()=>{
   loadState();
   restoreInputs();
+  initUnits();
   document.getElementById('f_year').value=new Date().getFullYear();
   // 入力変更で自動保存＋自動再計算
   ['input','change'].forEach(evt=>{
