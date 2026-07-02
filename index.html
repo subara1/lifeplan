@@ -432,11 +432,28 @@ tbody tr.ret td{background:#f0fdf4}
           <div class="field"><label>預金 金利（%/年）</label><input type="number" id="a_cashrate" value="0.1" step="0.01"></div>
           <div class="field"><label>投資資産（万円）</label><input type="number" id="a_invest" value="100"></div>
           <div class="field"><label>投資 利回り（%/年）</label><input type="number" id="a_investrate" value="5.0" step="0.1"></div>
+          <div class="field"><label>毎月の積立投資（円/月）</label><input type="number" id="a_investmon" value="30000"><div class="hint">現役中、現金から投資へ自動積立（NISA等）</div></div>
         </div>
-        <div class="sl">老後</div>
+        <div class="note">💡 現金が不足した年は投資資産を自動で取り崩して補填します（残りは運用継続）。</div>
+        <div class="sl">退職金</div>
         <div class="fg2">
           <div class="field"><label>退職金（万円）</label><input type="number" id="r_sev" value="2000"></div>
-          <div class="field"><label>年金 夫婦合計（万円/年）</label><input type="number" id="r_pen" value="240"></div>
+        </div>
+        <div class="sl">年金・本人</div>
+        <div class="fg2">
+          <div class="field"><label>受給開始年齢（60〜75歳）</label><input type="number" id="pn_u_start" value="65" min="60" max="75"><div class="hint">繰上げ−0.4%/月・繰下げ+0.7%/月を自動反映</div></div>
+          <div class="field"><label>見込額 直接入力（万円/年）</label><input type="number" id="pn_u_direct" value="0"><div class="hint">ねんきん定期便の65歳時点額。0=自動推計</div></div>
+          <div class="field"><label>平均年収・額面（万円）</label><input type="number" id="pn_u_sal" value="550"><div class="hint">現役期間の平均。厚生年金の推計に使用</div></div>
+          <div class="field"><label>厚生年金 加入年数</label><input type="number" id="pn_u_kosei" value="38"></div>
+          <div class="field"><label>国民年金 納付年数</label><input type="number" id="pn_u_kiso" value="40"><div class="hint">40年で満額（基礎年金 約81.6万円/年）</div></div>
+        </div>
+        <div class="sl">年金・妻</div>
+        <div class="fg2">
+          <div class="field"><label>受給開始年齢（60〜75歳）</label><input type="number" id="pn_w_start" value="65" min="60" max="75"></div>
+          <div class="field"><label>見込額 直接入力（万円/年）</label><input type="number" id="pn_w_direct" value="0"><div class="hint">0=自動推計</div></div>
+          <div class="field"><label>平均年収・額面（万円）</label><input type="number" id="pn_w_sal" value="200"></div>
+          <div class="field"><label>厚生年金 加入年数</label><input type="number" id="pn_w_kosei" value="20"></div>
+          <div class="field"><label>国民年金 納付年数</label><input type="number" id="pn_w_kiso" value="40"></div>
         </div>
       </div>
 
@@ -527,7 +544,7 @@ tbody tr.ret td{background:#f0fdf4}
               <th>収入合計</th><th>変動費</th><th>固定費</th>
               <th>住居費</th><th>保育費</th><th>教育費</th>
               <th>その他</th><th>支出合計</th>
-              <th>年収支</th><th>現金残</th><th>投資残</th><th>総資産</th>
+              <th>年収支</th><th>積立/取崩</th><th>現金残</th><th>投資残</th><th>総資産</th>
             </tr></thead>
             <tbody id="cf-body"></tbody>
           </table>
@@ -657,7 +674,7 @@ const LEVELS = [
 // STATE
 // ══════════════════════════════════════════════════════
 const DEF_STATE = {
-  name:'', goals:[], customEvents:[], scenarios:{}, sim:null,
+  name:'', goals:[], customEvents:[], scenarios:{}, sim:null, inputs:null,
   gamification:{xp:0,level:1,badges:[],lastLogin:''},
 };
 let state = JSON.parse(JSON.stringify(DEF_STATE));
@@ -668,6 +685,27 @@ let currentP = null;
 // PERSISTENCE
 // ══════════════════════════════════════════════════════
 function saveState(){try{localStorage.setItem('lifeplan_os',JSON.stringify(state));}catch(e){}}
+
+// 入力フォームの値をlocalStorageに保存／復元（リロードしても消えない）
+function saveInputs(){
+  const o={};
+  document.querySelectorAll('#page-sim input[id],#page-sim select[id]').forEach(el=>{o[el.id]=el.value;});
+  state.inputs=o;saveState();
+}
+function restoreInputs(){
+  if(!state.inputs) return;
+  for(const [k,v] of Object.entries(state.inputs)){
+    const el=document.getElementById(k);
+    if(el) el.value=v;
+  }
+}
+
+// 入力変更後、少し待ってから自動で再計算（結果表示済みのときのみ）
+let _autoT=null;
+function autoRun(){
+  clearTimeout(_autoT);
+  _autoT=setTimeout(()=>{if(state.sim) runAndRefresh(true);},800);
+}
 function loadState(){
   try{
     const s=localStorage.getItem('lifeplan_os');
@@ -699,6 +737,19 @@ const mw  = v => Math.round(v/1000)/10;
 const fmt = v => Number(v).toLocaleString();
 function g(id){const e=document.getElementById(id);return e?(e.tagName==='SELECT'?e.value:(parseFloat(e.value)||0)):0;}
 function gs(id){const e=document.getElementById(id);return e?e.value:'';}
+
+// 年金の年額を推計（円）。直接入力があれば優先。繰上げ/繰下げ調整込み。
+// 基礎年金: 満額81.6万円/年 × 納付年数/40、厚生年金: 平均年収 × 0.5481% × 加入年数
+function penAdjust(startAge){
+  const s=Math.min(75,Math.max(60,startAge||65));
+  return s<65?1-0.004*12*(65-s):1+0.007*12*(s-65);
+}
+function pensionAnnual(directMan,salMan,koseiY,kisoY,startAge){
+  const base=directMan>0
+    ? directMan*10000
+    : 816000*Math.min(kisoY||0,40)/40 + (salMan||0)*10000*0.005481*(koseiY||0);
+  return base*penAdjust(startAge);
+}
 
 function annualMortgage(principal,rateP,years){
   if(principal<=0||years<=0) return 0;
@@ -768,7 +819,12 @@ function getP(){
     c2edu:{el:g('c2_el'),mid:g('c2_mid'),hi:g('c2_hi'),uni:u2.uni,uni0:u2.uni0,dorm:g('c2_dorm'),extra:g('c2_extra')},
     cashAmt:g('a_cash')*10000,cashRate:g('a_cashrate')/100,
     investAmt:g('a_invest')*10000,investRate:g('a_investrate')/100,
-    sev:g('r_sev')*10000,pen:g('r_pen')*10000,
+    sev:g('r_sev')*10000,
+    investMon:g('a_investmon'),
+    uPenStart:Math.min(75,Math.max(60,g('pn_u_start')||65)),
+    wPenStart:Math.min(75,Math.max(60,g('pn_w_start')||65)),
+    uPenAmt:pensionAnnual(g('pn_u_direct'),g('pn_u_sal'),g('pn_u_kosei'),g('pn_u_kiso'),g('pn_u_start')),
+    wPenAmt:pensionAnnual(g('pn_w_direct'),g('pn_w_sal'),g('pn_w_kosei'),g('pn_w_kiso'),g('pn_w_start')),
     customEvents:[...state.customEvents]
   };
 }
@@ -794,7 +850,8 @@ function calculate(p){
     if(yr<p.RET) uInc=(p.uMon*12+p.uBon)*Math.pow(1+p.uGrow,dy)+allowTotal;
     if(p.reemployM>0&&yr>=p.RET&&yr<p.RET+p.reemployY) reemploy=p.reemployM*12;
     if(yr>=p.wret&&yr<p.WRET) wInc=(p.wMon*12+p.wBon)*Math.pow(1+p.uGrow*0.5,yr-p.wret);
-    if(yr>=p.RET) pen=p.pen;
+    if(ua>=p.uPenStart) pen+=p.uPenAmt;   // 本人の年金（受給開始年齢から）
+    if(wa>=p.wPenStart) pen+=p.wPenAmt;   // 妻の年金（受給開始年齢から）
     if(yr===p.RET) sev=p.sev;
     for(const ev of p.customEvents){
       const inR=ev.rec?(yr>=ev.year&&yr<=(ev.endYear||p.YEND)):yr===ev.year;
@@ -823,12 +880,25 @@ function calculate(p){
     const otherExp=dpCost+carLoan+trv+medical+special+custExp;
     const totalExp=varExp+fixExp+housing+childcare+edu+otherExp;
     const balance=totalInc-totalExp;
+    // ── 資産エンジン ──
+    // 1) 投資は運用継続  2) 年収支を現金に反映  3) 現役中は積立投資（現金→投資）
+    // 4) 現金が不足したら投資を取り崩して補填（残りは運用継続）
     const investReturn=invest*p.investRate;
-    invest*=(1+p.investRate);
-    cash=(cash+balance)*(1+p.cashRate);
+    invest+=investReturn;
+    cash+=balance;
+    let contribution=0,withdrawal=0;
+    if(yr<p.RET&&p.investMon>0&&cash>0){
+      contribution=Math.min(p.investMon*12,cash);
+      cash-=contribution;invest+=contribution;
+    }
+    if(cash<0){
+      withdrawal=Math.min(invest,-cash);
+      invest-=withdrawal;cash+=withdrawal;
+    }
+    if(cash>0) cash*=(1+p.cashRate);
     rows.push({yr,ua,wa,c1a,c2a,totalInc,uInc,wInc,pen,sev,reemploy,custInc,
       varExp,fixExp,housing,childcare,edu,otherExp,totalExp,balance,
-      cash,invest,totalAsset:cash+invest,investReturn});
+      cash,invest,totalAsset:cash+invest,investReturn,contribution,withdrawal});
   }
   return rows;
 }
@@ -943,12 +1013,13 @@ function updateXPDisplay(){
 // ══════════════════════════════════════════════════════
 // RUN
 // ══════════════════════════════════════════════════════
-function runAndRefresh(){
+function runAndRefresh(quiet){
   currentP=getP();
   const rows=calculate(currentP);
   const metrics=getMetrics(rows,currentP);
   state.sim={rows,p:currentP,metrics};
-  grantXP(10);checkBadges(rows,currentP);saveState();
+  if(!quiet){grantXP(10);checkBadges(rows,currentP);}
+  saveInputs();saveState();
   drawSimResults(rows,currentP,metrics);
   refreshDashboard();
 }
@@ -1060,7 +1131,9 @@ function lifeEventsOf(yr,ua,c1a,c2a,p){
   if(c1a===22) a('g','長女・独立');if(c2a===22) a('g','次子・独立');
   if(yr===p.hyr) a('a',`マンション購入（${p.hprc}万円）`);
   if(yr===p.hyr+p.hper) a('g','住宅ローン完済');
-  if(yr===p.RET) a('g','本人・定年退職 ／ 年金受給開始');
+  if(yr===p.RET) a('g','本人・定年退職');
+  if(ua===p.uPenStart) a('g',`本人・年金受給開始（約${w(p.uPenAmt)}万円/年）`);
+  if(wa===p.wPenStart) a('g',`妻・年金受給開始（約${w(p.wPenAmt)}万円/年）`);
   if(ua===LIFE_END_AGE) a('r','プラン終了');
   for(const ev2 of p.customEvents){
     const inR=ev2.rec?(yr>=ev2.year&&yr<=(ev2.endYear||p.YEND)):yr===ev2.year;
@@ -1098,6 +1171,7 @@ function drawCFTable(rows){
       <td>${fmt(w(r.housing))}</td><td>${fmt(w(r.childcare))}</td><td>${fmt(w(r.edu))}</td>
       <td>${fmt(w(r.otherExp))}</td><td>${fmt(w(r.totalExp))}</td>
       <td class="${bc}">${w(r.balance)>=0?'+':''}${fmt(w(r.balance))}</td>
+      <td class="${r.withdrawal?'wrn':r.contribution?'pos':''}" title="${r.withdrawal?'現金不足のため投資を取り崩し':r.contribution?'現金から投資へ積立':''}">${r.withdrawal?'−'+fmt(w(r.withdrawal)):r.contribution?'+'+fmt(w(r.contribution)):'0'}</td>
       <td>${fmt(w(r.cash))}</td><td>${fmt(w(r.invest))}</td>
       <td class="${sc}"><strong>${fmt(w(r.totalAsset))}</strong></td>`;
     tbody.appendChild(tr);
@@ -1132,7 +1206,8 @@ function drawCharts(rows,p){
     data:{labels,datasets:[
       {type:'line',label:'現金（万円）',data:rows.map(r=>w(r.cash)),borderColor:'#3b82f6',backgroundColor:'rgba(59,130,246,.12)',fill:true,tension:.35,pointRadius:0},
       {type:'line',label:'投資（万円）',data:rows.map(r=>w(r.invest)),borderColor:'#8b5cf6',backgroundColor:'rgba(139,92,246,.1)',fill:true,tension:.35,pointRadius:0},
-      {type:'line',label:'住宅（取得額）',data:rows.map(r=>r.yr>=p.hyr?w(p.hprc*10000):0),borderColor:'#f59e0b',tension:.35,pointRadius:0,borderDash:[5,4]}
+      {type:'line',label:'住宅（取得額）',data:rows.map(r=>r.yr>=p.hyr?w(p.hprc*10000):0),borderColor:'#f59e0b',tension:.35,pointRadius:0,borderDash:[5,4]},
+      {type:'bar',label:'投資取り崩し（万円）',data:rows.map(r=>w(r.withdrawal||0)),backgroundColor:'rgba(239,68,68,.55)'}
     ]},
     options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'top',labels:{font:{size:10}}}},scales:{x:xOpts,y:{title:{display:true,text:'残高（万円）',font:{size:9}},grid:{color:'rgba(0,0,0,.04)'}}}}});
 
@@ -1290,7 +1365,7 @@ function coachResponse(q){
   }
   if(qL.includes('老後')||qL.includes('退職')||qL.includes('年金')){
     const r65=rows.find(r=>r.ua===65),r85=rows.find(r=>r.ua===85);
-    return `老後の見通し：\n• 定年退職: ${p.RET}年（本人${p.RET-p.uBY}歳）\n• 退職金: ${w(p.sev)}万円\n• 年金（夫婦合計）: 月約${mw(p.pen/12)}万円\n\n資産推移：\n• 退職時（65歳）: ${r65?fmt(w(r65.totalAsset))+'万円':'−'}\n• 85歳時点: ${r85?fmt(w(r85.totalAsset))+'万円':'−'}\n• 資産寿命: ${typeof m.assetLife==='number'?m.assetLife+'歳まで':m.assetLife}\n\n公務員メリット：共済年金（現在は厚生年金統合）で民間より年金額が多い傾向です。ねんきん定期便で実際の見込み額を確認しましょう。`;
+    return `老後の見通し：\n• 定年退職: ${p.RET}年（本人${p.RET-p.uBY}歳）\n• 退職金: ${w(p.sev)}万円\n• 年金 本人: 約${w(p.uPenAmt)}万円/年（${p.uPenStart}歳〜）\n• 年金 妻: 約${w(p.wPenAmt)}万円/年（${p.wPenStart}歳〜）\n• 現金が尽きた後は投資資産を自動取り崩しで生活費に充当\n\n資産推移：\n• 退職時（65歳）: ${r65?fmt(w(r65.totalAsset))+'万円':'−'}\n• 85歳時点: ${r85?fmt(w(r85.totalAsset))+'万円':'−'}\n• 資産寿命: ${typeof m.assetLife==='number'?m.assetLife+'歳まで':m.assetLife}\n\n公務員メリット：共済年金（現在は厚生年金統合）で民間より年金額が多い傾向です。ねんきん定期便で実際の見込み額を確認しましょう。`;
   }
   if(qL.includes('今すぐ')||qL.includes('優先')||qL.includes('やるべき')){
     if(!props.length) return '現在の計画は良好です！引き続きシミュレーションを更新し続けましょう。';
@@ -1344,7 +1419,7 @@ function renderCustomEventsList(){
 // EXPORT
 // ══════════════════════════════════════════════════════
 function buildLifeArr(rows){return[['西暦','本人','妻','長女','次子','ライフイベント'],...rows.map(r=>{const evs=lifeEventsOf(r.yr,r.ua,r.c1a,r.c2a,currentP);return[r.yr,r.ua+'歳',r.wa+'歳',stageLabel(r.c1a),r.c2a>=0?stageLabel(r.c2a):'−',evs.map(([,t])=>t).join(' ／ ')];})];}
-function buildCFArr(rows){return[['西暦','本人','収入合計','変動費','固定費','住居費','保育費','教育費','その他','支出合計','年収支','現金残','投資残','総資産'],...rows.map(r=>[r.yr,r.ua,w(r.totalInc),w(r.varExp),w(r.fixExp),w(r.housing),w(r.childcare),w(r.edu),w(r.otherExp),w(r.totalExp),w(r.balance),w(r.cash),w(r.invest),w(r.totalAsset)])];}
+function buildCFArr(rows){return[['西暦','本人','収入合計','うち年金','変動費','固定費','住居費','保育費','教育費','その他','支出合計','年収支','積立投資','投資取崩','現金残','投資残','総資産'],...rows.map(r=>[r.yr,r.ua,w(r.totalInc),w(r.pen),w(r.varExp),w(r.fixExp),w(r.housing),w(r.childcare),w(r.edu),w(r.otherExp),w(r.totalExp),w(r.balance),w(r.contribution||0),w(r.withdrawal||0),w(r.cash),w(r.invest),w(r.totalAsset)])];}
 
 function exportExcel(){
   if(!state.sim){alert('先に再計算してください');return;}
@@ -1371,7 +1446,7 @@ function importJSON(input){
     try{
       const data=JSON.parse(e.target.result);
       if(data.state){state={...DEF_STATE,...data.state,gamification:{...DEF_STATE.gamification,...(data.state.gamification||{})}};}
-      saveState();renderCustomEventsList();renderScenarioList();renderGoals();updateXPDisplay();alert('データを読み込みました');
+      saveState();restoreInputs();renderCustomEventsList();renderScenarioList();renderGoals();updateXPDisplay();live();runAndRefresh(true);alert('データを読み込みました');
     }catch(ex){alert('読み込みに失敗しました');}
     input.value='';
   };
@@ -1421,21 +1496,18 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape') document.querySelec
 // ══════════════════════════════════════════════════════
 document.addEventListener('DOMContentLoaded',()=>{
   loadState();
+  restoreInputs();
   document.getElementById('f_year').value=new Date().getFullYear();
+  // 入力変更で自動保存＋自動再計算
+  ['input','change'].forEach(evt=>{
+    document.getElementById('page-sim').addEventListener(evt,e=>{
+      if(!e.target.matches('input,select')||e.target.type==='file') return;
+      saveInputs();autoRun();
+    });
+  });
   updateXPDisplay();renderCustomEventsList();renderGoals();live();
-  if(state.sim){
-    currentP=state.sim.p;
-    drawSimResults(state.sim.rows,state.sim.p,state.sim.metrics);
-    refreshDashboard();
-  }else{
-    currentP=getP();
-    const _rows=calculate(currentP);
-    const _metrics=getMetrics(_rows,currentP);
-    state.sim={rows:_rows,p:currentP,metrics:_metrics};
-    saveState();
-    drawSimResults(_rows,currentP,_metrics);
-    refreshDashboard();
-  }
+  // 復元した入力値で常に再計算（古い保存結果との不整合を防ぐ）
+  runAndRefresh(true);
   const hash=window.location.hash.replace('#/','');
   const valid=['dashboard','goals','sim','coach','settings'];
   if(valid.includes(hash)) nav(hash);
