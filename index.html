@@ -532,7 +532,7 @@ tbody tr.ret td{background:#f0fdf4}
         <button class="btn-o" onclick="exportCSV()">📥 CSV</button>
         <button class="btn-o" onclick="exportJSON()">📤 データ保存</button>
         <label class="btn-o" style="cursor:pointer">📁 データ読込<input type="file" accept=".json" style="display:none" onchange="importJSON(this)"></label>
-        <label class="btn-o" style="cursor:pointer" title="マネーフォワードMEの入出金明細CSVから生活費を自動入力">🔗 MF CSV取り込み<input type="file" accept=".csv" style="display:none" onchange="importMFCSV(this)"></label>
+        <label class="btn-o" style="cursor:pointer" title="マネーフォワードMEの入出金明細（CSV/Excel）から生活費を自動入力">🔗 MF取り込み<input type="file" accept=".csv,.xlsx,.xls" style="display:none" onchange="importMFCSV(this)"></label>
       </div>
     </div>
 
@@ -723,7 +723,8 @@ tbody tr.ret td{background:#f0fdf4}
           <div class="g-step"><span class="g-num">3</span><div>確認画面で「現在の入力」と「CSV月平均」を見比べ、反映したい項目にチェックして反映</div></div>
           <h4>知っておくこと</h4>
           <ul>
-            <li><strong>CSVはブラウザ内だけで処理され、どこにも送信されません</strong></li>
+            <li><strong>ファイルはブラウザ内だけで処理され、どこにも送信されません</strong></li>
+            <li>CSVだけでなく<strong>Excel形式（.xlsx）もOK</strong>。Excelで開いて保存し直したファイル（拡張子が.csvでも中身がExcelのもの）も自動判別します</li>
             <li>対応付け例: 食費+日用品→「食費・日用品」、趣味・娯楽+交際費→「交際費・外食・娯楽」、住宅→「家賃」など</li>
             <li>「税・社会保障」は手取り入力のため、「特別な支出」は一時支出のため対象外です（後者はカスタムイベントで登録できます）</li>
             <li>収入は賞与が混ざるため参考表示のみ（自動入力しません）</li>
@@ -1794,12 +1795,24 @@ function importMFCSV(input){
   const reader=new FileReader();
   reader.onload=e=>{
     const buf=e.target.result;
-    // 文字コード自動判定: UTF-8で読めなければShift_JIS（MFの既定）
+    const bytes=new Uint8Array(buf);
     let text;
-    try{text=new TextDecoder('utf-8',{fatal:true}).decode(buf);}
-    catch(_){text=new TextDecoder('shift_jis').decode(buf);}
-    if(!text.includes('大項目')){
-      try{const t2=new TextDecoder('shift_jis').decode(buf);if(t2.includes('大項目')) text=t2;}catch(_){}
+    // Excel形式（拡張子が.csvでも中身がxlsx/xlsのケースがある）はSheetJSで変換
+    const isXlsx=bytes[0]===0x50&&bytes[1]===0x4B;           // 'PK' = xlsx
+    const isXls=bytes[0]===0xD0&&bytes[1]===0xCF;            // 旧xls
+    if(isXlsx||isXls){
+      if(typeof XLSX==='undefined'){alert('Excel読込ライブラリが読み込めていません。通信環境を確認して再読み込みしてください。');input.value='';return;}
+      try{
+        const wb=XLSX.read(bytes,{type:'array'});
+        text=XLSX.utils.sheet_to_csv(wb.Sheets[wb.SheetNames[0]]);
+      }catch(err){alert('Excelファイルの読み込みに失敗しました: '+err.message);input.value='';return;}
+    }else{
+      // 文字コード自動判定: UTF-8で読めなければShift_JIS（MFの既定）
+      try{text=new TextDecoder('utf-8',{fatal:true}).decode(buf);}
+      catch(_){text=new TextDecoder('shift_jis').decode(buf);}
+      if(!text.includes('大項目')){
+        try{const t2=new TextDecoder('shift_jis').decode(buf);if(t2.includes('大項目')) text=t2;}catch(_){}
+      }
     }
     const parsed=parseMFCSV(text);
     if(parsed.error){alert(parsed.error);input.value='';return;}
