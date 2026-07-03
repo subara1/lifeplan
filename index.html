@@ -11,36 +11,38 @@
 :root{
   --sidebar-w:220px;
   --nav-h:60px;
-  --blue:#3b82f6;--blue-d:#1e40af;--blue-l:#dbeafe;--blue-ll:#eff6ff;
+  /* マネーフォワード風テーマ: アクセントはオレンジ。
+     変数名は歴史的に --blue のままだが値はオレンジ系（一括テーマ切替のため） */
+  --blue:#ff7d1e;--blue-d:#e56a00;--blue-l:#ffe3cc;--blue-ll:#fff6ee;
   --green:#10b981;--green-l:#d1fae5;--green-d:#065f46;
   --red:#ef4444;--red-l:#fee2e2;
   --amber:#f59e0b;--amber-l:#fef3c7;
   --purple:#8b5cf6;--purple-l:#ede9fe;
-  --dark:#0f172a;--dark2:#1e293b;--dark3:#334155;
-  --gray-1:#f1f5f9;--gray-2:#e2e8f0;--gray-3:#cbd5e1;
-  --gray-5:#64748b;--gray-7:#374151;--text:#111827;
-  --surf:#ffffff;--bg:#f8fafc;
+  --dark:#0f172a;--dark2:#333a45;--dark3:#4b5563;
+  --gray-1:#f5f6f8;--gray-2:#e9ebee;--gray-3:#cbd2da;
+  --gray-5:#7c828d;--gray-7:#374151;--text:#333333;
+  --surf:#ffffff;--bg:#f5f6f8;--line:#e9ebee;
   --radius:12px;--radius-sm:8px;
-  --shadow:0 1px 3px rgba(0,0,0,.1),0 1px 2px rgba(0,0,0,.06);
-  --shadow-md:0 4px 12px rgba(0,0,0,.1);
+  --shadow:0 1px 2px rgba(30,40,60,.06);
+  --shadow-md:0 4px 14px rgba(30,40,60,.10);
 }
 body{font-family:'Hiragino Sans','Yu Gothic UI','Meiryo',sans-serif;background:var(--bg);color:var(--text);font-size:14px;line-height:1.55;min-height:100vh;display:flex}
 
-/* ── Sidebar ── */
-#sidebar{width:var(--sidebar-w);min-height:100vh;background:var(--dark2);position:fixed;top:0;left:0;z-index:100;display:flex;flex-direction:column}
-.sb-logo{padding:20px 18px 16px;border-bottom:1px solid var(--dark3)}
-.sb-logo h1{color:#f1f5f9;font-size:1.05rem;font-weight:800;letter-spacing:-.3px}
+/* ── Sidebar（白基調・オレンジアクセント） ── */
+#sidebar{width:var(--sidebar-w);min-height:100vh;background:#fff;border-right:1px solid var(--line);position:fixed;top:0;left:0;z-index:100;display:flex;flex-direction:column}
+.sb-logo{padding:20px 18px 16px;border-bottom:1px solid var(--line)}
+.sb-logo h1{color:var(--text);font-size:1.05rem;font-weight:800;letter-spacing:-.3px}
 .sb-logo p{color:var(--gray-5);font-size:.7rem;margin-top:2px}
 .sb-nav{padding:12px 0;flex:1}
-.sbn{display:flex;align-items:center;gap:10px;padding:10px 18px;color:#94a3b8;text-decoration:none;font-size:.85rem;font-weight:600;cursor:pointer;transition:all .15s;border-left:3px solid transparent;user-select:none}
-.sbn:hover{color:#f1f5f9;background:rgba(255,255,255,.05)}
-.sbn.active{color:#fff;background:rgba(59,130,246,.25);border-left-color:var(--blue)}
+.sbn{display:flex;align-items:center;gap:10px;padding:10px 18px;color:var(--gray-5);text-decoration:none;font-size:.85rem;font-weight:600;cursor:pointer;transition:all .15s;border-left:3px solid transparent;user-select:none}
+.sbn:hover{color:var(--text);background:var(--gray-1)}
+.sbn.active{color:var(--blue-d);background:var(--blue-ll);border-left-color:var(--blue)}
 .sbn .ico{font-size:1.1rem;width:22px;text-align:center}
-.sb-xp{padding:14px 16px;border-top:1px solid var(--dark3)}
-.xp-label{color:#94a3b8;font-size:.68rem;margin-bottom:5px}
-.xp-level{color:#f1f5f9;font-size:.82rem;font-weight:700;margin-bottom:6px}
-.xp-bar-bg{background:var(--dark3);border-radius:10px;height:6px}
-.xp-bar{background:linear-gradient(90deg,var(--blue),var(--purple));height:6px;border-radius:10px;transition:width .5s ease}
+.sb-xp{padding:14px 16px;border-top:1px solid var(--line)}
+.xp-label{color:var(--gray-5);font-size:.68rem;margin-bottom:5px}
+.xp-level{color:var(--text);font-size:.82rem;font-weight:700;margin-bottom:6px}
+.xp-bar-bg{background:var(--gray-2);border-radius:10px;height:6px}
+.xp-bar{background:linear-gradient(90deg,#ff7d1e,#ffb25e);height:6px;border-radius:10px;transition:width .5s ease}
 
 /* ── Main ── */
 #main{margin-left:var(--sidebar-w);flex:1;min-width:0;min-height:100vh}
@@ -53,8 +55,8 @@ body{font-family:'Hiragino Sans','Yu Gothic UI','Meiryo',sans-serif;background:v
   #sidebar{display:none}
   #main{margin-left:0;padding-bottom:var(--nav-h);width:100%;max-width:100%;overflow-x:hidden}
   #app{padding:16px 14px;width:100%;max-width:100%;overflow-x:hidden}
-  #bottom-nav{display:flex;position:fixed;bottom:0;left:0;right:0;height:var(--nav-h);background:var(--dark2);z-index:100;border-top:1px solid var(--dark3)}
-  .bni{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#94a3b8;font-size:.6rem;gap:2px;cursor:pointer;transition:color .15s;padding:4px;border:none;background:none;font-family:inherit}
+  #bottom-nav{display:flex;position:fixed;bottom:0;left:0;right:0;height:var(--nav-h);background:#fff;z-index:100;border-top:1px solid var(--line);box-shadow:0 -2px 8px rgba(30,40,60,.05)}
+  .bni{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--gray-5);font-size:.6rem;gap:2px;cursor:pointer;transition:color .15s;padding:4px;border:none;background:none;font-family:inherit}
   .bni .ico{font-size:1.3rem}
   .bni.active{color:var(--blue)}
   /* CF表: モバイルは主要列のみ（西暦/年齢/収入/支出/収支/積立取崩/総資産） */
@@ -63,23 +65,24 @@ body{font-family:'Hiragino Sans','Yu Gothic UI','Meiryo',sans-serif;background:v
 }
 
 /* ── Card ── */
-.card{background:var(--surf);border-radius:var(--radius);box-shadow:var(--shadow);padding:18px 20px;margin-bottom:16px;min-width:0}
+.card{background:var(--surf);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:18px 20px;margin-bottom:16px;min-width:0}
 .card-h{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
 .card-h h2{font-size:.95rem;color:var(--dark2);font-weight:700;display:flex;align-items:center;gap:6px}
 .card-h h2::before{content:'';display:inline-block;width:3px;height:16px;background:var(--blue);border-radius:2px}
 
 /* ── Metric Cards ── */
 .mc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:12px;margin-bottom:16px}
-.mc{border-radius:var(--radius);padding:16px 18px;color:#fff;position:relative;overflow:hidden}
-.mc::after{content:attr(data-ico);position:absolute;right:12px;top:10px;font-size:2rem;opacity:.25}
-.mc.blue{background:linear-gradient(135deg,#3b82f6,#1d4ed8)}
-.mc.green{background:linear-gradient(135deg,#10b981,#059669)}
-.mc.amber{background:linear-gradient(135deg,#f59e0b,#d97706)}
-.mc.purple{background:linear-gradient(135deg,#8b5cf6,#6d28d9)}
-.mc.red{background:linear-gradient(135deg,#ef4444,#dc2626)}
-.mc-l{font-size:.68rem;opacity:.85;margin-bottom:4px}
-.mc-v{font-size:1.35rem;font-weight:800;letter-spacing:-.5px}
-.mc-s{font-size:.67rem;opacity:.8;margin-top:3px}
+/* 白カード＋大きな数字（マネーフォワード風）。色クラスは数字と左ボーダーに反映 */
+.mc{border-radius:var(--radius);padding:16px 18px;background:#fff;border:1px solid var(--line);border-left:4px solid var(--gray-3);color:var(--text);position:relative;overflow:hidden;box-shadow:var(--shadow)}
+.mc::after{content:attr(data-ico);position:absolute;right:12px;top:10px;font-size:1.7rem;opacity:.18}
+.mc.blue{border-left-color:var(--blue)}   .mc.blue .mc-v{color:var(--blue-d)}
+.mc.green{border-left-color:var(--green)} .mc.green .mc-v{color:var(--green-d)}
+.mc.amber{border-left-color:var(--amber)} .mc.amber .mc-v{color:#b45309}
+.mc.purple{border-left-color:var(--purple)}.mc.purple .mc-v{color:#6d28d9}
+.mc.red{border-left-color:var(--red)}     .mc.red .mc-v{color:#b91c1c}
+.mc-l{font-size:.68rem;color:var(--gray-5);margin-bottom:4px}
+.mc-v{font-size:1.45rem;font-weight:800;letter-spacing:-.5px}
+.mc-s{font-size:.67rem;color:var(--gray-5);margin-top:3px}
 
 /* ── Proposals ── */
 .proposal{display:flex;gap:12px;padding:13px 16px;border-radius:var(--radius-sm);margin-bottom:10px;align-items:flex-start;border:1px solid transparent}
@@ -138,13 +141,28 @@ body{font-family:'Hiragino Sans','Yu Gothic UI','Meiryo',sans-serif;background:v
 .field{display:flex;flex-direction:column;gap:3px}
 .field label{font-size:.71rem;color:var(--gray-5);font-weight:700;text-transform:uppercase;letter-spacing:.3px}
 .field input,.field select{padding:7px 10px;border:1.5px solid var(--gray-2);border-radius:var(--radius-sm);font-size:.87rem;font-family:inherit;background:#fff;transition:border-color .2s;outline:none}
-.field input:focus,.field select:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(59,130,246,.1)}
+.field input:focus,.field select:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(255,125,30,.1)}
 .field .hint{font-size:.66rem;color:var(--gray-3)}
 .sl{font-size:.72rem;font-weight:800;color:var(--dark2);margin:14px 0 8px;text-transform:uppercase;letter-spacing:.5px;padding-bottom:4px;border-bottom:1.5px solid var(--blue-l)}
 
 /* ── Unit chips（円/万円の区別を明示） ── */
-.unit{display:inline-block;margin-left:5px;padding:1px 6px;border-radius:8px;font-size:.62rem;font-weight:700;background:var(--blue-l);color:var(--blue-d);text-transform:none;letter-spacing:0}
+/* 単位チップ: 円=青 / 万円=オレンジ の区別は固定色で維持（テーマ非依存） */
+.unit{display:inline-block;margin-left:5px;padding:1px 6px;border-radius:8px;font-size:.62rem;font-weight:700;background:#dbeafe;color:#1e40af;text-transform:none;letter-spacing:0}
 .unit.man{background:var(--amber-l);color:#92400e}
+
+/* ── 使い方ガイド（アコーディオン） ── */
+.guide details{background:#fff;border:1px solid var(--line);border-radius:10px;margin-bottom:10px;overflow:hidden}
+.guide summary{cursor:pointer;padding:13px 16px;font-weight:700;font-size:.9rem;list-style:none;display:flex;gap:8px;align-items:center;user-select:none}
+.guide summary::-webkit-details-marker{display:none}
+.guide summary::after{content:'＋';margin-left:auto;color:var(--gray-5);font-weight:400}
+.guide details[open] summary::after{content:'−'}
+.guide details[open] summary{border-bottom:1px solid var(--gray-1)}
+.guide .g-body{padding:4px 16px 14px;font-size:.84rem;color:var(--dark3);line-height:1.9}
+.guide .g-body h4{margin:12px 0 4px;font-size:.82rem;color:var(--text)}
+.guide .g-body ul{padding-left:1.2em;margin:4px 0}
+.guide .g-body code{background:var(--gray-1);padding:1px 5px;border-radius:4px;font-size:.78rem}
+.guide .g-step{display:flex;gap:10px;align-items:flex-start;margin:8px 0}
+.guide .g-num{flex-shrink:0;width:24px;height:24px;border-radius:50%;background:var(--blue);color:#fff;font-weight:800;font-size:.8rem;display:flex;align-items:center;justify-content:center}
 
 /* ── 支出の目安ヒント ── */
 .refhint{font-size:.66rem;color:var(--green-d);background:var(--green-l);border-radius:6px;padding:2px 7px;margin-top:2px;display:inline-block}
@@ -166,7 +184,7 @@ body{font-family:'Hiragino Sans','Yu Gothic UI','Meiryo',sans-serif;background:v
 
 /* ── Buttons ── */
 .btn{background:var(--blue);color:#fff;border:none;padding:9px 20px;border-radius:var(--radius-sm);cursor:pointer;font-size:.87rem;font-weight:700;font-family:inherit;transition:all .15s;display:inline-flex;align-items:center;gap:6px}
-.btn:hover{background:var(--blue-d);transform:translateY(-1px);box-shadow:0 4px 12px rgba(59,130,246,.3)}
+.btn:hover{background:var(--blue-d);transform:translateY(-1px);box-shadow:0 4px 12px rgba(255,125,30,.3)}
 .btn.g{background:var(--green)}.btn.g:hover{background:var(--green-d)}
 .btn.r{background:var(--red)}.btn.r:hover{background:#dc2626}
 .btn.sm{padding:6px 13px;font-size:.78rem}
@@ -178,7 +196,7 @@ body{font-family:'Hiragino Sans','Yu Gothic UI','Meiryo',sans-serif;background:v
 /* ── Tables ── */
 .tbl-wrap{overflow-x:auto;max-width:100%;-webkit-overflow-scrolling:touch}
 table{width:100%;border-collapse:collapse;font-size:.77rem}
-thead th{background:var(--dark2);color:#fff;padding:7px 6px;text-align:center;white-space:nowrap;font-weight:600}
+thead th{background:var(--gray-1);color:var(--dark3);padding:8px 6px;text-align:center;white-space:nowrap;font-weight:700;border-bottom:2px solid var(--gray-2)}
 tbody td{padding:5px 6px;text-align:right;border-bottom:1px solid var(--gray-2);white-space:nowrap}
 tbody td.c{text-align:center}tbody td.l{text-align:left}
 tbody tr:hover{background:var(--blue-ll)}
@@ -258,6 +276,7 @@ tbody tr.ret td{background:#f0fdf4}
     <div class="sbn" onclick="nav('goals')" data-page="goals"><span class="ico">🎯</span>目標管理</div>
     <div class="sbn" onclick="nav('sim')" data-page="sim"><span class="ico">💹</span>シミュレーター</div>
     <div class="sbn" onclick="nav('coach')" data-page="coach"><span class="ico">🤖</span>AIコーチ</div>
+    <div class="sbn" onclick="nav('guide')" data-page="guide"><span class="ico">📖</span>使い方</div>
     <div class="sbn" onclick="nav('settings')" data-page="settings"><span class="ico">⚙️</span>設定</div>
   </div>
   <div class="sb-xp">
@@ -311,7 +330,7 @@ tbody tr.ret td{background:#f0fdf4}
     <div class="section-title">💹 シミュレーター</div>
     <div class="card">
       <div class="card-h"><h2>⚙️ シミュレーション設定</h2></div>
-      <div class="note" style="margin-bottom:10px">⭐印の6項目（月収・ボーナス・家賃・現金・投資・積立）を入れるだけで概算できます。他の項目は平均的な初期値が入っています。入力すると自動で再計算されます。</div>
+      <div class="note" style="margin-bottom:10px">⭐印の6項目（月収・ボーナス・家賃・現金・投資・積立）を入れるだけで概算できます。他の項目は平均的な初期値が入っています。入力すると自動で再計算されます。<a onclick="nav('guide')" style="color:var(--blue-d);font-weight:700;cursor:pointer;margin-left:6px">📖 詳しい使い方 →</a></div>
       <div class="tab-nav">
         <button class="tb on" onclick="showTab('fam',this)">👨‍👩‍👧 家族</button>
         <button class="tb" onclick="showTab('inc',this)">💴 収入</button>
@@ -623,6 +642,105 @@ tbody tr.ret td{background:#f0fdf4}
     <div class="note">※ このAIコーチはシミュレーション結果をもとにしたルールベースのアドバイスです。投資には元本割れのリスクがあります。重要な判断はファイナンシャルプランナーへご相談ください。</div>
   </div>
 
+  <!-- ════ GUIDE（使い方） ════ -->
+  <div id="page-guide" class="page">
+    <div class="section-title">📖 使い方ガイド</div>
+    <div class="guide">
+
+      <details open>
+        <summary>🚀 はじめての方へ — 3ステップで結果が出ます</summary>
+        <div class="g-body">
+          <div class="g-step"><span class="g-num">1</span><div><strong>シミュレーターの⭐6項目を入力</strong><br>月収・ボーナス・家賃・現金・投資額・毎月の積立。これだけで概算できます。他の項目には平均的な初期値が入っています。</div></div>
+          <div class="g-step"><span class="g-num">2</span><div><strong>自動で再計算されるのを待つ</strong><br>入力を変えると約1秒後に自動計算されます（「▶ 再計算・更新」を押してもOK）。入力値は自動保存されるので、ブラウザを閉じても消えません。</div></div>
+          <div class="g-step"><span class="g-num">3</span><div><strong>結果の一番上のバーを見る</strong><br>「資産寿命」（何歳まで資産がもつか）が結論です。「◯歳で枯渇」と出たら、積立額や支出を調整して「90歳まで維持」を目指しましょう。</div></div>
+        </div>
+      </details>
+
+      <details>
+        <summary>🧭 各画面でできること</summary>
+        <div class="g-body">
+          <h4>🏠 ダッシュボード</h4>資産の要点・リスク判定・アクション提案をまとめて表示。まずここを見れば現状がわかります。
+          <h4>💹 シミュレーター</h4>このアプリの中心。家族・収入・支出・教育・イベント・将来（資産/年金）をタブで入力し、90歳までの資産推移を計算します。
+          <h4>🎯 目標管理</h4>「2030年までに1,000万円」のような目標を登録すると、進捗と必要積立額を表示します。
+          <h4>🤖 AIコーチ</h4>計算結果をもとに質問に答えます（例:「老後の見通しは？」）。ボタンから質問できます。
+          <h4>⚙️ 設定</h4>名前の設定、実績バッジ、データの初期化。
+        </div>
+      </details>
+
+      <details>
+        <summary>✏️ 入力のコツ（単位・家族構成）</summary>
+        <div class="g-body">
+          <ul>
+            <li><strong>単位チップの色</strong>: 青=「円」（例: 月収320,000）、オレンジ=「万円」（例: 住宅価格5000）。入力欄の右のチップで確認できます。</li>
+            <li><strong>家族構成</strong>: 生年を <code>0</code>（または空欄）にすると「いない」扱いになり、収入・年金・教育費から自動で除外されます。</li>
+            <li><strong>呼び方の変更</strong>: 家族タブで「妻→夫」「長女→長男」など自由に変更でき、表やグラフ全体に反映されます。</li>
+            <li><strong>費用の目安</strong>: 各費用欄の下の緑バッジ「👥 目安」は、あなたの家族構成での一般的な支出額です。迷ったらこの近辺から始めましょう。</li>
+            <li><strong>理想バランス</strong>: 生活費タブ上部の表で、理想の家計配分と現在の入力を比較できます（🔴が出た項目は見直し候補）。</li>
+          </ul>
+        </div>
+      </details>
+
+      <details>
+        <summary>💰 年金・資産の設定の考え方</summary>
+        <div class="g-body">
+          <h4>年金</h4>
+          <ul>
+            <li>最も正確なのは<strong>「ねんきん定期便」の見込額を直接入力</strong>すること（0のままなら平均年収と加入年数から自動推計）。</li>
+            <li>受給開始年齢は60〜75歳で変更可能。繰上げは減額（−0.4%/月）、繰下げは増額（+0.7%/月）が自動反映されます。</li>
+            <li>年金スライド率は「物価上昇にどれだけ追随するか」の想定。初期値1.5%/年のままで概ねOKです。</li>
+          </ul>
+          <h4>資産の動き（自動運用ルール）</h4>
+          <ul>
+            <li>現役中は「毎月の積立投資」が現金から投資へ自動で移ります。</li>
+            <li><strong>現金が足りない年は、投資資産を自動で取り崩して補填</strong>します（残りは運用継続）。CF表の「積立/取崩」列で確認できます。</li>
+            <li>両方尽きると総資産がマイナス＝「資産寿命」です。</li>
+          </ul>
+        </div>
+      </details>
+
+      <details>
+        <summary>📊 結果の読み方（表とグラフ）</summary>
+        <div class="g-body">
+          <ul>
+            <li><strong>上部の固定バー</strong>: 資産寿命／90歳・65歳時点の総資産／リスク判定（🟢🟡🔴）。ここが結論です。</li>
+            <li><strong>グラフ</strong>: 「総資産」で全体の山と谷を、「資産内訳」で現金・投資・取り崩しの動きを確認。</li>
+            <li><strong>キャッシュフロー表</strong>: 1行=1年。「年収支」が赤い年は支出超過。「積立/取崩」で投資との出入り。収入欄にカーソルを乗せると内訳（給与/年金/退職金）が見えます。スマホでは主要列のみ表示されます。</li>
+            <li><strong>シナリオ比較</strong>: 現在の設定を「💾 シナリオ保存」してから条件を変えると、保存時点と比較できます（例:「私立進学プラン」vs「公立プラン」）。</li>
+            <li><strong>退職時期シミュレーション</strong>: 60/62/65/67歳で退職した場合の資産を並べて比較できます。</li>
+          </ul>
+        </div>
+      </details>
+
+      <details>
+        <summary>💾 データの保存と引き継ぎ</summary>
+        <div class="g-body">
+          <ul>
+            <li>入力値は<strong>このブラウザに自動保存</strong>されます（サーバーには送信されません）。</li>
+            <li>別のPC・スマホに引き継ぐには「📤 データ保存」でJSONファイルを保存し、移行先で「📁 データ読込」。</li>
+            <li>「📥 Excel / CSV」でキャッシュフロー表をダウンロードできます。</li>
+            <li>ブラウザの履歴削除（サイトデータ含む）をすると入力が消えるので、大事な設定はJSON保存を。</li>
+          </ul>
+        </div>
+      </details>
+
+      <details>
+        <summary>❓ よくある質問</summary>
+        <div class="g-body">
+          <h4>Q. 数字はどこまで正確？</h4>
+          簡易モデルによる概算です。税・社会保険料は「手取り」入力で吸収し、年金は簡易推計です。傾向をつかむ道具として使い、重要な判断はファイナンシャルプランナー等にご相談ください。
+          <h4>Q. 「◯歳で枯渇」と出て不安…</h4>
+          まず①毎月の積立投資を増やす ②理想バランスで🔴の支出を見直す ③退職時期や年金の受給開始を変えてみる、の順で調整してみてください。数字が変わるのをリアルタイムで確認できます。
+          <h4>Q. 投資利回り5%は妥当？</h4>
+          全世界株式インデックスの長期期待値としてよく使われる水準です。堅実に見たいなら3%に下げて試してみましょう。
+          <h4>Q. 入力を最初からやり直したい</h4>
+          設定ページの「データ管理」から初期化できます（元に戻せないのでJSON保存を先に）。
+        </div>
+      </details>
+
+    </div>
+    <div class="note">※ 本アプリの計算は概算です。制度・税制は変わるため、実際の判断は最新情報と専門家の助言をご確認ください。</div>
+  </div>
+
   <!-- ════ SETTINGS ════ -->
   <div id="page-settings" class="page">
     <div class="section-title">⚙️ 設定</div>
@@ -654,6 +772,7 @@ tbody tr.ret td{background:#f0fdf4}
   <button class="bni" onclick="nav('goals')" data-page="goals"><span class="ico">🎯</span>目標</button>
   <button class="bni" onclick="nav('sim')" data-page="sim"><span class="ico">💹</span>シミュ</button>
   <button class="bni" onclick="nav('coach')" data-page="coach"><span class="ico">🤖</span>コーチ</button>
+  <button class="bni" onclick="nav('guide')" data-page="guide"><span class="ico">📖</span>使い方</button>
   <button class="bni" onclick="nav('settings')" data-page="settings"><span class="ico">⚙️</span>設定</button>
 </nav>
 
@@ -1150,7 +1269,7 @@ function refreshDashboard(){
   const ctx=document.getElementById('db-chart').getContext('2d');
   chartObjs.db=new Chart(ctx,{
     data:{labels:rows.map(r=>r.yr),datasets:[
-      {type:'line',label:'総資産（万円）',data:rows.map(r=>w(r.totalAsset)),borderColor:'#3b82f6',backgroundColor:'rgba(59,130,246,.08)',fill:true,tension:.35,pointRadius:0,yAxisID:'y'},
+      {type:'line',label:'総資産（万円）',data:rows.map(r=>w(r.totalAsset)),borderColor:'#ff7d1e',backgroundColor:'rgba(255,125,30,.08)',fill:true,tension:.35,pointRadius:0,yAxisID:'y'},
       {type:'line',label:'投資（万円）',data:rows.map(r=>w(r.invest)),borderColor:'#8b5cf6',tension:.35,pointRadius:0,borderDash:[4,3],yAxisID:'y'},
       {type:'bar',label:'年収支（万円）',data:rows.map(r=>w(r.balance)),backgroundColor:rows.map(r=>r.balance>=0?'rgba(16,185,129,.4)':'rgba(239,68,68,.4)'),yAxisID:'y2'},
     ]},
@@ -1164,7 +1283,7 @@ function refreshDashboard(){
   const curAmt=w(p.cashAmt+p.investAmt);
   const goalsHtml=state.goals.length?state.goals.slice(0,3).map(gl=>{
     const pct=gl.amount>0?Math.min(100,Math.round(curAmt/gl.amount*100)):0;
-    const col=pct>=100?'#10b981':pct>=50?'#3b82f6':'#f59e0b';
+    const col=pct>=100?'#10b981':pct>=50?'#ff7d1e':'#f59e0b';
     return`<div style="margin-bottom:10px">
       <div style="display:flex;justify-content:space-between;font-size:.82rem;margin-bottom:4px"><strong>${gl.name}</strong><span style="color:var(--gray-5)">${pct}%</span></div>
       <div class="goal-prog-bar"><div class="goal-prog-fill" style="width:${pct}%;background:${col}"></div></div>
@@ -1292,7 +1411,7 @@ function drawCharts(rows,p){
 
   chartObjs.asset=new Chart(document.getElementById('ch-asset').getContext('2d'),{
     data:{labels,datasets:[
-      {type:'line',label:'総資産（万円）',data:rows.map(r=>w(r.totalAsset)),borderColor:'#3b82f6',backgroundColor:'rgba(59,130,246,.07)',fill:true,tension:.35,pointRadius:0,yAxisID:'yL'},
+      {type:'line',label:'総資産（万円）',data:rows.map(r=>w(r.totalAsset)),borderColor:'#ff7d1e',backgroundColor:'rgba(255,125,30,.07)',fill:true,tension:.35,pointRadius:0,yAxisID:'yL'},
       {type:'line',label:'投資（万円）',data:rows.map(r=>w(r.invest)),borderColor:'#8b5cf6',tension:.35,pointRadius:0,borderDash:[4,3],yAxisID:'yL'},
       {type:'bar',label:'年収入（万円）',data:rows.map(r=>w(r.totalInc)),backgroundColor:'rgba(16,185,129,.4)',yAxisID:'yR'},
       {type:'bar',label:'年支出（万円）',data:rows.map(r=>w(r.totalExp)),backgroundColor:'rgba(239,68,68,.35)',yAxisID:'yR'}
@@ -1306,7 +1425,7 @@ function drawCharts(rows,p){
 
   chartObjs.breakdown=new Chart(document.getElementById('ch-breakdown').getContext('2d'),{
     data:{labels,datasets:[
-      {type:'line',label:'現金（万円）',data:rows.map(r=>w(r.cash)),borderColor:'#3b82f6',backgroundColor:'rgba(59,130,246,.12)',fill:true,tension:.35,pointRadius:0},
+      {type:'line',label:'現金（万円）',data:rows.map(r=>w(r.cash)),borderColor:'#ff7d1e',backgroundColor:'rgba(255,125,30,.12)',fill:true,tension:.35,pointRadius:0},
       {type:'line',label:'投資（万円）',data:rows.map(r=>w(r.invest)),borderColor:'#8b5cf6',backgroundColor:'rgba(139,92,246,.1)',fill:true,tension:.35,pointRadius:0},
       {type:'line',label:'住宅（取得額）',data:rows.map(r=>r.yr>=p.hyr?w(p.hprc*10000):0),borderColor:'#f59e0b',tension:.35,pointRadius:0,borderDash:[5,4]},
       {type:'bar',label:'投資取り崩し（万円）',data:rows.map(r=>w(r.withdrawal||0)),backgroundColor:'rgba(239,68,68,.55)'}
@@ -1316,7 +1435,7 @@ function drawCharts(rows,p){
   const mid=rows[Math.floor(rows.length/2)]||rows[0];
   if(mid) chartObjs.expense=new Chart(document.getElementById('ch-expense').getContext('2d'),{
     type:'doughnut',
-    data:{labels:['生活費(変動)','生活費(固定)','住居費','保育費','教育費','旅行・特別費'],datasets:[{data:[w(mid.varExp),w(mid.fixExp),w(mid.housing),w(mid.childcare),w(mid.edu),w(mid.otherExp)],backgroundColor:['#3b82f6','#8b5cf6','#f59e0b','#10b981','#ef4444','#6b7280']}]},
+    data:{labels:['生活費(変動)','生活費(固定)','住居費','保育費','教育費','旅行・特別費'],datasets:[{data:[w(mid.varExp),w(mid.fixExp),w(mid.housing),w(mid.childcare),w(mid.edu),w(mid.otherExp)],backgroundColor:['#ff7d1e','#8b5cf6','#f59e0b','#10b981','#ef4444','#6b7280']}]},
     options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'right',labels:{font:{size:10}}},title:{display:true,text:`${mid.yr}年（本人${mid.ua}歳）の支出割合`}}}});
 }
 
@@ -1374,7 +1493,7 @@ function renderGoals(){
   const priL={high:'🔴 高',medium:'🟡 中',low:'🟢 低'};
   list.innerHTML=state.goals.map(gl=>{
     const pct=gl.amount>0?Math.min(100,Math.round(curAmt/gl.amount*100)):0;
-    const col=pct>=100?'#10b981':pct>=50?'#3b82f6':'#f59e0b';
+    const col=pct>=100?'#10b981':pct>=50?'#ff7d1e':'#f59e0b';
     const yr=new Date().getFullYear();
     const yLeft=gl.deadline?gl.deadline-yr:null;
     const needM=yLeft&&yLeft>0&&gl.amount>curAmt?Math.ceil((gl.amount-curAmt)/yLeft/12):0;
@@ -1739,7 +1858,7 @@ document.addEventListener('DOMContentLoaded',()=>{
   // 復元した入力値で常に再計算（古い保存結果との不整合を防ぐ）
   runAndRefresh(true);
   const hash=window.location.hash.replace('#/','');
-  const valid=['dashboard','goals','sim','coach','settings'];
+  const valid=['dashboard','goals','sim','coach','guide','settings'];
   if(valid.includes(hash)) nav(hash);
   window.addEventListener('hashchange',()=>{const h=window.location.hash.replace('#/','');if(valid.includes(h)) nav(h);});
   const today=new Date().toDateString();
