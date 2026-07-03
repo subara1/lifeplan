@@ -18,10 +18,17 @@ const grab = (name) => {
 };
 
 const w = v => Math.round(v / 10000); // lifeEventsOf が参照するグローバル
+const grabConst = (name) => {
+  const m = script.match(new RegExp(`const ${name}=\\{[\\s\\S]*?\\n\\};`));
+  if (!m) throw new Error(`定数が見つかりません: ${name}`);
+  return m[0];
+};
 eval(['const LIFE_END_AGE=90;',
   grab('penAdjust'), grab('pensionAnnual'), grab('annualMortgage'),
   grab('eduChild'), grab('calculate'), grab('getMetrics'),
   grab('lifeEventsOf'), grab('stageLabel'), grab('riskLevel'),
+  grabConst('MF_CAT_MAP'), grabConst('MF_SKIP_REASON'),
+  grab('parseCSVLine'), grab('parseMFCSV'), grab('mfAggregateToFields'),
 ].join('\n'));
 
 // ── テストヘルパー ──
@@ -173,6 +180,33 @@ try {
 } catch (e) { evErr = e.message; }
 check('全行でエラーなし', evErr === null, evErr);
 check('年金開始イベントが本人+妻で2回', penEvts === 2);
+
+section('マネーフォワードCSV取り込み');
+check('CSV行パース: 引用符内カンマ', JSON.stringify(parseCSVLine('a,"1,234",b')) === '["a","1,234","b"]');
+check('CSV行パース: エスケープされた引用符', parseCSVLine('"say ""hi""",x')[0] === 'say "hi"');
+const MF_SAMPLE = [
+  '計算対象,日付,内容,金額（円）,保有金融機関,大項目,中項目,メモ,振替,ID',
+  '1,2026/05/01,スーパー,-30000,カード,食費,食料品,,0,a1',
+  '1,2026/05/10,ドラッグストア,"-10,000",カード,日用品,消耗品,,0,a2',
+  '1,2026/05/15,電気代,-8000,口座,水道・光熱費,電気,,0,a3',
+  '1,2026/05/20,家賃,-84000,口座,住宅,家賃,,0,a4',
+  '1,2026/05/25,給与,300000,口座,収入,給与,,0,a5',
+  '0,2026/05/26,対象外の買い物,-99999,カード,食費,食料品,,0,a6',
+  '1,2026/05/27,口座振替,-50000,口座,現金・カード,,,1,a7',
+  '1,2026/06/01,スーパー,-34000,カード,食費,食料品,,0,b1',
+  '1,2026/06/15,住民税,-20000,口座,税・社会保障,住民税,,0,b2',
+].join('\n');
+const mfP = parseMFCSV(MF_SAMPLE);
+check('月数を正しく検出（2ヶ月）', mfP.months === 2);
+check('計算対象=0 の行を除外', mfP.sums['食費'] === 64000);
+check('振替=1 の行を除外', !('現金・カード' in mfP.sums));
+check('引用符付き金額を読める', mfP.sums['日用品'] === 10000);
+check('収入は月平均で参考値化', mfP.incomeAvg === 150000);
+const mfF = mfAggregateToFields(mfP);
+check('食費+日用品→e_food 月平均（100円丸め）', mfF.fields.e_food === 37000);
+check('住宅→h_rent 月平均', mfF.fields.h_rent === 42000);
+check('税・社会保障はスキップされ理由つき', mfF.skipped.some(([c]) => c === '税・社会保障'));
+check('ヘッダーなしCSVはエラーを返す', !!parseMFCSV('a,b,c\n1,2,3').error);
 
 section('メトリクス');
 const m = getMetrics(rows, p);

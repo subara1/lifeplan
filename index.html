@@ -532,6 +532,7 @@ tbody tr.ret td{background:#f0fdf4}
         <button class="btn-o" onclick="exportCSV()">📥 CSV</button>
         <button class="btn-o" onclick="exportJSON()">📤 データ保存</button>
         <label class="btn-o" style="cursor:pointer">📁 データ読込<input type="file" accept=".json" style="display:none" onchange="importJSON(this)"></label>
+        <label class="btn-o" style="cursor:pointer" title="マネーフォワードMEの入出金明細CSVから生活費を自動入力">🔗 MF CSV取り込み<input type="file" accept=".csv" style="display:none" onchange="importMFCSV(this)"></label>
       </div>
     </div>
 
@@ -712,6 +713,26 @@ tbody tr.ret td{background:#f0fdf4}
       </details>
 
       <details>
+        <summary>🔗 マネーフォワードとの連携（CSV取り込み）</summary>
+        <div class="g-body">
+          <h4>できること</h4>
+          マネーフォワードMEの<strong>入出金明細CSV</strong>を読み込むと、カテゴリ別の月平均を計算して生活費・固定費の入力欄に自動反映できます（確認画面でチェックした項目のみ）。手入力より実態に近い数字でシミュレーションできます。
+          <h4>手順</h4>
+          <div class="g-step"><span class="g-num">1</span><div>マネーフォワードME（Web版・プレミアム）にログイン →「家計簿」→ 対象月の<strong>CSVダウンロード</strong>。複数月分あると平均が安定します（3ヶ月分推奨）</div></div>
+          <div class="g-step"><span class="g-num">2</span><div>このアプリのシミュレーター下部「🔗 MF CSV取り込み」からファイルを選択</div></div>
+          <div class="g-step"><span class="g-num">3</span><div>確認画面で「現在の入力」と「CSV月平均」を見比べ、反映したい項目にチェックして反映</div></div>
+          <h4>知っておくこと</h4>
+          <ul>
+            <li><strong>CSVはブラウザ内だけで処理され、どこにも送信されません</strong></li>
+            <li>対応付け例: 食費+日用品→「食費・日用品」、趣味・娯楽+交際費→「交際費・外食・娯楽」、住宅→「家賃」など</li>
+            <li>「税・社会保障」は手取り入力のため、「特別な支出」は一時支出のため対象外です（後者はカスタムイベントで登録できます）</li>
+            <li>収入は賞与が混ざるため参考表示のみ（自動入力しません）</li>
+            <li>API連携（自動同期）はマネーフォワード側が個人向けAPIを提供していないため、現状はCSV経由のみです</li>
+          </ul>
+        </div>
+      </details>
+
+      <details>
         <summary>💾 データの保存と引き継ぎ</summary>
         <div class="g-body">
           <ul>
@@ -804,6 +825,17 @@ tbody tr.ret td{background:#f0fdf4}
     <div class="btn-row">
       <button class="btn" onclick="saveScenario()">保存</button>
       <button class="btn-o r" onclick="closeModal('modal-scenario')">キャンセル</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-bg" id="modal-mf">
+  <div class="modal" style="max-width:560px">
+    <h3>📥 マネーフォワードCSV取り込み</h3>
+    <div id="mf-preview" style="max-height:60vh;overflow-y:auto"></div>
+    <div class="btn-row">
+      <button class="btn" onclick="applyMFImport()">チェックした項目を反映</button>
+      <button class="btn-o r" onclick="closeModal('modal-mf')">キャンセル</button>
     </div>
   </div>
 </div>
@@ -1672,6 +1704,151 @@ function importJSON(input){
     input.value='';
   };
   reader.readAsText(file);
+}
+
+// ══════════════════════════════════════════════════════
+// マネーフォワードCSV取り込み
+// MF MEの入出金明細CSV（プレミアムでDL可）を読み、カテゴリ別の月平均を
+// 生活費・固定費の入力欄に反映する。処理はすべてブラウザ内（送信なし）。
+// ══════════════════════════════════════════════════════
+// MFの大項目 → このアプリの入力欄
+const MF_CAT_MAP={
+  '食費':'e_food','日用品':'e_food',
+  '水道・光熱費':'e_util',
+  '趣味・娯楽':'e_ent','交際費':'e_ent',
+  '衣服・美容':'e_cloth',
+  '健康・医療':'e_misc','交通費':'e_misc','その他':'e_misc',
+  '通信費':'f_tel','保険':'f_ins','自動車':'f_car',
+  '教養・教育':'f_sub',
+  '住宅':'h_rent',
+};
+// 対応付けしない大項目（理由つきで表示）
+const MF_SKIP_REASON={
+  '税・社会保障':'手取り入力のため対象外',
+  '特別な支出':'一時的な支出のため対象外（カスタムイベントで登録可）',
+  '現金・カード':'口座間の移動のため対象外',
+  '未分類':'分類できないため対象外',
+};
+
+function parseCSVLine(line){
+  const out=[];let cur='',q=false;
+  for(let i=0;i<line.length;i++){
+    const ch=line[i];
+    if(q){if(ch==='"'){if(line[i+1]==='"'){cur+='"';i++;}else q=false;}else cur+=ch;}
+    else if(ch==='"') q=true;
+    else if(ch===','){out.push(cur);cur='';}
+    else cur+=ch;
+  }
+  out.push(cur);
+  return out.map(s=>s.trim());
+}
+
+// CSVテキスト → {months, sums(大項目別支出合計), incomeAvg} を返す純関数
+function parseMFCSV(text){
+  const lines=text.split(/\r?\n/).filter(l=>l.trim());
+  let hi=-1,cols=null;
+  for(let i=0;i<Math.min(lines.length,5);i++){
+    const c=parseCSVLine(lines[i]);
+    if(c.some(x=>x.includes('大項目'))&&c.some(x=>x.includes('金額'))){hi=i;cols=c;break;}
+  }
+  if(hi<0) return {error:'ヘッダー行が見つかりません。「大項目」「金額」列を含むマネーフォワードの入出金明細CSVを選んでください。'};
+  const idx=n=>cols.findIndex(c=>c.includes(n));
+  const iDate=idx('日付'),iAmt=idx('金額'),iCat=idx('大項目'),iCalc=idx('計算対象'),iTrans=idx('振替');
+  const monthSet=new Set(),sums={};let incomeSum=0,rows=0;
+  for(let i=hi+1;i<lines.length;i++){
+    const c=parseCSVLine(lines[i]);
+    if(c.length<3) continue;
+    if(iCalc>=0&&c[iCalc]==='0') continue;      // 計算対象外
+    if(iTrans>=0&&c[iTrans]==='1') continue;    // 振替（口座間移動）
+    const amt=parseFloat((c[iAmt]||'').replace(/[",円\s]/g,''));
+    if(isNaN(amt)) continue;
+    rows++;
+    const d=(c[iDate]||'').match(/(\d{4})[\/\-年](\d{1,2})/);
+    if(d) monthSet.add(d[1]+'-'+d[2]);
+    if(amt>0){incomeSum+=amt;continue;}         // 収入は参考表示のみ
+    const cat=(iCat>=0&&c[iCat])?c[iCat]:'その他';
+    sums[cat]=(sums[cat]||0)+(-amt);
+  }
+  if(!rows) return {error:'読み取れる明細行がありませんでした。'};
+  const months=Math.max(1,monthSet.size);
+  return {months,sums,incomeAvg:Math.round(incomeSum/months)};
+}
+
+// 大項目別合計 → 入力欄別の月平均（100円単位に丸め）
+function mfAggregateToFields(parsed){
+  const n=parsed.months,fields={},skipped=[];
+  for(const [cat,total] of Object.entries(parsed.sums)){
+    const f=MF_CAT_MAP[cat];
+    if(!f){skipped.push([cat,Math.round(total/n),MF_SKIP_REASON[cat]||'対応する欄がないため対象外']);continue;}
+    fields[f]=(fields[f]||0)+total/n;
+  }
+  for(const k in fields) fields[k]=Math.round(fields[k]/100)*100;
+  return {fields,skipped};
+}
+
+let _mfPending=null;
+const MF_FIELD_LABEL={e_food:'食費・日用品',e_util:'光熱費',e_ent:'交際費・外食・娯楽',e_cloth:'衣服・美容',e_misc:'雑費・その他',f_tel:'通信費',f_ins:'保険料',f_car:'車維持費',f_sub:'習い事・サブスク',h_rent:'家賃'};
+
+function importMFCSV(input){
+  const file=input.files[0];if(!file) return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    const buf=e.target.result;
+    // 文字コード自動判定: UTF-8で読めなければShift_JIS（MFの既定）
+    let text;
+    try{text=new TextDecoder('utf-8',{fatal:true}).decode(buf);}
+    catch(_){text=new TextDecoder('shift_jis').decode(buf);}
+    if(!text.includes('大項目')){
+      try{const t2=new TextDecoder('shift_jis').decode(buf);if(t2.includes('大項目')) text=t2;}catch(_){}
+    }
+    const parsed=parseMFCSV(text);
+    if(parsed.error){alert(parsed.error);input.value='';return;}
+    _mfPending=mfAggregateToFields(parsed);
+    _mfPending.months=parsed.months;_mfPending.incomeAvg=parsed.incomeAvg;
+    showMFPreview();
+    input.value='';
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function showMFPreview(){
+  const p=_mfPending;if(!p) return;
+  const rows=Object.entries(p.fields).map(([k,v])=>{
+    const cur=g(k);
+    const diff=cur>0?Math.round((v-cur)/cur*100):null;
+    return `<tr>
+      <td class="c"><input type="checkbox" id="mfck_${k}" checked></td>
+      <td class="l">${MF_FIELD_LABEL[k]||k}</td>
+      <td>${fmtNum(cur)}円</td>
+      <td><strong>${fmtNum(v)}円</strong></td>
+      <td class="c" style="font-size:.72rem;color:var(--gray-5)">${diff===null?'−':(diff>0?'+':'')+diff+'%'}</td>
+    </tr>`;
+  }).join('');
+  const skipped=p.skipped.length?`<div class="note" style="margin-top:8px">対象外: ${p.skipped.map(([c,v,r])=>`${c}（月${fmtNum(v)}円・${r}）`).join(' ／ ')}</div>`:'';
+  document.getElementById('mf-preview').innerHTML=`
+    <div class="note">${p.months}ヶ月分の明細から月平均を計算しました。反映したい項目にチェックして「反映」を押してください。<strong>CSVは外部に送信されません。</strong></div>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>反映</th><th style="text-align:left">入力欄</th><th>現在</th><th>CSV月平均</th><th>差</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table></div>
+    ${p.incomeAvg?`<div class="note" style="margin-top:8px">参考: 月平均収入 ${fmtNum(p.incomeAvg)}円（賞与・臨時収入込みのため自動入力はしません。収入タブで確認を）</div>`:''}
+    ${skipped}`;
+  document.getElementById('modal-mf').classList.add('open');
+}
+
+function applyMFImport(){
+  const p=_mfPending;if(!p) return;
+  let applied=0;
+  for(const [k,v] of Object.entries(p.fields)){
+    const ck=document.getElementById('mfck_'+k);
+    if(!ck||!ck.checked) continue;
+    const el=document.getElementById(k);
+    if(!el) continue;
+    el.value=el.inputMode==='numeric'?fmtNum(v):v;
+    applied++;
+  }
+  closeModal('modal-mf');_mfPending=null;
+  if(applied){saveInputs();live();runAndRefresh(true);grantXP(15);}
 }
 
 // ══════════════════════════════════════════════════════
