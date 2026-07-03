@@ -422,6 +422,7 @@ tbody tr.ret td{background:#f0fdf4}
           <div class="field"><label>ローン金利（%）</label><input type="number" id="h_rate" value="0.7" step="0.1"></div>
           <div class="field"><label>ローン期間（年）</label><input type="number" id="h_per" value="35"></div>
           <div class="field"><label>管理費等（円/月）</label><input type="number" id="h_mgmt" value="20000"></div>
+          <div class="field"><label>固定資産税（万円/年）</label><input type="number" id="h_tax" value="12"><div class="hint">購入後に毎年かかる税金の目安</div></div>
         </div>
       </div>
 
@@ -473,6 +474,10 @@ tbody tr.ret td{background:#f0fdf4}
         <div class="sl">退職金</div>
         <div class="fg2">
           <div class="field"><label>退職金（万円）</label><input type="number" id="r_sev" value="2000"></div>
+        </div>
+        <div class="sl">年金の共通設定</div>
+        <div class="fg2">
+          <div class="field"><label>年金スライド率（%/年）</label><input type="number" id="pn_slide" value="1.5" step="0.1"><div class="hint">物価スライド−マクロ経済スライド調整の想定。見込額が毎年この率で増額</div></div>
         </div>
         <div class="sl">年金・本人</div>
         <div class="fg2">
@@ -889,7 +894,8 @@ function getP(){
     ins:g('f_ins'),tel:g('f_tel'),carM:g('f_car'),sub:g('f_sub'),oth:g('f_oth'),
     carLoanAnn:carAnn,carLoanYears,
     rent:g('h_rent'),hyr:g('h_yr'),hprc:g('h_prc'),hdp:g('h_dp')*10000,
-    hrate:g('h_rate'),hper:g('h_per'),hmgmt:g('h_mgmt'),
+    hrate:g('h_rate'),hper:g('h_per'),hmgmt:g('h_mgmt'),hTax:g('h_tax')*10000,
+    penSlide:g('pn_slide')/100,
     c1edu:{el:g('c1_el'),mid:g('c1_mid'),hi:g('c1_hi'),uni:u1.uni,uni0:u1.uni0,dorm:g('c1_dorm'),extra:g('c1_extra')},
     c2edu:{el:g('c2_el'),mid:g('c2_mid'),hi:g('c2_hi'),uni:u2.uni,uni0:u2.uni0,dorm:g('c2_dorm'),extra:g('c2_extra')},
     cashAmt:g('a_cash')*10000,cashRate:g('a_cashrate')/100,
@@ -920,13 +926,16 @@ function calculate(p){
     const c1a=p.hasC1?yr-p.c1BY:-999,c2a=p.hasC2?yr-p.c2BY:-999;
     const dy=yr-p.Y0,inf=Math.pow(1+p.inflRate,dy);
     const depCh=(c1a>=0&&c1a<18?1:0)+(c2a>=0&&c2a<18?1:0);
-    const allowTotal=(p.hAllow+p.depAllow*depCh+p.otherAllow)*12;
+    // 住居手当は賃貸のあいだのみ（住宅購入後は支給されない）
+    const allowTotal=((yr<p.hyr?p.hAllow:0)+p.depAllow*depCh+p.otherAllow)*12;
     let uInc=0,wInc=0,pen=0,sev=0,reemploy=0,custInc=0,custExp=0;
     if(yr<p.RET) uInc=(p.uMon*12+p.uBon)*Math.pow(1+p.uGrow,dy)+allowTotal;
     if(p.reemployM>0&&yr>=p.RET&&yr<p.RET+p.reemployY) reemploy=p.reemployM*12;
     if(p.hasSp&&yr>=p.wret&&yr<p.WRET) wInc=(p.wMon*12+p.wBon)*Math.pow(1+p.uGrow*0.5,yr-p.wret);
-    if(ua>=p.uPenStart) pen+=p.uPenAmt;   // 本人の年金（受給開始年齢から）
-    if(wa>=p.wPenStart) pen+=p.wPenAmt;   // 妻の年金（受給開始年齢から）
+    // 年金は物価スライドで毎年増額（見込額は現在価値なので現在年からスライド）
+    const penInf=Math.pow(1+p.penSlide,dy);
+    if(ua>=p.uPenStart) pen+=p.uPenAmt*penInf;   // 本人の年金（受給開始年齢から）
+    if(wa>=p.wPenStart) pen+=p.wPenAmt*penInf;   // 妻の年金（受給開始年齢から）
     if(yr===p.RET) sev=p.sev;
     for(const ev of p.customEvents){
       const inR=ev.rec?(yr>=ev.year&&yr<=(ev.endYear||p.YEND)):yr===ev.year;
@@ -936,16 +945,19 @@ function calculate(p){
     const totalInc=uInc+wInc+pen+sev+reemploy+custInc;
     const varExp=(p.food+p.util+p.ent+p.cloth+p.aself+(p.hasSp?p.awife:0)+p.kids+p.misc)*12*inf;
     const fixExp=(p.ins+p.tel+p.carM+p.sub+p.oth)*12*inf;
-    const housing=yr<p.hyr?p.rent*12:(yr<p.hyr+p.hper?mgage+p.hmgmt*12:p.hmgmt*12);
+    // 購入後は固定資産税も毎年かかる
+    const housing=yr<p.hyr?p.rent*12:(yr<p.hyr+p.hper?mgage+p.hmgmt*12:p.hmgmt*12)+p.hTax;
     const dpCost=yr===p.hyr?(p.hdp+p.hprc*10000*0.03):0;
     const carLoan=yr<p.Y0+p.carLoanYears?p.carLoanAnn:0;
     let childcare=0;
     if(c1a>=0&&c1a<=2) childcare+=720000;
     if(c2a>=0&&c2a<=2) childcare+=720000;
+    childcare*=inf;  // 保育費もインフレ連動
     let edu=0;
     if(c1a>=0) edu+=eduChild(c1a,p.c1edu);
     if(c2a>=0) edu+=eduChild(c2a,p.c2edu);
-    const trv=(yr>=p.RET?p.tRetire:(c1a>=22&&(c2a<0||c2a>=22)?p.tEmpty:(c1a>=6||c2a>=6?p.tSchool:p.tBaby)))*10000;
+    edu*=inf;  // 教育費もインフレ連動
+    const trv=(yr>=p.RET?p.tRetire:(c1a>=22&&(c2a<0||c2a>=22)?p.tEmpty:(c1a>=6||c2a>=6?p.tSchool:p.tBaby)))*10000*inf;
     let medical=0;
     if(ua>=70) medical+=300000*inf;
     if(ua>=80) medical+=500000*inf;
