@@ -4,8 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>ライフプランOS</title>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js" integrity="sha384-e6nUZLBkQ86NJ6TVVKAeSaK8jWa3NhkYWZFomE39AvDbQWeie9PlQqM3pmYW5d1g" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js" integrity="sha384-vtjasyidUo0kW94K5MXDXntzOJpQgBKXmE7e2Ga4LG0skTTLeBi97eFAXsqewJjw" crossorigin="anonymous"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -932,6 +933,8 @@ function nav(page){
 const w   = v => Math.round(v/10000);
 const mw  = v => Math.round(v/1000)/10;
 const fmt = v => Number(v).toLocaleString();
+// ユーザー入力をHTMLに入れる前の無害化（XSS対策）。innerHTMLに文字列を渡す時は必ず通す
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 function g(id){const e=document.getElementById(id);return e?(e.tagName==='SELECT'?e.value:(parseFloat(String(e.value).replace(/,/g,''))||0)):0;}
 
 // 数値をカンマ区切り文字列に（円建て入力欄の表示用）
@@ -1318,7 +1321,7 @@ function refreshDashboard(){
     const pct=gl.amount>0?Math.min(100,Math.round(curAmt/gl.amount*100)):0;
     const col=pct>=100?'#10b981':pct>=50?'#ff7d1e':'#f59e0b';
     return`<div style="margin-bottom:10px">
-      <div style="display:flex;justify-content:space-between;font-size:.82rem;margin-bottom:4px"><strong>${gl.name}</strong><span style="color:var(--gray-5)">${pct}%</span></div>
+      <div style="display:flex;justify-content:space-between;font-size:.82rem;margin-bottom:4px"><strong>${esc(gl.name)}</strong><span style="color:var(--gray-5)">${pct}%</span></div>
       <div class="goal-prog-bar"><div class="goal-prog-fill" style="width:${pct}%;background:${col}"></div></div>
       <div style="font-size:.7rem;color:var(--gray-5);margin-top:2px">${gl.deadline}年目標 / ${gl.amount}万円</div>
     </div>`;
@@ -1328,8 +1331,8 @@ function refreshDashboard(){
   const actHtml=proposals.slice(0,2).map(pr=>`
     <div class="proposal p${pr.priority}">
       <div class="prop-ico">${pr.icon}</div>
-      <div class="prop-body"><div class="prop-title">${pr.title}</div><div class="prop-detail">${pr.detail}</div>
-      <ul class="prop-actions">${pr.actions.slice(0,2).map(a=>`<li>${a}</li>`).join('')}</ul></div>
+      <div class="prop-body"><div class="prop-title">${esc(pr.title)}</div><div class="prop-detail">${esc(pr.detail)}</div>
+      <ul class="prop-actions">${pr.actions.slice(0,2).map(a=>`<li>${esc(a)}</li>`).join('')}</ul></div>
     </div>`).join('')||'<div style="color:var(--gray-5);font-size:.82rem;padding:10px">現在の計画は概ね良好です！🎉</div>';
   document.getElementById('db-action-card').innerHTML=`<div class="card"><div class="card-h"><h2>💡 アクション提案</h2><a onclick="nav('coach')" style="font-size:.75rem;color:var(--blue);cursor:pointer">コーチに相談 →</a></div>${actHtml}</div>`;
 
@@ -1404,7 +1407,7 @@ function drawLifeTable(rows){
     const tr=document.createElement('tr');if(evs.length) tr.classList.add('ev');
     tr.innerHTML=`<td class="c">${r.yr}</td><td class="c">${r.ua}歳</td><td class="c">${r.wa>=0?r.wa+'歳':'−'}</td>
       <td class="c">${stageLabel(r.c1a)}</td><td class="c">${r.c2a>=0?stageLabel(r.c2a):'−'}</td>
-      <td class="l" style="padding-left:8px">${evs.length?evs.map(([c,t])=>`<span class="tag ${c}">${t}</span>`).join(''):'<span style="color:var(--gray-3)">−</span>'}</td>`;
+      <td class="l" style="padding-left:8px">${evs.length?evs.map(([c,t])=>`<span class="tag ${c}">${esc(t)}</span>`).join(''):'<span style="color:var(--gray-3)">−</span>'}</td>`;
     tbody.appendChild(tr);
   });
 }
@@ -1418,7 +1421,7 @@ function drawCFTable(rows){
     const ri=rl==='red'?'🔴':rl==='amber'?'🟡':'🟢';
     const bc=r.balance>=0?'pos':'neg';
     const sc=r.totalAsset<0?'neg':r.totalAsset<5000000?'wrn':'pos';
-    const tip=`本人:${fmt(w(r.uInc))}万${r.wInc?` ${currentP?.spLabel||'配偶者'}:${fmt(w(r.wInc))}万`:''}${r.pen?` 年金:${fmt(w(r.pen))}万`:''}${r.sev?` 退職金:${fmt(w(r.sev))}万`:''}`;
+    const tip=`本人:${fmt(w(r.uInc))}万${r.wInc?` ${esc(currentP?.spLabel||'配偶者')}:${fmt(w(r.wInc))}万`:''}${r.pen?` 年金:${fmt(w(r.pen))}万`:''}${r.sev?` 退職金:${fmt(w(r.sev))}万`:''}`;
     tr.innerHTML=`<td class="c">${ri}</td><td class="c">${r.yr}</td><td class="c">${r.ua}歳</td>
       <td title="${tip}"><strong>${fmt(w(r.totalInc))}</strong></td>
       <td>${fmt(w(r.varExp))}</td><td>${fmt(w(r.fixExp))}</td>
@@ -1492,9 +1495,9 @@ function renderScenarioList(){
   if(!area) return;
   const names=Object.keys(state.scenarios);
   if(!names.length){area.innerHTML='<p style="color:var(--gray-5);font-size:.82rem">シナリオがまだ保存されていません。</p>';if(cmp) cmp.innerHTML='';return;}
-  area.innerHTML=`<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">${names.map(n=>`<div style="background:var(--blue-l);color:var(--blue-d);padding:4px 10px;border-radius:20px;font-size:.78rem;font-weight:600;display:flex;align-items:center;gap:6px">${n}<button onclick="deleteScenario('${n}')" style="background:none;border:none;cursor:pointer;color:var(--blue-d)">✕</button></div>`).join('')}</div>`;
+  area.innerHTML=`<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">${names.map(n=>`<div style="background:var(--blue-l);color:var(--blue-d);padding:4px 10px;border-radius:20px;font-size:.78rem;font-weight:600;display:flex;align-items:center;gap:6px">${esc(n)}<button data-scn="${esc(n)}" onclick="deleteScenario(this.dataset.scn)" style="background:none;border:none;cursor:pointer;color:var(--blue-d)">✕</button></div>`).join('')}</div>`;
   const keys=[['assetLife','資産寿命'],['asset65','65歳時資産'],['asset85','85歳時資産'],['finalAsset','90歳時資産'],['totalBalance','生涯収支'],['worstBal','最大赤字額'],['worstYr','最大赤字年']];
-  if(cmp) cmp.innerHTML=`<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:.8rem"><thead><tr><th style="background:var(--gray-1);padding:7px 10px;text-align:left;font-weight:700;border-bottom:2px solid var(--gray-2)">比較項目</th>${names.map(n=>`<th style="background:var(--gray-1);padding:7px 10px;font-weight:700;border-bottom:2px solid var(--gray-2)">${n}</th>`).join('')}</tr></thead><tbody>${keys.map(([k,l])=>`<tr><td style="font-weight:600;padding:6px 10px;color:var(--gray-5);font-size:.78rem">${l}</td>${names.map(n=>{const v=state.scenarios[n].metrics[k];if(v===null||v===undefined)return'<td style="padding:6px 10px;text-align:right">−</td>';if(k==='assetLife')return`<td style="padding:6px 10px;text-align:right">${typeof v==='number'?v+'歳':v}</td>`;if(k==='worstYr')return`<td style="padding:6px 10px;text-align:right">${v}年</td>`;return`<td style="padding:6px 10px;text-align:right">${fmt(w(v))}万円</td>`;}).join('')}</tr>`).join('')}</tbody></table></div>`;
+  if(cmp) cmp.innerHTML=`<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:.8rem"><thead><tr><th style="background:var(--gray-1);padding:7px 10px;text-align:left;font-weight:700;border-bottom:2px solid var(--gray-2)">比較項目</th>${names.map(n=>`<th style="background:var(--gray-1);padding:7px 10px;font-weight:700;border-bottom:2px solid var(--gray-2)">${esc(n)}</th>`).join('')}</tr></thead><tbody>${keys.map(([k,l])=>`<tr><td style="font-weight:600;padding:6px 10px;color:var(--gray-5);font-size:.78rem">${l}</td>${names.map(n=>{const v=state.scenarios[n].metrics[k];if(v===null||v===undefined)return'<td style="padding:6px 10px;text-align:right">−</td>';if(k==='assetLife')return`<td style="padding:6px 10px;text-align:right">${typeof v==='number'?v+'歳':v}</td>`;if(k==='worstYr')return`<td style="padding:6px 10px;text-align:right">${v}年</td>`;return`<td style="padding:6px 10px;text-align:right">${fmt(w(v))}万円</td>`;}).join('')}</tr>`).join('')}</tbody></table></div>`;
 }
 
 function runRetirementCmp(){
@@ -1532,7 +1535,7 @@ function renderGoals(){
     const needM=yLeft&&yLeft>0&&gl.amount>curAmt?Math.ceil((gl.amount-curAmt)/yLeft/12):0;
     return`<div class="goal-item">
       <div class="goal-header">
-        <span class="goal-name">${gl.name}</span>
+        <span class="goal-name">${esc(gl.name)}</span>
         <span class="goal-badge ${gl.category}">${catL[gl.category]||gl.category}</span>
         <span class="goal-badge ${gl.priority}">${priL[gl.priority]||gl.priority}</span>
         <button class="btn r sm" onclick="deleteGoal(${gl.id})" style="margin-left:auto">削除</button>
@@ -1544,7 +1547,7 @@ function renderGoals(){
         ${gl.deadline?`<span>期限: <strong>${gl.deadline}年</strong>${yLeft?` (残${yLeft}年)`:''}</span>`:''}
         ${needM?`<span style="color:var(--amber)">月<strong>${needM}万円</strong>の積立が必要</span>`:''}
       </div>
-      ${gl.note?`<div style="font-size:.72rem;color:var(--gray-5);margin-top:4px">📝 ${gl.note}</div>`:''}
+      ${gl.note?`<div style="font-size:.72rem;color:var(--gray-5);margin-top:4px">📝 ${esc(gl.note)}</div>`:''}
     </div>`;}).join('');
 }
 
@@ -1583,7 +1586,7 @@ ${props.slice(0,2).map((pr,i)=>`${i+1}. ${pr.icon} ${pr.title}`).join('\n')||'�
 function addAIMsg(text){
   const area=document.getElementById('chat-area');if(!area) return;
   const div=document.createElement('div');div.className='msg ai';
-  div.innerHTML=`<div class="ai-name">🤖 AIコーチ</div>${text.replace(/\n/g,'<br>')}`;
+  div.innerHTML=`<div class="ai-name">🤖 AIコーチ</div>${esc(text).replace(/\n/g,'<br>')}`;
   area.appendChild(div);area.scrollTop=area.scrollHeight;
 }
 function addUserMsg(text){
@@ -1664,7 +1667,7 @@ function renderCustomEventsList(){
   const list=document.getElementById('ev-list');if(!list) return;
   if(!state.customEvents.length){list.innerHTML='<p style="color:var(--gray-5);font-size:.8rem">イベントはまだありません。</p>';return;}
   list.innerHTML=state.customEvents.map(ev=>`
-    <div class="ev-item"><div class="ev-info"><strong>${ev.year}年${ev.rec?(ev.endYear?`〜${ev.endYear}年（毎年）`:'〜（毎年）'):''}</strong>　${ev.name}
+    <div class="ev-item"><div class="ev-info"><strong>${ev.year}年${ev.rec?(ev.endYear?`〜${ev.endYear}年（毎年）`:'〜（毎年）'):''}</strong>　${esc(ev.name)}
     <span class="tag ${ev.type==='income'?'g':'a'}">${ev.type==='income'?'収入':'支出'}</span><strong>${fmt(ev.amt)}万円</strong></div>
     <button class="btn r sm" onclick="deleteCustomEvent(${ev.id})">削除</button></div>`).join('');
 }
@@ -1826,7 +1829,7 @@ function importMFCSV(input){
 
 function showMFPreview(){
   const p=_mfPending;if(!p) return;
-  const rows=Object.entries(p.fields).map(([k,v])=>{
+  const rows=Object.entries(p.fields).map(([k,v])=>{ /* 値は数値・ラベルは固定辞書 */
     const cur=g(k);
     const diff=cur>0?Math.round((v-cur)/cur*100):null;
     return `<tr>
@@ -1837,7 +1840,7 @@ function showMFPreview(){
       <td class="c" style="font-size:.72rem;color:var(--gray-5)">${diff===null?'−':(diff>0?'+':'')+diff+'%'}</td>
     </tr>`;
   }).join('');
-  const skipped=p.skipped.length?`<div class="note" style="margin-top:8px">対象外: ${p.skipped.map(([c,v,r])=>`${c}（月${fmtNum(v)}円・${r}）`).join(' ／ ')}</div>`:'';
+  const skipped=p.skipped.length?`<div class="note" style="margin-top:8px">対象外: ${p.skipped.map(([c,v,r])=>`${esc(c)}（月${fmtNum(v)}円・${r}）`).join(' ／ ')}</div>`:'';
   document.getElementById('mf-preview').innerHTML=`
     <div class="note">${p.months}ヶ月分の明細から月平均を計算しました。反映したい項目にチェックして「反映」を押してください。<strong>CSVは外部に送信されません。</strong></div>
     <div class="tbl-wrap"><table>
