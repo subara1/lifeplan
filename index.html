@@ -3,7 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>ライフプランOS</title>
+<title>ライフプランOS｜家計・資産シミュレーター</title>
+<meta name="description" content="ライフプランOS — 90歳までの家計・資産をシミュレーションする無料ツール。入力データはブラウザ内のみで処理され、外部に送信されません。">
+<meta property="og:title" content="ライフプランOS">
+<meta property="og:description" content="90歳までの家計・資産シミュレーター。データはブラウザ内で完結し外部送信なし。">
+<meta property="og:type" content="website">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js" integrity="sha384-e6nUZLBkQ86NJ6TVVKAeSaK8jWa3NhkYWZFomE39AvDbQWeie9PlQqM3pmYW5d1g" crossorigin="anonymous"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js" integrity="sha384-vtjasyidUo0kW94K5MXDXntzOJpQgBKXmE7e2Ga4LG0skTTLeBi97eFAXsqewJjw" crossorigin="anonymous"></script>
@@ -35,7 +39,7 @@ body{font-family:'Hiragino Sans','Yu Gothic UI','Meiryo',sans-serif;background:v
 .sb-logo h1{color:var(--text);font-size:1.05rem;font-weight:800;letter-spacing:-.3px}
 .sb-logo p{color:var(--gray-5);font-size:.7rem;margin-top:2px}
 .sb-nav{padding:12px 0;flex:1}
-.sbn{display:flex;align-items:center;gap:10px;padding:10px 18px;color:var(--gray-5);text-decoration:none;font-size:.85rem;font-weight:600;cursor:pointer;transition:all .15s;border-left:3px solid transparent;user-select:none}
+.sbn{display:flex;align-items:center;gap:10px;padding:10px 18px;color:var(--gray-5);text-decoration:none;font-size:.85rem;font-weight:600;cursor:pointer;transition:all .15s;border-left:3px solid transparent;user-select:none;width:100%;border-top:none;border-right:none;border-bottom:none;background:none;font-family:inherit;text-align:left}
 .sbn:hover{color:var(--text);background:var(--gray-1)}
 .sbn.active{color:var(--blue-d);background:var(--blue-ll);border-left-color:var(--blue)}
 .sbn .ico{font-size:1.1rem;width:22px;text-align:center}
@@ -256,12 +260,25 @@ tbody tr.ret td{background:#f0fdf4}
 .ev-item{display:flex;align-items:center;gap:10px;padding:9px 13px;border:1px solid var(--gray-2);border-radius:var(--radius-sm);margin-bottom:6px;font-size:.8rem;background:var(--bg);flex-wrap:wrap}
 .ev-info{flex:1}
 @media(max-width:600px){
-  .mc-grid{grid-template-columns:1fr}
+  .mc-grid{grid-template-columns:1fr}          /* 重要KPIは1列 */
   .fg,.fg2,.fg3{grid-template-columns:1fr}
   .card{padding:14px 12px}
-  .tab-nav,.btn-row,.chat-qs{overflow-x:auto;flex-wrap:nowrap;padding-bottom:6px}
-  .tb,.btn,.btn-o,.cq{white-space:nowrap;flex-shrink:0}
+  /* タブは横スクロール可能に（見切れさせない） */
+  .tab-nav,.chart-tabs,.chat-qs{overflow-x:auto;flex-wrap:nowrap;padding-bottom:6px;-webkit-overflow-scrolling:touch}
+  .tb,.cq,.ctb{white-space:nowrap;flex-shrink:0}
+  /* 出力ボタン群はスクロールでなく2列グリッドで縦に積む */
+  .btn-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .btn-row .btn,.btn-row .btn-o,.btn-row label.btn-o{width:100%;white-space:normal;text-align:center;font-size:.8rem;padding:9px 8px}
+  /* 表は横スクロール可能なことを視覚的に示す（右端にグラデ影） */
+  .tbl-wrap{position:relative;background:
+    linear-gradient(90deg,#fff 30%,rgba(255,255,255,0)) left/24px 100% no-repeat,
+    linear-gradient(270deg,#fff 30%,rgba(255,255,255,0)) right/24px 100% no-repeat,
+    radial-gradient(farthest-side at 100% 50%,rgba(0,0,0,.12),transparent) right/12px 100% no-repeat;
+    background-attachment:local,local,scroll}
+  .tbl-hint{display:block}
 }
+.tbl-hint{display:none;font-size:.68rem;color:var(--gray-5);margin:2px 0 4px}
+.tbl-hint::before{content:'← 横にスクロールできます →'}
 </style>
 </head>
 <body>
@@ -273,12 +290,12 @@ tbody tr.ret td{background:#f0fdf4}
     <p id="sb-date">読み込み中...</p>
   </div>
   <div class="sb-nav">
-    <div class="sbn active" onclick="nav('dashboard')" data-page="dashboard"><span class="ico">🏠</span>ダッシュボード</div>
-    <div class="sbn" onclick="nav('goals')" data-page="goals"><span class="ico">🎯</span>目標管理</div>
-    <div class="sbn" onclick="nav('sim')" data-page="sim"><span class="ico">💹</span>シミュレーター</div>
-    <div class="sbn" onclick="nav('coach')" data-page="coach"><span class="ico">🤖</span>AIコーチ</div>
-    <div class="sbn" onclick="nav('guide')" data-page="guide"><span class="ico">📖</span>使い方</div>
-    <div class="sbn" onclick="nav('settings')" data-page="settings"><span class="ico">⚙️</span>設定</div>
+    <button type="button" class="sbn active" onclick="nav('dashboard')" data-page="dashboard"><span class="ico">🏠</span>ダッシュボード</button>
+    <button type="button" class="sbn" onclick="nav('goals')" data-page="goals"><span class="ico">🎯</span>目標管理</button>
+    <button type="button" class="sbn" onclick="nav('sim')" data-page="sim"><span class="ico">💹</span>シミュレーター</button>
+    <button type="button" class="sbn" onclick="nav('coach')" data-page="coach"><span class="ico">🤖</span>AIコーチ</button>
+    <button type="button" class="sbn" onclick="nav('guide')" data-page="guide"><span class="ico">📖</span>使い方</button>
+    <button type="button" class="sbn" onclick="nav('settings')" data-page="settings"><span class="ico">⚙️</span>設定</button>
   </div>
   <div class="sb-xp">
     <div class="xp-label">LEVEL &amp; XP</div>
@@ -535,6 +552,7 @@ tbody tr.ret td{background:#f0fdf4}
         <label class="btn-o" style="cursor:pointer">📁 データ読込<input type="file" accept=".json" style="display:none" onchange="importJSON(this)"></label>
         <label class="btn-o" style="cursor:pointer" title="マネーフォワードMEの入出金明細（CSV/Excel）から生活費を自動入力">🔗 MF取り込み<input type="file" accept=".csv,.xlsx,.xls" style="display:none" onchange="importMFCSV(this)"></label>
       </div>
+      <div class="note" style="margin-top:8px">🔒 入力した家計・資産・家族情報は、このブラウザ内にのみ保存され、外部サーバーには一切送信されません。別端末への引き継ぎは「📤 データ保存」でファイル化してください。</div>
     </div>
 
     <!-- 結果 -->
@@ -589,6 +607,7 @@ tbody tr.ret td{background:#f0fdf4}
       <div class="card collapsible closed" id="le-card">
         <div class="card-h" style="cursor:pointer" onclick="toggleC('le-card')"><h2>📅 ライフイベント表 <span style="font-size:.7rem;color:var(--gray-5);font-weight:400">▲クリックで開閉</span></h2></div>
         <div class="c-body">
+        <div class="tbl-hint"></div>
         <div class="tbl-wrap">
           <table>
             <thead><tr><th>西暦</th><th>本人</th><th class="lbl-sp">妻</th><th class="lbl-c1">長女</th><th class="lbl-c2">次子</th><th style="text-align:left;padding-left:8px">ライフイベント</th></tr></thead>
@@ -602,6 +621,7 @@ tbody tr.ret td{background:#f0fdf4}
       <div class="card collapsible" id="cf-card">
         <div class="card-h" style="cursor:pointer" onclick="toggleC('cf-card')"><h2>💰 キャッシュフロー表（万円） <span style="font-size:.7rem;color:var(--gray-5);font-weight:400">▲クリックで開閉</span></h2></div>
         <div class="c-body">
+        <div class="tbl-hint"></div>
         <div class="tbl-wrap">
           <table id="cf-table">
             <thead><tr>
@@ -930,9 +950,15 @@ function nav(page){
 // ══════════════════════════════════════════════════════
 // UTILITIES
 // ══════════════════════════════════════════════════════
-const w   = v => Math.round(v/10000);
-const mw  = v => Math.round(v/1000)/10;
-const fmt = v => Number(v).toLocaleString();
+// 表示ヘルパー。Infinity/NaN/undefined/null は絶対に画面に出さない（0扱い）
+const w   = v => Number.isFinite(v) ? Math.round(v/10000) : 0;
+const mw  = v => Number.isFinite(v) ? Math.round(v/1000)/10 : 0;
+const fmt = v => { const n=Number(v); return Number.isFinite(n) ? n.toLocaleString() : '0'; };
+// 必須6項目（未入力=空文字なら計算結果を出さない。0を入力した場合は許容）
+const REQUIRED_FIELDS=[['u_mon','月収・手取り'],['u_bon','ボーナス'],['h_rent','家賃'],['a_cash','現金・預金'],['a_invest','投資資産'],['a_investmon','毎月の積立投資']];
+function requiredMissing(){
+  return REQUIRED_FIELDS.filter(([id])=>{const e=document.getElementById(id);return !e||String(e.value).trim()==='';}).map(([,l])=>l);
+}
 // ユーザー入力をHTMLに入れる前の無害化（XSS対策）。innerHTMLに文字列を渡す時は必ず通す
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 function g(id){const e=document.getElementById(id);return e?(e.tagName==='SELECT'?e.value:(parseFloat(String(e.value).replace(/,/g,''))||0)):0;}
@@ -1256,6 +1282,14 @@ function updateXPDisplay(){
 // RUN
 // ══════════════════════════════════════════════════════
 function runAndRefresh(quiet){
+  // 必須項目が未入力なら壊れた試算を出さず、入力を促す
+  const missing=requiredMissing();
+  if(missing.length){
+    state.sim=null;saveInputs();saveState();
+    showNeedInput(missing);
+    refreshDashboard();
+    return;
+  }
   currentP=getP();
   const rows=calculate(currentP);
   const metrics=getMetrics(rows,currentP);
@@ -1264,6 +1298,20 @@ function runAndRefresh(quiet){
   saveInputs();saveState();
   drawSimResults(rows,currentP,metrics);
   refreshDashboard();
+}
+
+// 必須項目が未入力のときの案内表示（シミュレーター）
+function showNeedInput(missing){
+  const box=document.getElementById('sim-results');if(!box) return;
+  box.style.display='block';
+  const ids=REQUIRED_FIELDS.map(([id,l])=>`<li>${esc(l)}</li>`).join('');
+  box.innerHTML=`<div class="card" style="text-align:center;padding:28px 18px">
+    <div style="font-size:2rem;margin-bottom:8px">✏️</div>
+    <div style="font-weight:800;font-size:1rem;margin-bottom:6px">必須6項目を入力してください</div>
+    <div class="note" style="margin-bottom:10px">未入力: ${missing.map(esc).join(' / ')}</div>
+    <ul style="list-style:none;text-align:left;max-width:280px;margin:0 auto 12px;font-size:.85rem">${ids}</ul>
+    <div class="note">⭐印の欄を埋めると、90歳までの資産シミュレーションが表示されます。</div>
+  </div>`;
 }
 
 // ══════════════════════════════════════════════════════
@@ -1563,7 +1611,7 @@ function coachAutoAnalysis(){
   const props=actionEngine(rows,p,state.goals);
   const mVar=p.food+p.util+p.ent+p.cloth+p.aself+p.awife+p.kids+p.misc;
   const mFix=p.ins+p.tel+p.carM+p.sub+p.oth;
-  const savRate=Math.round((p.uMon-(mVar+mFix+p.rent))/p.uMon*100);
+  const savRate=p.uMon>0?Math.round((p.uMon-(mVar+mFix+p.rent))/p.uMon*100):0;
   const msg=`📋 現在のプラン分析レポート
 
 💰 資産サマリー
@@ -1616,6 +1664,25 @@ function coachResponse(q){
     const a5=Math.round(p.investAmt*Math.pow(1+p.investRate,5)/10000);
     return `現在の投資状況：\n• 投資資産: ${w(p.investAmt)}万円（利回り${(p.investRate*100).toFixed(1)}%）\n• 5年後予測: 約${fmt(a5)}万円\n\nおすすめ制度：\n1. 新NISA（つみたて投資枠） 年間120万円まで非課税\n2. 新NISA（成長投資枠） 年間240万円まで非課税\n3. iDeCo 公務員は月1.2万円まで全額所得控除\n   → 税負担軽減で年約3万円程度の節税効果\n\n現在の投資比率: ${Math.round(p.investAmt/(p.cashAmt+p.investAmt||1)*100)}%（40代以下の目安: 40〜60%）`;
   }
+  // 「住宅購入を◯年遅らせると？」等の差分（what-if）質問に実際に再計算して答える
+  const delayM=qL.match(/(\d+)\s*年.*(遅|後ろ|先延|延期|ずら)/)||((qL.includes('遅')||qL.includes('延期'))&&(qL.includes('住宅')||qL.includes('購入')||qL.includes('マンション'))?['','3']:null);
+  const earlyM=qL.match(/(\d+)\s*年.*(早|前倒)/);
+  if((qL.includes('住宅')||qL.includes('購入')||qL.includes('マンション'))&&(delayM||earlyM)){
+    const yrs=parseInt((delayM||earlyM)[1])||3;
+    const sign=earlyM?-1:1;
+    const p2={...p,hyr:p.hyr+sign*yrs};
+    const rows2=calculate(p2),m2=getMetrics(rows2,p2);
+    const g65a=(m.asset65!=null?w(m.asset65):null),g65b=(m2.asset65!=null?w(m2.asset65):null);
+    const finA=w(rows[rows.length-1].totalAsset),finB=w(rows2[rows2.length-1].totalAsset);
+    const life=v=>typeof v==='number'?v+'歳':String(v);
+    const diff=(a,b)=>a==null||b==null?'−':`${b-a>=0?'+':''}${fmt(b-a)}万円`;
+    return `住宅購入を${yrs}年${earlyM?'早めた':'遅らせた'}場合の比較（購入 ${p.hyr}年 → ${p2.hyr}年）\n\n`+
+      `　　　　　　　現行 → 変更後（差分）\n`+
+      `・90歳時総資産: ${fmt(finA)} → ${fmt(finB)}万円（${diff(finA,finB)}）\n`+
+      `・65歳時資産: ${g65a!=null?fmt(g65a):'−'} → ${g65b!=null?fmt(g65b):'−'}万円（${diff(g65a,g65b)}）\n`+
+      `・資産寿命: ${life(m.assetLife)} → ${life(m2.assetLife)}\n\n`+
+      `${finB>finA?'📈 遅らせる方が総資産は増える見込みです（頭金を貯める期間が延び、ローン期間が後ろ倒しになるため）。ただし家賃を払い続ける期間も延びます。':finB<finA?'📉 変更後の方が総資産は減る見込みです。':'ほぼ同等です。'}\n※ 物件価格・金利は変えずに購入年だけを動かした試算です。`;
+  }
   if(qL.includes('住宅')||qL.includes('マンション')||qL.includes('ローン')){
     const loan=Math.max(0,p.hprc*10000-p.hdp);const annual=annualMortgage(loan,p.hrate,p.hper);
     return `住宅購入プラン：\n• 購入予定: ${p.hyr}年（本人${p.hyr-p.uBY}歳）\n• 物件価格: ${p.hprc}万円\n• 頭金: ${w(p.hdp)}万円（${Math.round(p.hdp/(p.hprc*10000)*100)}%）\n• ローン: ${Math.round(loan/10000)}万円 @ ${p.hrate}%\n• 月額返済: 約${mw(annual/12)}万円\n\n【チェック】\n・頭金${Math.round(p.hdp/(p.hprc*10000)*100)>=20?'◎20%以上でOK':'▲20%以上が理想'}\n・年間返済額 vs 年収: ${annual/(p.uMon*12+p.uBon)*100<25?'◎25%未満でOK':'▲やや高め'}\n・購入後は管理費・修繕費（月${mw(p.hmgmt)}万円）も毎月発生`;
@@ -1648,7 +1715,13 @@ function renderBadges(id){
 // ══════════════════════════════════════════════════════
 function saveProfileName(){state.name=gs('s_name');saveState();}
 function renderSettings(){const e=document.getElementById('s_name');if(e) e.value=state.name||'';renderBadges('all-badges');}
-function resetAll(){state=JSON.parse(JSON.stringify(DEF_STATE));saveState();location.reload();}
+function resetAll(){
+  if(!confirm('すべてのデータ（入力値・目標・シナリオ）を初期化します。この操作は元に戻せません。よろしいですか？')) return;
+  if(!confirm('本当に初期化しますか？ 大切な設定は先に「データ保存」でバックアップできます。')) return;
+  state=JSON.parse(JSON.stringify(DEF_STATE));
+  localStorage.removeItem('lifeplan_os');
+  saveState();location.reload();
+}
 
 // ══════════════════════════════════════════════════════
 // CUSTOM EVENTS
@@ -2035,15 +2108,70 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape') document.querySelec
 // ══════════════════════════════════════════════════════
 // INIT
 // ══════════════════════════════════════════════════════
+// アクセシビリティ一括付与: ①全buttonにtype ②入力欄にlabel紐付け/aria-label
+// （100近い入力欄を個別編集せず、ロード時に一括で正しく関連付ける）
+let _a11ySeq=0;
+function applyA11y(){
+  // ① 通常ボタンは type="button"（フォーム内の意図しないsubmitを防ぐ）
+  document.querySelectorAll('button:not([type])').forEach(b=>b.setAttribute('type','button'));
+  // ② .field内のlabelを同じfield内の入力にfor/idで紐付け。無ければaria-labelを付与
+  document.querySelectorAll('.field').forEach(f=>{
+    const lab=f.querySelector('label'), ctl=f.querySelector('input,select,textarea');
+    if(!ctl) return;
+    if(!ctl.id) ctl.id='a11y_'+(++_a11ySeq);
+    const text=(lab?lab.textContent:'').trim();
+    if(lab){ if(!lab.htmlFor) lab.htmlFor=ctl.id; }
+    if(text && !ctl.getAttribute('aria-label')) ctl.setAttribute('aria-label',text);
+  });
+  // field外の裸の入力にもaria-labelの保険（placeholder/直前テキスト）
+  document.querySelectorAll('input,select,textarea').forEach(ctl=>{
+    if(ctl.getAttribute('aria-label')||ctl.labels?.length) return;
+    const ph=ctl.getAttribute('placeholder'); if(ph) ctl.setAttribute('aria-label',ph);
+  });
+}
+
+// 入力バリデーション一括付与: 数値欄に妥当な min/max/step を設定し、範囲外を弾く
+const VALID_RANGE={
+  f_uby:[1940,2020,1],f_wby:[1940,2020,1],f_c1by:[1990,2040,1],f_c2by:[1990,2040,1],
+  f_retage:[55,75,1],f_wretage:[50,75,1],
+  a_investrate:[0,15,0.1],a_cashrate:[0,5,0.01],h_rate:[0,5,0.1],infl:[0,10,0.1],u_grow:[0,10,0.1],
+  h_prc:[0,30000,100],h_dp:[0,20000,50],h_per:[1,50,1],
+  pn_u_start:[60,75,1],pn_w_start:[60,75,1],pn_slide:[0,3,0.1],
+  ret_a:[50,75,1],ret_b:[50,75,1],ret_c:[50,75,1],ret_d:[50,75,1],
+};
+function applyValidation(){
+  document.querySelectorAll('input[type="number"]').forEach(inp=>{
+    const r=VALID_RANGE[inp.id];
+    if(r){inp.min=r[0];inp.max=r[1];inp.step=r[2];}
+    else if(inp.min==='') inp.min=0;   // 金額・数量は負数不可を既定に
+  });
+}
+// 範囲外・負数の入力時に軽く補正＋警告（計算前に破綻値を防ぐ）
+function clampInput(inp){
+  if(inp.type!=='number'||inp.value==='') return;
+  const v=parseFloat(inp.value); if(isNaN(v)) return;
+  const min=inp.min!==''?parseFloat(inp.min):-Infinity;
+  const max=inp.max!==''?parseFloat(inp.max):Infinity;
+  if(v<min){inp.value=min;flashInvalid(inp);}
+  else if(v>max){inp.value=max;flashInvalid(inp);}
+}
+function flashInvalid(inp){
+  inp.style.borderColor='var(--red)';
+  setTimeout(()=>{inp.style.borderColor='';},1200);
+}
+
 document.addEventListener('DOMContentLoaded',()=>{
   loadState();
   restoreInputs();
   initUnits();
+  applyA11y();
+  applyValidation();
   document.getElementById('f_year').value=new Date().getFullYear();
-  // 入力変更で自動保存＋自動再計算
+  // 入力変更で自動保存＋自動再計算（changeで範囲チェック）
   ['input','change'].forEach(evt=>{
     document.getElementById('page-sim').addEventListener(evt,e=>{
       if(!e.target.matches('input,select')||e.target.type==='file') return;
+      if(evt==='change') clampInput(e.target);
       saveInputs();autoRun();
     });
   });
