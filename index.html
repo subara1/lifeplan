@@ -549,11 +549,11 @@ tbody tr.ret td{background:#f0fdf4}
         <button class="btn-o" onclick="exportExcel()">📥 Excel</button>
         <button class="btn-o" onclick="exportCSV()">📥 CSV</button>
         <button class="btn-o" onclick="exportJSON()">📤 データ保存</button>
-        <button class="btn-o" onclick="syncToLifeHub()" title="現在の入力と計算結果をLifeHubアプリへワンタッチ保存">🧭 LifeHubへ保存</button>
+        <button class="btn-o" onclick="syncToLifeHub()" title="現在の入力と計算結果を生活改善アプリへワンタッチ保存">🌸 生活改善アプリへ保存</button>
         <label class="btn-o" style="cursor:pointer">📁 データ読込<input type="file" accept=".json" style="display:none" onchange="importJSON(this)"></label>
         <label class="btn-o" style="cursor:pointer" title="マネーフォワードMEの入出金明細（CSV/Excel）から生活費を自動入力">🔗 MF取り込み<input type="file" accept=".csv,.xlsx,.xls" style="display:none" onchange="importMFCSV(this)"></label>
       </div>
-      <div class="note" style="margin-top:8px">🔒 入力した家計・資産・家族情報は、このブラウザ内にのみ保存されます。外部への送信は「🧭 LifeHubへ保存」を押した時だけ、あなた自身のLifeHub（Firebase）に送られます。別端末への引き継ぎは「📤 データ保存」でも可能です。</div>
+      <div class="note" style="margin-top:8px">🔒 入力した家計・資産・家族情報は、このブラウザ内にのみ保存されます。外部への送信は「🌸 生活改善アプリへ保存」を押した時だけ、あなた自身の生活改善アプリ（Firebase）に送られます。別端末への引き継ぎは「📤 データ保存」でも可能です。</div>
     </div>
 
     <!-- 結果 -->
@@ -1803,8 +1803,8 @@ async function lifehubToken(){
     if(r.ok){const d=await r.json();return d.id_token;}
     localStorage.removeItem('lifehub_refresh'); // 失効→再ログインへ
   }
-  const email=prompt('LifeHubのメールアドレス（初回のみ）');if(!email)return null;
-  const pass=prompt('LifeHubのパスワード（端末に保存されるのは認証トークンのみ）');if(!pass)return null;
+  const email=prompt('生活改善アプリのメールアドレス（初回のみ）');if(!email)return null;
+  const pass=prompt('生活改善アプリのパスワード（端末に保存されるのは認証トークンのみ）');if(!pass)return null;
   const r=await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${LIFEHUB_API_KEY}`,{
     method:'POST',headers:{'Content-Type':'application/json'},
     body:JSON.stringify({email:email.trim(),password:pass,returnSecureToken:true})});
@@ -1827,7 +1827,7 @@ async function syncToLifeHub(){
         updatedAt:{timestampValue:new Date().toISOString()},
       }})});
     if(!res.ok){const e=await res.json().catch(()=>({}));throw new Error('保存失敗 '+res.status+' '+(e.error&&e.error.message||''));}
-    alert(`🧭 LifeHubへ保存しました\n・資産寿命: ${payload.results.assetLife}\n・年収${payload.plan.income}万／生活費${payload.plan.expense}万\nLifeHubのマネー画面で「反映」できます`);
+    alert(`🌸 生活改善アプリへ保存しました\n・資産寿命: ${payload.results.assetLife}\n・年収${payload.plan.income}万／生活費${payload.plan.expense}万\n生活改善アプリのマネー画面で「反映」できます`);
   }catch(e){alert('LifeHub連携エラー: '+(e.message||e));}
 }
 
