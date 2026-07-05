@@ -923,7 +923,14 @@ function restoreInputs(){
 let _autoT=null;
 function autoRun(){
   clearTimeout(_autoT);
-  _autoT=setTimeout(()=>{if(state.sim) runAndRefresh(true);},800);
+  _autoT=setTimeout(()=>{if(state.sim){runAndRefresh(true);autoSyncLifeHub();}},800);
+}
+// 連携を一度有効にしていれば（refreshトークンあり）、再計算のたびに自動で生活改善アプリへ送信
+let _lhAutoT=null;
+function autoSyncLifeHub(){
+  if(!localStorage.getItem('lifehub_refresh'))return;  // 未連携なら何もしない（手動ボタンで初回連携）
+  clearTimeout(_lhAutoT);
+  _lhAutoT=setTimeout(()=>{syncToLifeHub(true).catch(()=>{});},2500);  // silent=true
 }
 function loadState(){
   try{
@@ -1794,6 +1801,15 @@ function buildLifeHubPayload(p,m,rows,currentYear){
 // LifeHubのFirebase（あなた専用・UID固定ルールで保護）へ書き込む。初回のみログイン、以降ワンタッチ。
 const LIFEHUB_API_KEY='AIzaSyCa38zcki7_wHT4AqOtTNtMeW1-xG5keQ0';
 const LIFEHUB_PROJECT='lifehub-787f6';
+// 保存済みrefreshトークンのみでidTokenを得る（自動送信用・プロンプトを出さない）
+async function lifehubTokenSilent(){
+  const refresh=localStorage.getItem('lifehub_refresh');if(!refresh)return null;
+  const r=await fetch(`https://securetoken.googleapis.com/v1/token?key=${LIFEHUB_API_KEY}`,{
+    method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},
+    body:`grant_type=refresh_token&refresh_token=${encodeURIComponent(refresh)}`});
+  if(!r.ok){localStorage.removeItem('lifehub_refresh');return null;}
+  return (await r.json()).id_token;
+}
 async function lifehubToken(){
   const refresh=localStorage.getItem('lifehub_refresh');
   if(refresh){
@@ -1813,10 +1829,11 @@ async function lifehubToken(){
   localStorage.setItem('lifehub_refresh',d.refreshToken);
   return d.idToken;
 }
-async function syncToLifeHub(){
+async function syncToLifeHub(silent){
   try{
-    if(!state.sim){alert('まず「▶ 再計算・更新」を実行してください');return;}
-    const token=await lifehubToken();if(!token)return;
+    if(!state.sim){if(!silent)alert('まず「▶ 再計算・更新」を実行してください');return;}
+    // silent（自動送信）時は保存済みトークンのみ使用。無ければ何もしない（プロンプトを出さない）
+    const token=silent?await lifehubTokenSilent():await lifehubToken();if(!token)return;
     const {rows,p}=state.sim;const m=getMetrics(rows,p);
     const payload=buildLifeHubPayload(p,m,rows,new Date().getFullYear());
     const url=`https://firestore.googleapis.com/v1/projects/${LIFEHUB_PROJECT}/databases/(default)/documents/lifeplanSync/main`;
@@ -1827,8 +1844,8 @@ async function syncToLifeHub(){
         updatedAt:{timestampValue:new Date().toISOString()},
       }})});
     if(!res.ok){const e=await res.json().catch(()=>({}));throw new Error('保存失敗 '+res.status+' '+(e.error&&e.error.message||''));}
-    alert(`🌸 生活改善アプリへ保存しました\n・資産寿命: ${payload.results.assetLife}\n・年収${payload.plan.income}万／生活費${payload.plan.expense}万\n生活改善アプリのマネー画面で「反映」できます`);
-  }catch(e){alert('LifeHub連携エラー: '+(e.message||e));}
+    if(!silent)alert(`🌸 生活改善アプリへ保存しました\n・資産寿命: ${payload.results.assetLife}\n・年収${payload.plan.income}万／生活費${payload.plan.expense}万\nこれ以降は入力を変えるたび自動で反映されます`);
+  }catch(e){if(!silent)alert('連携エラー: '+(e.message||e));}
 }
 
 function exportJSON(){
