@@ -218,5 +218,23 @@ if (typeof m.assetLife === 'number') {
 }
 
 // ══════════════════════════════════════════
+
+section('LifeHub連携ペイロード');
+{
+  const g2=grab('buildLifeHubPayload');
+  eval(g2);
+  const p={uBY:1993,uMon:320000,uBon:1460000,food:60000,util:20000,ent:20000,cloth:10000,aself:20000,awife:20000,kids:10000,misc:10000,ins:15000,tel:10000,carM:10000,sub:3000,oth:5000,rent:84000,cashAmt:2000000,investAmt:1000000,investMon:30000,investRate:0.03,RET:2058,uPenAmt:1900000,uPenStart:65};
+  const m={assetLife:87,asset65:55240000};
+  const rows=[{totalAsset:12000000}];
+  const pl=buildLifeHubPayload(p,m,rows,2026);
+  check('年齢33', pl.plan.age===33);
+  check('年収530万', pl.plan.income===530);
+  check('生活費356万', pl.plan.expense===356);
+  check('現金200/投資100(万円)', pl.plan.cash===200&&pl.plan.invest===100);
+  check('積立36万/利回り3%', pl.plan.annualInvest===36&&pl.plan.investReturn===3);
+  check('退職65/年金190万@65', pl.plan.retireAge===65&&pl.plan.pension===190&&pl.plan.pensionAge===65);
+  check('結果: 資産寿命87歳/90歳時1200万', pl.results.assetLife==='87歳'&&pl.results.final90===1200);
+}
+
 console.log(`\n合計: ✅ ${pass} / ❌ ${fail}`);
 process.exit(fail ? 1 : 0);

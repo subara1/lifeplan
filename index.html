@@ -8,7 +8,7 @@
 <meta property="og:title" content="ライフプランOS">
 <meta property="og:description" content="90歳までの家計・資産シミュレーター。データはブラウザ内で完結し外部送信なし。">
 <meta property="og:type" content="website">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://firestore.googleapis.com; object-src 'none'; base-uri 'none'; form-action 'none'">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js" integrity="sha384-e6nUZLBkQ86NJ6TVVKAeSaK8jWa3NhkYWZFomE39AvDbQWeie9PlQqM3pmYW5d1g" crossorigin="anonymous"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js" integrity="sha384-vtjasyidUo0kW94K5MXDXntzOJpQgBKXmE7e2Ga4LG0skTTLeBi97eFAXsqewJjw" crossorigin="anonymous"></script>
 <style>
@@ -549,10 +549,11 @@ tbody tr.ret td{background:#f0fdf4}
         <button class="btn-o" onclick="exportExcel()">📥 Excel</button>
         <button class="btn-o" onclick="exportCSV()">📥 CSV</button>
         <button class="btn-o" onclick="exportJSON()">📤 データ保存</button>
+        <button class="btn-o" onclick="syncToLifeHub()" title="現在の入力と計算結果をLifeHubアプリへワンタッチ保存">🧭 LifeHubへ保存</button>
         <label class="btn-o" style="cursor:pointer">📁 データ読込<input type="file" accept=".json" style="display:none" onchange="importJSON(this)"></label>
         <label class="btn-o" style="cursor:pointer" title="マネーフォワードMEの入出金明細（CSV/Excel）から生活費を自動入力">🔗 MF取り込み<input type="file" accept=".csv,.xlsx,.xls" style="display:none" onchange="importMFCSV(this)"></label>
       </div>
-      <div class="note" style="margin-top:8px">🔒 入力した家計・資産・家族情報は、このブラウザ内にのみ保存され、外部サーバーには一切送信されません。別端末への引き継ぎは「📤 データ保存」でファイル化してください。</div>
+      <div class="note" style="margin-top:8px">🔒 入力した家計・資産・家族情報は、このブラウザ内にのみ保存されます。外部への送信は「🧭 LifeHubへ保存」を押した時だけ、あなた自身のLifeHub（Firebase）に送られます。別端末への引き継ぎは「📤 データ保存」でも可能です。</div>
     </div>
 
     <!-- 結果 -->
@@ -1765,6 +1766,71 @@ function exportCSV(){
   const blob=new Blob(['﻿'+buildCFArr(state.sim.rows).map(r=>r.map(c=>String(c).includes(',')?`"${c}"`:c).join(',')).join('\n')],{type:'text/csv;charset=utf-8;'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`lifeplan_${new Date().getFullYear()}.csv`;a.click();
 }
+// ══ LifeHub連携 ══
+// 現在の入力(p)と計算結果(m)から、LifeHubの将来予測形式のペイロードを作る（純関数）
+function buildLifeHubPayload(p,m,rows,currentYear){
+  const mV=p.food+p.util+p.ent+p.cloth+p.aself+p.awife+p.kids+p.misc;
+  const mF=p.ins+p.tel+p.carM+p.sub+p.oth;
+  const last=rows[rows.length-1];
+  return {
+    source:'lifeplan', savedAt:new Date().toISOString(),
+    plan:{
+      age:currentYear-p.uBY,
+      income:Math.round((p.uMon*12+p.uBon)/10000),
+      expense:Math.round((mV+mF+p.rent)*12/10000),
+      cash:Math.round(p.cashAmt/10000), invest:Math.round(p.investAmt/10000),
+      annualInvest:Math.round(p.investMon*12/10000),
+      investReturn:Math.round(p.investRate*1000)/10,
+      retireAge:p.RET-p.uBY, pension:Math.round(p.uPenAmt/10000), pensionAge:p.uPenStart,
+    },
+    results:{
+      assetLife:typeof m.assetLife==='number'?m.assetLife+'歳':String(m.assetLife),
+      asset65:m.asset65!=null?Math.round(m.asset65/10000):null,
+      final90:last?Math.round(last.totalAsset/10000):null,
+    },
+  };
+}
+
+// LifeHubのFirebase（あなた専用・UID固定ルールで保護）へ書き込む。初回のみログイン、以降ワンタッチ。
+const LIFEHUB_API_KEY='AIzaSyCa38zcki7_wHT4AqOtTNtMeW1-xG5keQ0';
+const LIFEHUB_PROJECT='lifehub-787f6';
+async function lifehubToken(){
+  const refresh=localStorage.getItem('lifehub_refresh');
+  if(refresh){
+    const r=await fetch(`https://securetoken.googleapis.com/v1/token?key=${LIFEHUB_API_KEY}`,{
+      method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},
+      body:`grant_type=refresh_token&refresh_token=${encodeURIComponent(refresh)}`});
+    if(r.ok){const d=await r.json();return d.id_token;}
+    localStorage.removeItem('lifehub_refresh'); // 失効→再ログインへ
+  }
+  const email=prompt('LifeHubのメールアドレス（初回のみ）');if(!email)return null;
+  const pass=prompt('LifeHubのパスワード（端末に保存されるのは認証トークンのみ）');if(!pass)return null;
+  const r=await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${LIFEHUB_API_KEY}`,{
+    method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({email:email.trim(),password:pass,returnSecureToken:true})});
+  const d=await r.json();
+  if(!r.ok)throw new Error('ログイン失敗: '+(d.error&&d.error.message||''));
+  localStorage.setItem('lifehub_refresh',d.refreshToken);
+  return d.idToken;
+}
+async function syncToLifeHub(){
+  try{
+    if(!state.sim){alert('まず「▶ 再計算・更新」を実行してください');return;}
+    const token=await lifehubToken();if(!token)return;
+    const {rows,p}=state.sim;const m=getMetrics(rows,p);
+    const payload=buildLifeHubPayload(p,m,rows,new Date().getFullYear());
+    const url=`https://firestore.googleapis.com/v1/projects/${LIFEHUB_PROJECT}/databases/(default)/documents/lifeplanSync/main`;
+    const res=await fetch(url,{method:'PATCH',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
+      body:JSON.stringify({fields:{
+        json:{stringValue:JSON.stringify(payload)},
+        updatedAt:{timestampValue:new Date().toISOString()},
+      }})});
+    if(!res.ok){const e=await res.json().catch(()=>({}));throw new Error('保存失敗 '+res.status+' '+(e.error&&e.error.message||''));}
+    alert(`🧭 LifeHubへ保存しました\n・資産寿命: ${payload.results.assetLife}\n・年収${payload.plan.income}万／生活費${payload.plan.expense}万\nLifeHubのマネー画面で「反映」できます`);
+  }catch(e){alert('LifeHub連携エラー: '+(e.message||e));}
+}
+
 function exportJSON(){
   const blob=new Blob([JSON.stringify({state,exportedAt:new Date().toISOString()},null,2)],{type:'application/json'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`lifeplan_${new Date().getFullYear()}.json`;a.click();
