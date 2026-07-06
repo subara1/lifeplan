@@ -101,7 +101,10 @@ input[type=checkbox]{accent-color:var(--blue)}
 .proposal.p1{background:#fef2f2;border-color:#fecaca}
 .proposal.p2{background:#fffbeb;border-color:#fde68a}
 .proposal.p3{background:#f0fdf4;border-color:#bbf7d0}
-.prop-ico{font-size:1.3rem;flex-shrink:0;margin-top:1px}
+.prop-ico{flex-shrink:0;margin-top:2px;color:var(--gray-5)}
+.pdot{display:inline-block;width:12px;height:12px;border-radius:50%;background:var(--green);margin-top:3px}
+.pdot.red{background:var(--red)}
+.pdot.amber{background:var(--amber)}
 .prop-body{flex:1}
 .prop-title{font-weight:700;font-size:.88rem;color:var(--dark2);margin-bottom:3px}
 .prop-detail{font-size:.78rem;color:var(--gray-5);margin-bottom:6px}
@@ -180,7 +183,7 @@ input[type=checkbox]{accent-color:var(--blue)}
 .refhint{font-size:.66rem;color:var(--green-d);background:var(--green-l);border-radius:6px;padding:2px 7px;margin-top:2px;display:inline-block}
 
 /* ── 重要項目（⭐） ── */
-.field.imp label::before{content:'⭐ '}
+.field.imp label::before{content:'● ';color:var(--amber)}
 .field.imp input{border-color:var(--amber);background:#fffdf5}
 
 /* ── 結果サマリーバー（スクロールしても固定） ── */
@@ -243,7 +246,8 @@ tbody tr.ret td{background:#f0fdf4}
 .badge{text-align:center;padding:10px 12px;border-radius:var(--radius-sm);font-size:.7rem;font-weight:700;min-width:70px}
 .badge.earned{background:linear-gradient(135deg,#fef3c7,#fde68a);color:#92400e;border:1px solid #fcd34d}
 .badge.locked{background:var(--gray-1);color:var(--gray-3);border:1px solid var(--gray-2);filter:grayscale(1)}
-.badge .b-ico{font-size:1.5rem;display:block;margin-bottom:3px}
+.badge .b-ico{display:block;margin-bottom:4px}
+.badge .b-ico svg{display:block;margin:0 auto}
 
 /* ── Tag ── */
 .tag{display:inline-block;padding:2px 7px;border-radius:10px;font-size:.65rem;font-weight:700;margin:1px;white-space:nowrap}
@@ -361,9 +365,9 @@ tbody tr.ret td{background:#f0fdf4}
     <div class="section-title">シミュレーター</div>
     <div class="card">
       <div class="card-h"><h2>シミュレーション設定</h2></div>
-      <div class="note" style="margin-bottom:10px">⭐印の6項目（月収・ボーナス・家賃・現金・投資・積立）を入れるだけで概算できます。他の項目は平均的な初期値が入っています。入力すると自動で再計算されます。<a onclick="nav('guide')" style="color:var(--blue-d);font-weight:700;cursor:pointer;margin-left:6px">詳しい使い方 →</a></div>
+      <div class="note" style="margin-bottom:10px">●印の6項目（月収・ボーナス・家賃・現金・投資・積立）を入れるだけで概算できます。他の項目は平均的な初期値が入っています。入力すると自動で再計算されます。<a onclick="nav('guide')" style="color:var(--blue-d);font-weight:700;cursor:pointer;margin-left:6px">詳しい使い方 →</a></div>
       <div class="tab-nav">
-        <button class="tb on" onclick="showTab('fam',this)">👨‍👩‍👧 家族</button>
+        <button class="tb on" onclick="showTab('fam',this)">家族</button>
         <button class="tb" onclick="showTab('inc',this)">収入</button>
         <button class="tb" onclick="showTab('var',this)">生活費</button>
         <button class="tb" onclick="showTab('fix',this)">固定費</button>
@@ -558,15 +562,15 @@ tbody tr.ret td{background:#f0fdf4}
 
       <div class="btn-row">
         <button class="btn" onclick="runAndRefresh()">▶ 再計算・更新</button>
-        <button class="btn-o" onclick="openScenarioModal()">💾 シナリオ保存</button>
-        <button class="btn-o" onclick="exportExcel()">📥 Excel</button>
-        <button class="btn-o" onclick="exportCSV()">📥 CSV</button>
-        <button class="btn-o" onclick="exportJSON()">📤 データ保存</button>
-        <button class="btn-o" onclick="syncToLifeHub()" title="現在の入力と計算結果を生活改善アプリへワンタッチ保存">🌸 生活改善アプリへ保存</button>
-        <label class="btn-o" style="cursor:pointer">📁 データ読込<input type="file" accept=".json" style="display:none" onchange="importJSON(this)"></label>
-        <label class="btn-o" style="cursor:pointer" title="マネーフォワードMEの入出金明細（CSV/Excel）から生活費を自動入力">🔗 MF取り込み<input type="file" accept=".csv,.xlsx,.xls" style="display:none" onchange="importMFCSV(this)"></label>
+        <button class="btn-o" onclick="openScenarioModal()">シナリオ保存</button>
+        <button class="btn-o" onclick="exportExcel()">Excel</button>
+        <button class="btn-o" onclick="exportCSV()">CSV</button>
+        <button class="btn-o" onclick="exportJSON()">データ保存</button>
+        <button class="btn-o" onclick="syncToLifeHub()" title="現在の入力と計算結果を生活改善アプリへワンタッチ保存">生活改善アプリへ保存</button>
+        <label class="btn-o" style="cursor:pointer">データ読込<input type="file" accept=".json" style="display:none" onchange="importJSON(this)"></label>
+        <label class="btn-o" style="cursor:pointer" title="マネーフォワードMEの入出金明細（CSV/Excel）から生活費を自動入力">MF取り込み<input type="file" accept=".csv,.xlsx,.xls" style="display:none" onchange="importMFCSV(this)"></label>
       </div>
-      <div class="note" style="margin-top:8px">🔒 入力した家計・資産・家族情報は、このブラウザ内にのみ保存されます。外部への送信は「🌸 生活改善アプリへ保存」を押した時だけ、あなた自身の生活改善アプリ（Firebase）に送られます。別端末への引き継ぎは「📤 データ保存」でも可能です。</div>
+      <div class="note" style="margin-top:8px">入力した家計・資産・家族情報は、このブラウザ内にのみ保存されます。外部への送信は「生活改善アプリへ保存」を押した時だけ、あなた自身の生活改善アプリ（Firebase）に送られます。別端末への引き継ぎは「データ保存」でも可能です。</div>
     </div>
 
     <!-- 結果 -->
@@ -686,7 +690,7 @@ tbody tr.ret td{background:#f0fdf4}
       <details open>
         <summary>はじめての方へ — 3ステップで結果が出ます</summary>
         <div class="g-body">
-          <div class="g-step"><span class="g-num">1</span><div><strong>シミュレーターの⭐6項目を入力</strong><br>月収・ボーナス・家賃・現金・投資額・毎月の積立。これだけで概算できます。他の項目には平均的な初期値が入っています。</div></div>
+          <div class="g-step"><span class="g-num">1</span><div><strong>シミュレーターの●印6項目を入力</strong><br>月収・ボーナス・家賃・現金・投資額・毎月の積立。これだけで概算できます。他の項目には平均的な初期値が入っています。</div></div>
           <div class="g-step"><span class="g-num">2</span><div><strong>自動で再計算されるのを待つ</strong><br>入力を変えると約1秒後に自動計算されます（「▶ 再計算・更新」を押してもOK）。入力値は自動保存されるので、ブラウザを閉じても消えません。</div></div>
           <div class="g-step"><span class="g-num">3</span><div><strong>結果の一番上のバーを見る</strong><br>「資産寿命」（何歳まで資産がもつか）が結論です。「◯歳で枯渇」と出たら、積立額や支出を調整して「90歳まで維持」を目指しましょう。</div></div>
         </div>
@@ -710,8 +714,8 @@ tbody tr.ret td{background:#f0fdf4}
             <li><strong>単位チップの色</strong>: 青=「円」（例: 月収320,000）、オレンジ=「万円」（例: 住宅価格5000）。入力欄の右のチップで確認できます。</li>
             <li><strong>家族構成</strong>: 生年を <code>0</code>（または空欄）にすると「いない」扱いになり、収入・年金・教育費から自動で除外されます。</li>
             <li><strong>呼び方の変更</strong>: 家族タブで「妻→夫」「長女→長男」など自由に変更でき、表やグラフ全体に反映されます。</li>
-            <li><strong>費用の目安</strong>: 各費用欄の下の緑バッジ「👥 目安」は、あなたの家族構成での一般的な支出額です。迷ったらこの近辺から始めましょう。</li>
-            <li><strong>理想バランス</strong>: 生活費タブ上部の表で、理想の家計配分と現在の入力を比較できます（🔴が出た項目は見直し候補）。</li>
+            <li><strong>費用の目安</strong>: 各費用欄の下の緑バッジ「目安」は、あなたの家族構成での一般的な支出額です。迷ったらこの近辺から始めましょう。</li>
+            <li><strong>理想バランス</strong>: 生活費タブ上部の表で、理想の家計配分と現在の入力を比較できます（赤が出た項目は見直し候補）。</li>
           </ul>
         </div>
       </details>
@@ -741,7 +745,7 @@ tbody tr.ret td{background:#f0fdf4}
             <li><strong>上部の固定バー</strong>: 資産寿命／90歳・65歳時点の総資産／リスク判定（緑/黄/赤）。ここが結論です。</li>
             <li><strong>グラフ</strong>: 「総資産」で全体の山と谷を、「資産内訳」で現金・投資・取り崩しの動きを確認。</li>
             <li><strong>キャッシュフロー表</strong>: 1行=1年。「年収支」が赤い年は支出超過。「積立/取崩」で投資との出入り。収入欄にカーソルを乗せると内訳（給与/年金/退職金）が見えます。スマホでは主要列のみ表示されます。</li>
-            <li><strong>シナリオ比較</strong>: 現在の設定を「💾 シナリオ保存」してから条件を変えると、保存時点と比較できます（例:「私立進学プラン」vs「公立プラン」）。</li>
+            <li><strong>シナリオ比較</strong>: 現在の設定を「シナリオ保存」してから条件を変えると、保存時点と比較できます（例:「私立進学プラン」vs「公立プラン」）。</li>
             <li><strong>退職時期シミュレーション</strong>: 60/62/65/67歳で退職した場合の資産を並べて比較できます。</li>
           </ul>
         </div>
@@ -754,7 +758,7 @@ tbody tr.ret td{background:#f0fdf4}
           マネーフォワードMEの<strong>入出金明細CSV</strong>を読み込むと、カテゴリ別の月平均を計算して生活費・固定費の入力欄に自動反映できます（確認画面でチェックした項目のみ）。手入力より実態に近い数字でシミュレーションできます。
           <h4>手順</h4>
           <div class="g-step"><span class="g-num">1</span><div>マネーフォワードME（Web版・プレミアム）にログイン →「家計簿」→ 対象月の<strong>CSVダウンロード</strong>。複数月分あると平均が安定します（3ヶ月分推奨）</div></div>
-          <div class="g-step"><span class="g-num">2</span><div>このアプリのシミュレーター下部「🔗 MF CSV取り込み」からファイルを選択</div></div>
+          <div class="g-step"><span class="g-num">2</span><div>このアプリのシミュレーター下部「MF CSV取り込み」からファイルを選択</div></div>
           <div class="g-step"><span class="g-num">3</span><div>確認画面で「現在の入力」と「CSV月平均」を見比べ、反映したい項目にチェックして反映</div></div>
           <h4>知っておくこと</h4>
           <ul>
@@ -773,8 +777,8 @@ tbody tr.ret td{background:#f0fdf4}
         <div class="g-body">
           <ul>
             <li>入力値は<strong>このブラウザに自動保存</strong>されます（サーバーには送信されません）。</li>
-            <li>別のPC・スマホに引き継ぐには「📤 データ保存」でJSONファイルを保存し、移行先で「📁 データ読込」。</li>
-            <li>「📥 Excel / CSV」でキャッシュフロー表をダウンロードできます。</li>
+            <li>別のPC・スマホに引き継ぐには「データ保存」でJSONファイルを保存し、移行先で「データ読込」。</li>
+            <li>「Excel / CSV」でキャッシュフロー表をダウンロードできます。</li>
             <li>ブラウザの履歴削除（サイトデータ含む）をすると入力が消えるので、大事な設定はJSON保存を。</li>
           </ul>
         </div>
@@ -786,7 +790,7 @@ tbody tr.ret td{background:#f0fdf4}
           <h4>Q. 数字はどこまで正確？</h4>
           簡易モデルによる概算です。税・社会保険料は「手取り」入力で吸収し、年金は簡易推計です。傾向をつかむ道具として使い、重要な判断はファイナンシャルプランナー等にご相談ください。
           <h4>Q. 「◯歳で枯渇」と出て不安…</h4>
-          まず①毎月の積立投資を増やす ②理想バランスで🔴の支出を見直す ③退職時期や年金の受給開始を変えてみる、の順で調整してみてください。数字が変わるのをリアルタイムで確認できます。
+          まず①毎月の積立投資を増やす ②理想バランスで赤の支出を見直す ③退職時期や年金の受給開始を変えてみる、の順で調整してみてください。数字が変わるのをリアルタイムで確認できます。
           <h4>Q. 投資利回り5%は妥当？</h4>
           全世界株式インデックスの長期期待値としてよく使われる水準です。堅実に見たいなら3%に下げて試してみましょう。
           <h4>Q. 入力を最初からやり直したい</h4>
@@ -814,7 +818,7 @@ tbody tr.ret td{background:#f0fdf4}
     <div class="card">
       <div class="card-h"><h2>データ管理</h2></div>
       <div class="btn-row">
-        <button class="btn r" onclick="if(confirm('全データを初期化しますか？'))resetAll()">🗑️ データ初期化</button>
+        <button class="btn r" onclick="if(confirm('全データを初期化しますか？'))resetAll()">データ初期化</button>
       </div>
       <div class="note" style="margin-top:10px">全設定・シナリオ・目標・カスタムイベントを初期状態に戻します。</div>
     </div>
@@ -856,7 +860,7 @@ tbody tr.ret td{background:#f0fdf4}
 
 <div class="modal-bg" id="modal-scenario">
   <div class="modal">
-    <h3>💾 シナリオを保存</h3>
+    <h3>シナリオを保存</h3>
     <div class="field" style="margin-bottom:14px"><label>シナリオ名</label><input type="text" id="sc_name" placeholder="例：標準プラン、住宅購入プラン"></div>
     <div class="btn-row">
       <button class="btn" onclick="saveScenario()">保存</button>
@@ -867,7 +871,7 @@ tbody tr.ret td{background:#f0fdf4}
 
 <div class="modal-bg" id="modal-mf">
   <div class="modal" style="max-width:560px">
-    <h3>📥 マネーフォワードCSV取り込み</h3>
+    <h3>マネーフォワードCSV取り込み</h3>
     <div id="mf-preview" style="max-height:60vh;overflow-y:auto"></div>
     <div class="btn-row">
       <button class="btn" onclick="applyMFImport()">チェックした項目を反映</button>
@@ -881,15 +885,30 @@ tbody tr.ret td{background:#f0fdf4}
 // CONSTANTS
 // ══════════════════════════════════════════════════════
 const LIFE_END_AGE = 90;
+function lpIcon(key,size){
+  var P={
+   zap:['M13 2 3 14h9l-1 8 10-12h-9l1-8z'],
+   target:['M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20Z','M12 18a6 6 0 1 0 0-12 6 6 0 0 0 0 12Z','M12 14a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z'],
+   star:['M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.123 2.123 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.123 2.123 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.122 2.122 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.122 2.122 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.122 2.122 0 0 0 1.597-1.16z'],
+   award:['M12 14a6 6 0 1 0 0-12 6 6 0 0 0 0 12Z','M15.477 12.89 17 22l-5-3-5 3 1.523-9.11'],
+   chart:['M3 3v16a2 2 0 0 0 2 2h16','M18 17V9','M13 17V5','M8 17v-3'],
+   shield:['M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z'],
+   trending:['M16 7h6v6','m22 7-8.5 8.5-5-5L2 17'],
+   calendar:['M8 2v4','M16 2v4','M3 10h18','M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z'],
+   pencil:['M12 20h9','M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z'],
+  };
+  var ps=(P[key]||P.star).map(function(d){return '<path d="'+d+'"/>';}).join('');
+  return '<svg width="'+size+'" height="'+size+'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+ps+'</svg>';
+}
 const BADGE_DEFS = [
-  {id:'first_run',  ico:'🚀',name:'ファーストラン',   desc:'初めて計算実行'},
-  {id:'goal_set',   ico:'🎯',name:'目標設定完了',     desc:'初めて目標を設定'},
-  {id:'goal_50',    ico:'⭐', name:'折り返し',          desc:'目標達成率50%'},
-  {id:'goal_100',   ico:'🏆',name:'目標達成！',        desc:'目標を100%達成'},
-  {id:'scenario_2', ico:'📊',name:'シナリオ比較家',   desc:'2つ以上シナリオ保存'},
-  {id:'safe_90',    ico:'🛡️', name:'安全航行',         desc:'90歳まで資産プラス'},
-  {id:'invest_guru',ico:'📈',name:'投資の達人',        desc:'投資利回り7%以上設定'},
-  {id:'custom_ev',  ico:'📅',name:'イベントマスター', desc:'カスタムイベントを追加'},
+  {id:'first_run',  ico:'zap',name:'ファーストラン',   desc:'初めて計算実行'},
+  {id:'goal_set',   ico:'target',name:'目標設定完了',     desc:'初めて目標を設定'},
+  {id:'goal_50',    ico:'star', name:'折り返し',          desc:'目標達成率50%'},
+  {id:'goal_100',   ico:'award',name:'目標達成！',        desc:'目標を100%達成'},
+  {id:'scenario_2', ico:'chart',name:'シナリオ比較家',   desc:'2つ以上シナリオ保存'},
+  {id:'safe_90',    ico:'shield', name:'安全航行',         desc:'90歳まで資産プラス'},
+  {id:'invest_guru',ico:'trending',name:'投資の達人',        desc:'投資利回り7%以上設定'},
+  {id:'custom_ev',  ico:'calendar',name:'イベントマスター', desc:'カスタムイベントを追加'},
 ];
 const LEVELS = [
   {min:0,   name:'ライフプラン初心者'},
@@ -1222,26 +1241,26 @@ function actionEngine(rows,p,goals){
   if(typeof metrics.assetLife==='number'&&metrics.assetLife<85){
     const yrs=85-metrics.assetLife;
     const mNeed=Math.ceil(yrs*12*200000/Math.max(1,(p.RET-p.Y0)*12)/10000);
-    proposals.push({priority:1,icon:'🔴',title:`${metrics.assetLife}歳で資産が枯渇する見込みです`,
+    proposals.push({priority:1,icon:'red',title:`${metrics.assetLife}歳で資産が枯渇する見込みです`,
       detail:`このまま続けると${metrics.assetLife}歳時点で資産がマイナスになります。`,
       actions:[`毎月約${mNeed}万円以上の追加積立が必要です`,
         `投資利回り（現在${(p.investRate*100).toFixed(1)}%）の見直しも効果的です`,
         '老後の生活費を現在より10〜15%削減する計画を立てましょう']});
   }
   if(savRate<0.10){
-    proposals.push({priority:2,icon:'🟡',title:`貯蓄率が低い状態です（現在${Math.max(0,Math.round(savRate*100))}%）`,
+    proposals.push({priority:2,icon:'amber',title:`貯蓄率が低い状態です（現在${Math.max(0,Math.round(savRate*100))}%）`,
       detail:'推奨は手取り収入の15〜20%以上の貯蓄です。',
       actions:['変動費（食費・娯楽費）の見直しをしてみましょう',
         `毎月${Math.ceil(mInc*0.15/10000)}万円を先取り貯蓄する仕組みを作りましょう`]});
   }
   if(emerMo<6){
-    proposals.push({priority:2,icon:'🟡',title:'緊急予備費が不足しています',
+    proposals.push({priority:2,icon:'amber',title:'緊急予備費が不足しています',
       detail:`現在の現金は生活費の${Math.round(emerMo*10)/10}ヶ月分です（推奨：6ヶ月以上）。`,
       actions:[`目標：${Math.ceil(mExp*6/10000)}万円以上の現金を維持`,
         '毎月の余剰資金を先にこちらに積み立ててください']});
   }
   if(invRatio<0.3&&p.UA0<50){
-    proposals.push({priority:3,icon:'🟢',title:'投資比率の引き上げを検討しましょう',
+    proposals.push({priority:3,icon:'green',title:'投資比率の引き上げを検討しましょう',
       detail:`現在の投資比率は${Math.round(invRatio*100)}%です。40代以下なら40〜60%が目安です。`,
       actions:['NISAの年間枠（最大360万円）を活用しましょう',
         'iDeCo（公務員は月1.2万円まで全額控除）も有効です']});
@@ -1252,7 +1271,7 @@ function actionEngine(rows,p,goals){
     if(yLeft<=0) continue;
     const gap=gl.amount-w(p.cashAmt+p.investAmt);
     if(gap>0){
-      proposals.push({priority:3,icon:'🎯',title:`目標「${gl.name}」まで残り${gap}万円`,
+      proposals.push({priority:3,icon:'target',title:`目標「${gl.name}」まで残り${gap}万円`,
         detail:`${yLeft}年後（${gl.deadline}年）に達成するには月${Math.ceil(gap/yLeft/12)}万円の積立が必要です。`,
         actions:[`毎月${Math.ceil(gap/yLeft/12)}万円を目標専用口座に積立てましょう`]});
     }
@@ -1327,11 +1346,11 @@ function showNeedInput(missing){
   box.style.display='block';
   const ids=REQUIRED_FIELDS.map(([id,l])=>`<li>${esc(l)}</li>`).join('');
   box.innerHTML=`<div class="card" style="text-align:center;padding:28px 18px">
-    <div style="font-size:2rem;margin-bottom:8px">✏️</div>
+    <div style="margin-bottom:8px;color:var(--gray-3)">${lpIcon('pencil',30)}</div>
     <div style="font-weight:800;font-size:1rem;margin-bottom:6px">必須6項目を入力してください</div>
     <div class="note" style="margin-bottom:10px">未入力: ${missing.map(esc).join(' / ')}</div>
     <ul style="list-style:none;text-align:left;max-width:280px;margin:0 auto 12px;font-size:.85rem">${ids}</ul>
-    <div class="note">⭐印の欄を埋めると、90歳までの資産シミュレーションが表示されます。</div>
+    <div class="note">●印の欄を埋めると、90歳までの資産シミュレーションが表示されます。</div>
   </div>`;
 }
 
@@ -1340,7 +1359,7 @@ function showNeedInput(missing){
 // ══════════════════════════════════════════════════════
 function refreshDashboard(){
   if(!state.sim){
-    document.getElementById('db-metrics').innerHTML=`<div style="grid-column:1/-1"><div class="empty-state"><div class="e-ico">💹</div>まずシミュレーターで計算を実行すると<br>ダッシュボードにデータが表示されます。<br><br><button class="btn" onclick="nav('sim')">シミュレーターへ →</button></div></div>`;
+    document.getElementById('db-metrics').innerHTML=`<div style="grid-column:1/-1"><div class="empty-state"><div class="e-ico" style="color:var(--gray-3)">${lpIcon('trending',32)}</div>まずシミュレーターで計算を実行すると<br>ダッシュボードにデータが表示されます。<br><br><button class="btn" onclick="nav('sim')">シミュレーターへ →</button></div></div>`;
     document.getElementById('db-albar').innerHTML='';document.getElementById('db-risk').innerHTML='';
     document.getElementById('db-goals-card').innerHTML='';document.getElementById('db-action-card').innerHTML='';
     renderBadges('db-badges');return;
@@ -1352,10 +1371,10 @@ function refreshDashboard(){
   const fc=last.totalAsset>10000000?'green':last.totalAsset>0?'blue':'red';
   const dc=reds>5?'red':ambs>8?'amber':'green';
   document.getElementById('db-metrics').innerHTML=`
-    <div class="mc ${fc}" data-ico="💰"><div class="mc-l">90歳時点の総資産</div><div class="mc-v">${fmt(w(last.totalAsset))}万円</div><div class="mc-s">現金${fmt(w(last.cash))}万 ／ 投資${fmt(w(last.invest))}万</div></div>
-    <div class="mc blue" data-ico="📊"><div class="mc-l">ピーク総資産</div><div class="mc-v">${fmt(w(metrics.peakAsset))}万円</div><div class="mc-s">本人${metrics.peakAge}歳時点</div></div>
-    <div class="mc amber" data-ico="📅"><div class="mc-l">65歳時点の総資産</div><div class="mc-v">${metrics.asset65!==null?fmt(w(metrics.asset65))+'万円':'−'}</div><div class="mc-s">85歳：${metrics.asset85!==null?fmt(w(metrics.asset85))+'万円':'−'}</div></div>
-    <div class="mc ${dc}" data-ico="⚠️"><div class="mc-l">年間赤字の年数</div><div class="mc-v">${rows.filter(r=>r.balance<0).length}年</div><div class="mc-s">全${rows.length}年中</div></div>`;
+    <div class="mc ${fc}"><div class="mc-l">90歳時点の総資産</div><div class="mc-v">${fmt(w(last.totalAsset))}万円</div><div class="mc-s">現金${fmt(w(last.cash))}万 ／ 投資${fmt(w(last.invest))}万</div></div>
+    <div class="mc blue"><div class="mc-l">ピーク総資産</div><div class="mc-v">${fmt(w(metrics.peakAsset))}万円</div><div class="mc-s">本人${metrics.peakAge}歳時点</div></div>
+    <div class="mc amber"><div class="mc-l">65歳時点の総資産</div><div class="mc-v">${metrics.asset65!==null?fmt(w(metrics.asset65))+'万円':'−'}</div><div class="mc-s">85歳：${metrics.asset85!==null?fmt(w(metrics.asset85))+'万円':'−'}</div></div>
+    <div class="mc ${dc}"><div class="mc-l">年間赤字の年数</div><div class="mc-v">${rows.filter(r=>r.balance<0).length}年</div><div class="mc-s">全${rows.length}年中</div></div>`;
 
   document.getElementById('db-albar').innerHTML=`
     <div class="al-bar">
@@ -1393,15 +1412,15 @@ function refreshDashboard(){
       <div class="goal-prog-bar"><div class="goal-prog-fill" style="width:${pct}%;background:${col}"></div></div>
       <div style="font-size:.7rem;color:var(--gray-5);margin-top:2px">${gl.deadline}年目標 / ${gl.amount}万円</div>
     </div>`;
-  }).join(''):`<div class="empty-state" style="padding:20px"><div class="e-ico" style="font-size:1.5rem">🎯</div>目標を設定してみましょう<br><button class="btn sm" style="margin-top:8px" onclick="nav('goals')">目標管理へ</button></div>`;
+  }).join(''):`<div class="empty-state" style="padding:20px"><div class="e-ico" style="color:var(--gray-3)">${lpIcon('target',24)}</div>目標を設定してみましょう<br><button class="btn sm" style="margin-top:8px" onclick="nav('goals')">目標管理へ</button></div>`;
   document.getElementById('db-goals-card').innerHTML=`<div class="card"><div class="card-h"><h2>目標進捗</h2><a onclick="nav('goals')" style="font-size:.75rem;color:var(--blue);cursor:pointer">すべて見る →</a></div>${goalsHtml}</div>`;
 
   const actHtml=proposals.slice(0,2).map(pr=>`
     <div class="proposal p${pr.priority}">
-      <div class="prop-ico">${pr.icon}</div>
+      <div class="prop-ico">${pr.icon==='target'?lpIcon('target',20):'<span class="pdot '+pr.icon+'"></span>'}</div>
       <div class="prop-body"><div class="prop-title">${esc(pr.title)}</div><div class="prop-detail">${esc(pr.detail)}</div>
       <ul class="prop-actions">${pr.actions.slice(0,2).map(a=>`<li>${esc(a)}</li>`).join('')}</ul></div>
-    </div>`).join('')||'<div style="color:var(--gray-5);font-size:.82rem;padding:10px">現在の計画は概ね良好です！🎉</div>';
+    </div>`).join('')||'<div style="color:var(--gray-5);font-size:.82rem;padding:10px">現在の計画は概ね良好です。</div>';
   document.getElementById('db-action-card').innerHTML=`<div class="card"><div class="card-h"><h2>アクション提案</h2><a onclick="nav('coach')" style="font-size:.75rem;color:var(--blue);cursor:pointer">コーチに相談 →</a></div>${actHtml}</div>`;
 
   renderBadges('db-badges');updateXPDisplay();
@@ -1420,7 +1439,7 @@ function drawSimResults(rows,p,metrics){
     const reds0=rows.filter(r=>riskLevel(r)==='red').length;
     const ambs0=rows.filter(r=>riskLevel(r)==='amber').length;
     const rl0=reds0>5?'danger':ambs0>8?'caution':'safe';
-    const rt0=reds0>5?'🔴 要対策':ambs0>8?'🟡 注意':'🟢 安全';
+    const rt0=reds0>5?'<span class="rdot red"></span> 要対策':ambs0>8?'<span class="rdot amber"></span> 注意':'<span class="rdot"></span> 安全';
     const alTxt=typeof metrics.assetLife==='number'?metrics.assetLife+'歳で枯渇':'90歳まで維持';
     document.getElementById('sim-summary').innerHTML=`<div class="sim-sum">
       <div class="ss-item"><span class="ss-l">資産寿命</span><span class="ss-v ${typeof metrics.assetLife==='number'?'neg':''}">${alTxt}</span></div>
@@ -1430,9 +1449,9 @@ function drawSimResults(rows,p,metrics){
     </div>`;
   }
   document.getElementById('sim-metrics').innerHTML=`
-    <div class="mc ${fc}" data-ico="💰"><div class="mc-l">90歳時点の総資産</div><div class="mc-v">${fmt(w(last.totalAsset))}万円</div><div class="mc-s">現金${fmt(w(last.cash))}万 ／ 投資${fmt(w(last.invest))}万</div></div>
-    <div class="mc blue" data-ico="📊"><div class="mc-l">ピーク総資産</div><div class="mc-v">${fmt(w(metrics.peakAsset))}万円</div><div class="mc-s">本人${metrics.peakAge}歳時点</div></div>
-    <div class="mc amber" data-ico="📅"><div class="mc-l">65歳時資産</div><div class="mc-v">${metrics.asset65!==null?fmt(w(metrics.asset65))+'万円':'−'}</div><div class="mc-s">85歳：${metrics.asset85!==null?fmt(w(metrics.asset85))+'万円':'−'}</div></div>`;
+    <div class="mc ${fc}"><div class="mc-l">90歳時点の総資産</div><div class="mc-v">${fmt(w(last.totalAsset))}万円</div><div class="mc-s">現金${fmt(w(last.cash))}万 ／ 投資${fmt(w(last.invest))}万</div></div>
+    <div class="mc blue"><div class="mc-l">ピーク総資産</div><div class="mc-v">${fmt(w(metrics.peakAsset))}万円</div><div class="mc-s">本人${metrics.peakAge}歳時点</div></div>
+    <div class="mc amber"><div class="mc-l">65歳時資産</div><div class="mc-v">${metrics.asset65!==null?fmt(w(metrics.asset65))+'万円':'−'}</div><div class="mc-s">85歳：${metrics.asset85!==null?fmt(w(metrics.asset85))+'万円':'−'}</div></div>`;
   document.getElementById('sim-albar').innerHTML=`
     <div class="al-bar">
       <span style="font-size:.7rem;font-weight:700;color:var(--blue-d)">資産寿命：</span>
@@ -1592,9 +1611,9 @@ function deleteGoal(id){state.goals=state.goals.filter(g=>g.id!==id);saveState()
 function renderGoals(){
   const p=currentP||state.sim?.p;const curAmt=p?w(p.cashAmt+p.investAmt):0;
   const list=document.getElementById('goals-list');if(!list) return;
-  if(!state.goals.length){list.innerHTML='<div class="empty-state"><div class="e-ico">🎯</div>まだ目標が設定されていません。<br>「＋ 目標を追加」から追加してください。</div>';return;}
-  const catL={asset:'💰 資産',career:'💼 キャリア',life:'🏠 生活'};
-  const priL={high:'🔴 高',medium:'🟡 中',low:'🟢 低'};
+  if(!state.goals.length){list.innerHTML='<div class="empty-state"><div class="e-ico" style="color:var(--gray-3)">'+lpIcon('target',30)+'</div>まだ目標が設定されていません。<br>「＋ 目標を追加」から追加してください。</div>';return;}
+  const catL={asset:'資産',career:'キャリア',life:'生活'};
+  const priL={high:'高',medium:'中',low:'低'};
   list.innerHTML=state.goals.map(gl=>{
     const pct=gl.amount>0?Math.min(100,Math.round(curAmt/gl.amount*100)):0;
     const col=pct>=100?'#10b981':pct>=50?'#ff7d1e':'#f59e0b';
@@ -1615,7 +1634,7 @@ function renderGoals(){
         ${gl.deadline?`<span>期限: <strong>${gl.deadline}年</strong>${yLeft?` (残${yLeft}年)`:''}</span>`:''}
         ${needM?`<span style="color:var(--amber)">月<strong>${needM}万円</strong>の積立が必要</span>`:''}
       </div>
-      ${gl.note?`<div style="font-size:.72rem;color:var(--gray-5);margin-top:4px">📝 ${esc(gl.note)}</div>`:''}
+      ${gl.note?`<div style="font-size:.72rem;color:var(--gray-5);margin-top:4px">${esc(gl.note)}</div>`:''}
     </div>`;}).join('');
 }
 
@@ -1632,19 +1651,19 @@ function coachAutoAnalysis(){
   const mVar=p.food+p.util+p.ent+p.cloth+p.aself+p.awife+p.kids+p.misc;
   const mFix=p.ins+p.tel+p.carM+p.sub+p.oth;
   const savRate=p.uMon>0?Math.round((p.uMon-(mVar+mFix+p.rent))/p.uMon*100):0;
-  const msg=`📋 現在のプラン分析レポート
+  const msg=`現在のプラン分析レポート
 
-💰 資産サマリー
+■ 資産サマリー
 • 現在の総資産: ${fmt(w(p.cashAmt+p.investAmt))}万円（現金${w(p.cashAmt)}万 ／ 投資${w(p.investAmt)}万）
 • 65歳時の予測資産: ${m.asset65!==null?fmt(w(m.asset65))+'万円':'計算中'}
 • 資産寿命: ${typeof m.assetLife==='number'?m.assetLife+'歳まで':m.assetLife}
 
-📈 月次収支
+■ 月次収支
 • 月収（手取+手当）: 約${mw(p.uMon)}万円
 • 月支出合計: 約${mw(mVar+mFix+p.rent)}万円
 • 貯蓄率: 約${savRate}%
 
-⚡ 最優先課題
+■ 最優先課題
 ${props.slice(0,2).map((pr,i)=>`${i+1}. ${pr.icon} ${pr.title}`).join('\n')||'現在の計画は概ね良好です！'}
 
 下のよく聞かれる質問や入力フォームで詳しく聞いてください。`;
@@ -1701,7 +1720,7 @@ function coachResponse(q){
       `・90歳時総資産: ${fmt(finA)} → ${fmt(finB)}万円（${diff(finA,finB)}）\n`+
       `・65歳時資産: ${g65a!=null?fmt(g65a):'−'} → ${g65b!=null?fmt(g65b):'−'}万円（${diff(g65a,g65b)}）\n`+
       `・資産寿命: ${life(m.assetLife)} → ${life(m2.assetLife)}\n\n`+
-      `${finB>finA?'📈 遅らせる方が総資産は増える見込みです（頭金を貯める期間が延び、ローン期間が後ろ倒しになるため）。ただし家賃を払い続ける期間も延びます。':finB<finA?'📉 変更後の方が総資産は減る見込みです。':'ほぼ同等です。'}\n※ 物件価格・金利は変えずに購入年だけを動かした試算です。`;
+      `${finB>finA?'遅らせる方が総資産は増える見込みです（頭金を貯める期間が延び、ローン期間が後ろ倒しになるため）。ただし家賃を払い続ける期間も延びます。':finB<finA?'変更後の方が総資産は減る見込みです。':'ほぼ同等です。'}\n※ 物件価格・金利は変えずに購入年だけを動かした試算です。`;
   }
   if(qL.includes('住宅')||qL.includes('マンション')||qL.includes('ローン')){
     const loan=Math.max(0,p.hprc*10000-p.hdp);const annual=annualMortgage(loan,p.hrate,p.hper);
@@ -1726,7 +1745,7 @@ function renderBadges(id){
   const el=document.getElementById(id);if(!el) return;
   el.innerHTML=BADGE_DEFS.map(b=>{
     const e=state.gamification.badges.includes(b.id);
-    return`<div class="badge ${e?'earned':'locked'}" title="${b.desc}"><span class="b-ico">${b.ico}</span>${b.name}</div>`;
+    return`<div class="badge ${e?'earned':'locked'}" title="${b.desc}"><span class="b-ico">${lpIcon(b.ico,22)}</span>${b.name}</div>`;
   }).join('');
 }
 
@@ -2107,7 +2126,7 @@ function updateRefHints(){
     const field=inp.closest('.field');if(!field) continue;
     let hint=field.querySelector('.refhint');
     if(!hint){hint=document.createElement('div');hint.className='refhint';field.appendChild(hint);}
-    hint.textContent=`👥 目安 ${mw(vals[idx])}万円/月（${label}の平均的な水準）`;
+    hint.textContent=`目安 ${mw(vals[idx])}万円/月（${label}の平均的な水準）`;
   }
   // 家賃は手取り比で表示
   const rentInp=document.getElementById('h_rent');
@@ -2115,7 +2134,7 @@ function updateRefHints(){
     const field=rentInp.closest('.field');
     let hint=field.querySelector('.refhint');
     if(!hint){hint=document.createElement('div');hint.className='refhint';field.appendChild(hint);}
-    hint.textContent=`👥 目安 手取りの25% ≒ ${mw(netMonthly()*0.25)}万円/月`;
+    hint.textContent=`目安 手取りの25% ≒ ${mw(netMonthly()*0.25)}万円/月`;
   }
 }
 
@@ -2145,22 +2164,24 @@ function renderIdealBalance(){
     curTotal+=cur;
     const pct=IDEAL_PCT[key][idx];
     const ideal=net*pct/100;
-    const mark=ideal<=0?(cur>0?'🔴':'−')
-      :cur>ideal*1.2?'🔴':cur>ideal*1.05?'🟡':'🟢';
-    const cls=mark==='🔴'?'neg':mark==='🟡'?'wrn':'pos';
+    const lv=ideal<=0?(cur>0?'red':'none')
+      :cur>ideal*1.2?'red':cur>ideal*1.05?'amber':'green';
+    const mark=lv==='none'?'−':'<span class="rdot '+lv+'"></span>';
+    const cls=lv==='red'?'neg':lv==='amber'?'wrn':'pos';
     return `<tr><td class="l">${name}</td><td>${pct}%</td><td>${mw(ideal)}万円</td><td class="${cls}">${mw(cur)}万円</td><td class="c">${mark}</td></tr>`;
   }).join('');
   const savePct=IDEAL_PCT.save[idx];
   const saveIdeal=net*savePct/100;
   const saveCur=net-curTotal;
-  const saveMark=saveCur<saveIdeal*0.8?'🔴':saveCur<saveIdeal?'🟡':'🟢';
-  const saveCls=saveMark==='🔴'?'neg':saveMark==='🟡'?'wrn':'pos';
+  const saveLv=saveCur<saveIdeal*0.8?'red':saveCur<saveIdeal?'amber':'green';
+  const saveMark='<span class="rdot '+saveLv+'"></span>';
+  const saveCls=saveLv==='red'?'neg':saveLv==='amber'?'wrn':'pos';
   box.innerHTML=`<div class="tbl-wrap"><table>
     <thead><tr><th style="text-align:left">項目</th><th>理想割合</th><th>理想額/月</th><th>現在の入力</th><th>判定</th></tr></thead>
     <tbody>${trs}
       <tr style="border-top:2px solid var(--gray-3)"><td class="l"><strong>貯蓄・投資余力</strong></td><td><strong>${savePct}%</strong></td><td><strong>${mw(saveIdeal)}万円</strong></td><td class="${saveCls}"><strong>${mw(saveCur)}万円</strong></td><td class="c">${saveMark}</td></tr>
     </tbody></table></div>
-    <div class="note">世帯手取り 月${mw(net)}万円 ／ 家族構成「${label}」として算出。🟢=理想内 🟡=やや高め 🔴=見直し推奨。割合はFPでよく使われる家計バランスの目安です。</div>`;
+    <div class="note">世帯手取り 月${mw(net)}万円 ／ 家族構成「${label}」として算出。緑=理想内 / 黄=やや高め / 赤=見直し推奨。割合はFPでよく使われる家計バランスの目安です。</div>`;
 }
 
 function live(){
