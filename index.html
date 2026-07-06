@@ -32,6 +32,10 @@
   --shadow-md:0 4px 14px rgba(30,40,60,.10);
 }
 html,body{max-width:100%;overflow-x:hidden}
+@media (pointer:coarse){input,select,textarea{font-size:16px}} /* iOS自動ズーム→タップずれ防止 */
+button,a,input,select,textarea,summary,label{touch-action:manipulation}
+.field>*,.btn-row>*,.chat-qs>*,.mc-grid>*{min-width:0}
+canvas,img{max-width:100%}
 body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Noto Sans JP','Yu Gothic UI',sans-serif;background:var(--bg);color:var(--text);font-size:14px;line-height:1.55;min-height:100vh;display:flex;-webkit-font-smoothing:antialiased}
 input[type=checkbox]{accent-color:var(--blue)}
 :focus-visible{outline:2px solid var(--blue);outline-offset:1px}
@@ -281,8 +285,9 @@ tbody tr.ret td{background:#f0fdf4}
   .fg,.fg2,.fg3{grid-template-columns:1fr}
   .card{padding:14px 12px}
   /* タブは横スクロール可能に（見切れさせない） */
-  .tab-nav,.chart-tabs,.chat-qs{overflow-x:auto;flex-wrap:nowrap;padding-bottom:6px;-webkit-overflow-scrolling:touch}
-  .tb,.cq,.ctb{white-space:nowrap;flex-shrink:0}
+  .tab-nav,.chart-tabs{overflow-x:auto;flex-wrap:nowrap;padding-bottom:6px;-webkit-overflow-scrolling:touch}
+  .tb,.ctb{white-space:nowrap;flex-shrink:0}
+  .cq{white-space:nowrap}
   /* 出力ボタン群はスクロールでなく2列グリッドで縦に積む */
   .btn-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
   .btn-row .btn,.btn-row .btn-o,.btn-row label.btn-o{width:100%;white-space:normal;text-align:center;font-size:.8rem;padding:9px 8px}
@@ -1471,6 +1476,7 @@ function lifeEventsOf(yr,ua,wa,c1a,c2a,p){
   if(p.hasSp&&yr===p.wret) a('',`${p.spLabel}・復職`);
   if(c1a===6) a('',`${p.c1Label}・小学校`);if(c2a===6) a('',`${p.c2Label}・小学校`);
   if(c1a===12) a('',`${p.c1Label}・中学`);if(c2a===12) a('',`${p.c2Label}・中学`);
+  if(c1a===15) a('',`${p.c1Label}・高校`);if(c2a===15) a('',`${p.c2Label}・高校`);
   if(c1a===18) a('a',`${p.c1Label}・大学入学`);if(c2a===18) a('a',`${p.c2Label}・大学入学`);
   if(c1a===22) a('g',`${p.c1Label}・独立`);if(c2a===22) a('g',`${p.c2Label}・独立`);
   if(yr===p.hyr) a('a',`マンション購入（${p.hprc}万円）`);
@@ -1479,7 +1485,7 @@ function lifeEventsOf(yr,ua,wa,c1a,c2a,p){
   if(ua===p.uPenStart) a('g',`本人・年金受給開始（約${w(p.uPenAmt)}万円/年）`);
   if(p.hasSp&&wa===p.wPenStart) a('g',`${p.spLabel}・年金受給開始（約${w(p.wPenAmt)}万円/年）`);
   if(ua===LIFE_END_AGE) a('r','プラン終了');
-  for(const ev2 of p.customEvents){
+  for(const ev2 of (p.customEvents||[])){
     const inR=ev2.rec?(yr>=ev2.year&&yr<=(ev2.endYear||p.YEND)):yr===ev2.year;
     if(inR) a(ev2.type==='income'?'g':'a',ev2.name+(ev2.rec?' (毎年)':''));
   }
@@ -1821,6 +1827,9 @@ function buildLifeHubPayload(p,m,rows,currentYear){
       investReturn:Math.round(p.investRate*1000)/10,
       retireAge:p.RET-p.uBY, pension:Math.round(p.uPenAmt/10000), pensionAge:p.uPenStart,
     },
+    labels:{sp:p.hasSp?p.spLabel:null,c1:p.hasC1?p.c1Label:null,c2:p.hasC2?p.c2Label:null},
+    lifeEvents:(rows||[]).filter(r=>r&&r.yr!=null).map(r=>({y:r.yr,ua:r.ua,wa:p.hasSp?r.wa:null,c1:p.hasC1?r.c1a:null,c2:p.hasC2?r.c2a:null,
+      ev:lifeEventsOf(r.yr,r.ua,r.wa,r.c1a,r.c2a,p).map(([,t])=>t).join(' ／ ')})),
     results:{
       assetLife:typeof m.assetLife==='number'?m.assetLife+'歳':String(m.assetLife),
       asset65:m.asset65!=null?Math.round(m.asset65/10000):null,
