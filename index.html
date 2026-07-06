@@ -25,13 +25,16 @@
   --purple:#8b5cf6;--purple-l:#ede9fe;
   --dark:#0f172a;--dark2:#333a45;--dark3:#4b5563;
   --gray-1:#f5f6f8;--gray-2:#e9ebee;--gray-3:#cbd2da;
-  --gray-5:#7c828d;--gray-7:#374151;--text:#333333;
+  --gray-5:#878e98;--gray-7:#374151;--text:#1c1e23;
   --surf:#ffffff;--bg:#f5f6f8;--line:#e9ebee;
-  --radius:12px;--radius-sm:8px;
-  --shadow:0 1px 2px rgba(30,40,60,.06);
+  --radius:14px;--radius-sm:10px;
+  --shadow:0 1px 2px rgba(18,24,38,.04),0 2px 6px rgba(18,24,38,.04);
   --shadow-md:0 4px 14px rgba(30,40,60,.10);
 }
-body{font-family:'Hiragino Sans','Yu Gothic UI','Meiryo',sans-serif;background:var(--bg);color:var(--text);font-size:14px;line-height:1.55;min-height:100vh;display:flex}
+html,body{max-width:100%;overflow-x:hidden}
+body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Noto Sans JP','Yu Gothic UI',sans-serif;background:var(--bg);color:var(--text);font-size:14px;line-height:1.55;min-height:100vh;display:flex;-webkit-font-smoothing:antialiased}
+input[type=checkbox]{accent-color:var(--blue)}
+:focus-visible{outline:2px solid var(--blue);outline-offset:1px}
 
 /* ── Sidebar（白基調・オレンジアクセント） ── */
 #sidebar{width:var(--sidebar-w);min-height:100vh;background:#fff;border-right:1px solid var(--line);position:fixed;top:0;left:0;z-index:100;display:flex;flex-direction:column}
@@ -81,15 +84,16 @@ body{font-family:'Hiragino Sans','Yu Gothic UI','Meiryo',sans-serif;background:v
 /* ── Metric Cards ── */
 .mc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:12px;margin-bottom:16px}
 /* 白カード＋大きな数字（マネーフォワード風）。色クラスは数字と左ボーダーに反映 */
-.mc{border-radius:var(--radius);padding:16px 18px;background:#fff;border:1px solid var(--line);border-left:4px solid var(--gray-3);color:var(--text);position:relative;overflow:hidden;box-shadow:var(--shadow)}
-.mc::after{content:attr(data-ico);position:absolute;right:12px;top:10px;font-size:1.7rem;opacity:.18}
-.mc.blue{border-left-color:var(--blue)}   .mc.blue .mc-v{color:var(--blue-d)}
-.mc.green{border-left-color:var(--green)} .mc.green .mc-v{color:var(--green-d)}
-.mc.amber{border-left-color:var(--amber)} .mc.amber .mc-v{color:#b45309}
-.mc.purple{border-left-color:var(--purple)}.mc.purple .mc-v{color:#6d28d9}
-.mc.red{border-left-color:var(--red)}     .mc.red .mc-v{color:#b91c1c}
-.mc-l{font-size:.68rem;color:var(--gray-5);margin-bottom:4px}
-.mc-v{font-size:1.45rem;font-weight:800;letter-spacing:-.5px}
+.mc{border-radius:var(--radius);padding:15px 17px;background:#fff;border:1px solid var(--line);color:var(--text);position:relative;overflow:hidden;box-shadow:var(--shadow)}
+
+.mc-l::before{content:'';display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--gray-3);margin-right:6px}
+.mc.blue .mc-l::before{background:var(--blue)}   .mc.blue .mc-v{color:var(--blue-d)}
+.mc.green .mc-l::before{background:var(--green)} .mc.green .mc-v{color:var(--green-d)}
+.mc.amber .mc-l::before{background:var(--amber)} .mc.amber .mc-v{color:#b45309}
+.mc.purple .mc-l::before{background:var(--purple)}.mc.purple .mc-v{color:#6d28d9}
+.mc.red .mc-l::before{background:var(--red)}     .mc.red .mc-v{color:#b91c1c}
+.mc-l{font-size:.68rem;color:var(--gray-5);margin-bottom:4px;font-weight:600}
+.mc-v{font-size:1.45rem;font-weight:800;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
 .mc-s{font-size:.67rem;color:var(--gray-5);margin-top:3px}
 
 /* ── Proposals ── */
@@ -130,7 +134,7 @@ body{font-family:'Hiragino Sans','Yu Gothic UI','Meiryo',sans-serif;background:v
 .msg.ai .ai-name{font-size:.65rem;color:var(--blue);font-weight:700;margin-bottom:4px}
 .chat-input-row{display:flex;gap:8px}
 .chat-input{flex:1;padding:10px 14px;border:1.5px solid var(--gray-2);border-radius:var(--radius-sm);font-size:.85rem;font-family:inherit;outline:none;transition:border-color .2s}
-.chat-input:focus{border-color:var(--blue)}
+.chat-input:focus{border-color:var(--blue);box-shadow:0 0 0 3px var(--blue-l)}
 .chat-qs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
 .cq{padding:5px 12px;border:1.5px solid var(--blue);color:var(--blue);border-radius:20px;font-size:.75rem;font-weight:600;cursor:pointer;background:#fff;transition:all .15s;font-family:inherit}
 .cq:hover{background:var(--blue);color:#fff}
@@ -197,7 +201,7 @@ body{font-family:'Hiragino Sans','Yu Gothic UI','Meiryo',sans-serif;background:v
 .btn.r{background:var(--red)}.btn.r:hover{background:#dc2626}
 .btn.sm{padding:6px 13px;font-size:.78rem}
 .btn-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:12px}
-.btn-o{background:#fff;color:var(--blue);border:2px solid var(--blue);padding:8px 16px;border-radius:var(--radius-sm);cursor:pointer;font-size:.82rem;font-weight:700;font-family:inherit;transition:all .15s}
+.btn-o{background:#fff;color:var(--blue);border:1.5px solid var(--blue);padding:8px 16px;border-radius:var(--radius-sm);cursor:pointer;font-size:.82rem;font-weight:700;font-family:inherit;transition:all .15s}
 .btn-o:hover{background:var(--blue);color:#fff}
 .btn-o.r{color:var(--red);border-color:var(--red)}.btn-o.r:hover{background:var(--red);color:#fff}
 
@@ -223,6 +227,12 @@ tbody tr.ret td{background:#f0fdf4}
 .risk.safe{background:var(--green-l);color:var(--green-d)}
 .risk.caution{background:var(--amber-l);color:#92400e}
 .risk.danger{background:var(--red-l);color:#991b1b}
+.risk .risk-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;background:var(--green)}
+.risk.caution .risk-dot{background:var(--amber)}
+.risk.danger .risk-dot{background:var(--red)}
+.rdot{display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--green);vertical-align:middle}
+.rdot.amber{background:var(--amber)}
+.rdot.red{background:var(--red)}
 
 /* ── Asset life ── */
 .al-bar{background:var(--blue-ll);border:1px solid var(--blue-l);border-radius:var(--radius-sm);padding:12px 18px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px}
@@ -351,15 +361,15 @@ tbody tr.ret td{background:#f0fdf4}
     <div class="section-title">シミュレーター</div>
     <div class="card">
       <div class="card-h"><h2>シミュレーション設定</h2></div>
-      <div class="note" style="margin-bottom:10px">⭐印の6項目（月収・ボーナス・家賃・現金・投資・積立）を入れるだけで概算できます。他の項目は平均的な初期値が入っています。入力すると自動で再計算されます。<a onclick="nav('guide')" style="color:var(--blue-d);font-weight:700;cursor:pointer;margin-left:6px">📖 詳しい使い方 →</a></div>
+      <div class="note" style="margin-bottom:10px">⭐印の6項目（月収・ボーナス・家賃・現金・投資・積立）を入れるだけで概算できます。他の項目は平均的な初期値が入っています。入力すると自動で再計算されます。<a onclick="nav('guide')" style="color:var(--blue-d);font-weight:700;cursor:pointer;margin-left:6px">詳しい使い方 →</a></div>
       <div class="tab-nav">
         <button class="tb on" onclick="showTab('fam',this)">👨‍👩‍👧 家族</button>
-        <button class="tb" onclick="showTab('inc',this)">💴 収入</button>
-        <button class="tb" onclick="showTab('var',this)">🛒 生活費</button>
-        <button class="tb" onclick="showTab('fix',this)">🔒 固定費</button>
-        <button class="tb" onclick="showTab('edu',this)">📚 教育</button>
-        <button class="tb" onclick="showTab('cev',this)">📅 イベント</button>
-        <button class="tb" onclick="showTab('fut',this)">📊 将来</button>
+        <button class="tb" onclick="showTab('inc',this)">収入</button>
+        <button class="tb" onclick="showTab('var',this)">生活費</button>
+        <button class="tb" onclick="showTab('fix',this)">固定費</button>
+        <button class="tb" onclick="showTab('edu',this)">教育</button>
+        <button class="tb" onclick="showTab('cev',this)">イベント</button>
+        <button class="tb" onclick="showTab('fut',this)">将来</button>
       </div>
 
       <div id="tc-fam" class="tp on">
@@ -411,7 +421,7 @@ tbody tr.ret td{background:#f0fdf4}
       </div>
 
       <div id="tc-var" class="tp">
-        <div class="sl">💡 理想の生活費バランス</div>
+        <div class="sl">理想の生活費バランス</div>
         <div class="note" style="margin-bottom:8px">家族構成（家族タブ）と収入（収入タブ）から、FPの家計割合ガイドを元に理想額を自動算出しています。入力を変えるとリアルタイムで更新されます。</div>
         <div id="ideal-balance"></div>
         <div class="sl">インフレ設定</div>
@@ -510,7 +520,7 @@ tbody tr.ret td{background:#f0fdf4}
           <div class="field"><label>投資 利回り（%/年）</label><input type="number" id="a_investrate" value="5.0" step="0.1"></div>
           <div class="field imp"><label>毎月の積立投資（円/月）</label><input type="number" id="a_investmon" value="30000"><div class="hint">現役中、現金から投資へ自動積立（NISA等）</div></div>
         </div>
-        <div class="note">💡 現金が不足した年は投資資産を自動で取り崩して補填します（残りは運用継続）。</div>
+        <div class="note">現金が不足した年は投資資産を自動で取り崩して補填します（残りは運用継続）。</div>
         <div class="sl">退職金</div>
         <div class="fg2">
           <div class="field"><label>退職金（万円）</label><input type="number" id="r_sev" value="2000"></div>
@@ -638,7 +648,7 @@ tbody tr.ret td{background:#f0fdf4}
             <tbody id="cf-body"></tbody>
           </table>
         </div>
-        <div class="note">危険度：🟢安全 / 🟡注意 / 🔴要対策。収入欄にカーソルで内訳表示。スマホでは主要列のみ表示（全列はPC・CSVで）。</div>
+        <div class="note">危険度：緑=安全 / 黄=注意 / 赤=要対策。収入欄にカーソルで内訳表示。スマホでは主要列のみ表示（全列はPC・CSVで）。</div>
         </div>
       </div>
     </div>
@@ -670,11 +680,11 @@ tbody tr.ret td{background:#f0fdf4}
 
   <!-- ════ GUIDE（使い方） ════ -->
   <div id="page-guide" class="page">
-    <div class="section-title">📖 使い方ガイド</div>
+    <div class="section-title">使い方ガイド</div>
     <div class="guide">
 
       <details open>
-        <summary>🚀 はじめての方へ — 3ステップで結果が出ます</summary>
+        <summary>はじめての方へ — 3ステップで結果が出ます</summary>
         <div class="g-body">
           <div class="g-step"><span class="g-num">1</span><div><strong>シミュレーターの⭐6項目を入力</strong><br>月収・ボーナス・家賃・現金・投資額・毎月の積立。これだけで概算できます。他の項目には平均的な初期値が入っています。</div></div>
           <div class="g-step"><span class="g-num">2</span><div><strong>自動で再計算されるのを待つ</strong><br>入力を変えると約1秒後に自動計算されます（「▶ 再計算・更新」を押してもOK）。入力値は自動保存されるので、ブラウザを閉じても消えません。</div></div>
@@ -683,7 +693,7 @@ tbody tr.ret td{background:#f0fdf4}
       </details>
 
       <details>
-        <summary>🧭 各画面でできること</summary>
+        <summary>各画面でできること</summary>
         <div class="g-body">
           <h4>ダッシュボード</h4>資産の要点・リスク判定・アクション提案をまとめて表示。まずここを見れば現状がわかります。
           <h4>シミュレーター</h4>このアプリの中心。家族・収入・支出・教育・イベント・将来（資産/年金）をタブで入力し、90歳までの資産推移を計算します。
@@ -694,7 +704,7 @@ tbody tr.ret td{background:#f0fdf4}
       </details>
 
       <details>
-        <summary>✏️ 入力のコツ（単位・家族構成）</summary>
+        <summary>入力のコツ（単位・家族構成）</summary>
         <div class="g-body">
           <ul>
             <li><strong>単位チップの色</strong>: 青=「円」（例: 月収320,000）、オレンジ=「万円」（例: 住宅価格5000）。入力欄の右のチップで確認できます。</li>
@@ -707,7 +717,7 @@ tbody tr.ret td{background:#f0fdf4}
       </details>
 
       <details>
-        <summary>💰 年金・資産の設定の考え方</summary>
+        <summary>年金・資産の設定の考え方</summary>
         <div class="g-body">
           <h4>年金</h4>
           <ul>
@@ -725,10 +735,10 @@ tbody tr.ret td{background:#f0fdf4}
       </details>
 
       <details>
-        <summary>📊 結果の読み方（表とグラフ）</summary>
+        <summary>結果の読み方（表とグラフ）</summary>
         <div class="g-body">
           <ul>
-            <li><strong>上部の固定バー</strong>: 資産寿命／90歳・65歳時点の総資産／リスク判定（🟢🟡🔴）。ここが結論です。</li>
+            <li><strong>上部の固定バー</strong>: 資産寿命／90歳・65歳時点の総資産／リスク判定（緑/黄/赤）。ここが結論です。</li>
             <li><strong>グラフ</strong>: 「総資産」で全体の山と谷を、「資産内訳」で現金・投資・取り崩しの動きを確認。</li>
             <li><strong>キャッシュフロー表</strong>: 1行=1年。「年収支」が赤い年は支出超過。「積立/取崩」で投資との出入り。収入欄にカーソルを乗せると内訳（給与/年金/退職金）が見えます。スマホでは主要列のみ表示されます。</li>
             <li><strong>シナリオ比較</strong>: 現在の設定を「💾 シナリオ保存」してから条件を変えると、保存時点と比較できます（例:「私立進学プラン」vs「公立プラン」）。</li>
@@ -738,7 +748,7 @@ tbody tr.ret td{background:#f0fdf4}
       </details>
 
       <details>
-        <summary>🔗 マネーフォワードとの連携（CSV取り込み）</summary>
+        <summary>マネーフォワードとの連携（CSV取り込み）</summary>
         <div class="g-body">
           <h4>できること</h4>
           マネーフォワードMEの<strong>入出金明細CSV</strong>を読み込むと、カテゴリ別の月平均を計算して生活費・固定費の入力欄に自動反映できます（確認画面でチェックした項目のみ）。手入力より実態に近い数字でシミュレーションできます。
@@ -759,7 +769,7 @@ tbody tr.ret td{background:#f0fdf4}
       </details>
 
       <details>
-        <summary>💾 データの保存と引き継ぎ</summary>
+        <summary>データの保存と引き継ぎ</summary>
         <div class="g-body">
           <ul>
             <li>入力値は<strong>このブラウザに自動保存</strong>されます（サーバーには送信されません）。</li>
@@ -771,7 +781,7 @@ tbody tr.ret td{background:#f0fdf4}
       </details>
 
       <details>
-        <summary>❓ よくある質問</summary>
+        <summary>よくある質問</summary>
         <div class="g-body">
           <h4>Q. 数字はどこまで正確？</h4>
           簡易モデルによる概算です。税・社会保険料は「手取り」入力で吸収し、年金は簡易推計です。傾向をつかむ道具として使い、重要な判断はファイナンシャルプランナー等にご相談ください。
@@ -826,15 +836,15 @@ tbody tr.ret td{background:#f0fdf4}
 <!-- ══ MODALS ══ -->
 <div class="modal-bg" id="modal-goal">
   <div class="modal">
-    <h3>🎯 ライフゴールを追加</h3>
+    <h3>ライフゴールを追加</h3>
     <div class="fg" style="gap:10px;margin-bottom:14px">
       <div class="field"><label>目標名</label><input type="text" id="g_name" placeholder="例：貯金1000万円達成"></div>
       <div class="field"><label>目標金額（万円）</label><input type="number" id="g_amount" placeholder="1000"></div>
       <div class="field"><label>達成期限（西暦）</label><input type="number" id="g_deadline" placeholder="2033"></div>
       <div class="field"><label>カテゴリ</label>
-        <select id="g_category"><option value="asset">💰 資産</option><option value="career">💼 キャリア</option><option value="life">🏠 生活</option></select></div>
+        <select id="g_category"><option value="asset">資産</option><option value="career">キャリア</option><option value="life">生活</option></select></div>
       <div class="field"><label>優先度</label>
-        <select id="g_priority"><option value="high">🔴 高</option><option value="medium" selected>🟡 中</option><option value="low">🟢 低</option></select></div>
+        <select id="g_priority"><option value="high">高</option><option value="medium" selected>中</option><option value="low">低</option></select></div>
       <div class="field" style="grid-column:1/-1"><label>メモ（任意）</label><input type="text" id="g_note" placeholder="目標の背景・理由など"></div>
     </div>
     <div class="btn-row">
@@ -1349,14 +1359,13 @@ function refreshDashboard(){
 
   document.getElementById('db-albar').innerHTML=`
     <div class="al-bar">
-      <span style="font-size:1.4rem">📊</span>
       <div><div style="font-size:.7rem;font-weight:700;color:var(--blue-d)">資産寿命</div>
       <div class="al-v">${typeof metrics.assetLife==='number'?metrics.assetLife+'歳まで維持可能':metrics.assetLife}</div></div>
       <div style="font-size:.75rem;color:var(--blue-d);opacity:.8">${typeof metrics.assetLife==='number'?'計画期間中に資産が枯渇する見込みです':'計画期間（90歳）まで資産がプラスで推移します'}</div>
     </div>`;
 
   const rl=reds>5?'danger':ambs>8?'caution':'safe';
-  const ri=reds>5?'🔴':ambs>8?'🟡':'🟢';
+  const ri='<span class="risk-dot"></span>';
   const rt=reds>5?`要対策：${reds}年間で資産500万円未満かつ赤字の時期があります`:ambs>8?`注意：${ambs}年間で収支マイナスまたは資産減少傾向があります`:'安全：計画期間中の資産は概ね良好に推移しています';
   document.getElementById('db-risk').innerHTML=`<div class="risk ${rl}">${ri} <strong>${rt}</strong></div>`;
 
@@ -1425,14 +1434,14 @@ function drawSimResults(rows,p,metrics){
     <div class="mc blue" data-ico="📊"><div class="mc-l">ピーク総資産</div><div class="mc-v">${fmt(w(metrics.peakAsset))}万円</div><div class="mc-s">本人${metrics.peakAge}歳時点</div></div>
     <div class="mc amber" data-ico="📅"><div class="mc-l">65歳時資産</div><div class="mc-v">${metrics.asset65!==null?fmt(w(metrics.asset65))+'万円':'−'}</div><div class="mc-s">85歳：${metrics.asset85!==null?fmt(w(metrics.asset85))+'万円':'−'}</div></div>`;
   document.getElementById('sim-albar').innerHTML=`
-    <div class="al-bar"><span style="font-size:1.2rem">📊</span>
+    <div class="al-bar">
       <span style="font-size:.7rem;font-weight:700;color:var(--blue-d)">資産寿命：</span>
       <span class="al-v">${typeof metrics.assetLife==='number'?metrics.assetLife+'歳まで維持可能':metrics.assetLife}</span>
     </div>`;
   const reds=rows.filter(r=>riskLevel(r)==='red').length;
   const ambs=rows.filter(r=>riskLevel(r)==='amber').length;
   const rl=reds>5?'danger':ambs>8?'caution':'safe';
-  const ri=reds>5?'🔴':ambs>8?'🟡':'🟢';
+  const ri='<span class="risk-dot"></span>';
   document.getElementById('sim-risk').innerHTML=`<div class="risk ${rl}">${ri} <strong>${reds>5?`要対策：${reds}年間で要注意時期あり`:ambs>8?`注意：${ambs}年間で収支マイナスまたは資産減少傾向あり`:'安全：計画期間中の資産は概ね良好です'}</strong></div>`;
   drawLifeTable(rows);drawCFTable(rows);drawCharts(rows,p);renderScenarioList();
 }
@@ -1477,7 +1486,7 @@ function drawCFTable(rows){
   rows.forEach(r=>{
     const tr=document.createElement('tr');if(r.ua>=65) tr.classList.add('ret');
     const rl=riskLevel(r);
-    const ri=rl==='red'?'🔴':rl==='amber'?'🟡':'🟢';
+    const ri='<span class="rdot '+rl+'"></span>';
     const bc=r.balance>=0?'pos':'neg';
     const sc=r.totalAsset<0?'neg':r.totalAsset<5000000?'wrn':'pos';
     const tip=`本人:${fmt(w(r.uInc))}万${r.wInc?` ${esc(currentP?.spLabel||'配偶者')}:${fmt(w(r.wInc))}万`:''}${r.pen?` 年金:${fmt(w(r.pen))}万`:''}${r.sev?` 退職金:${fmt(w(r.sev))}万`:''}`;
@@ -1847,7 +1856,7 @@ async function syncToLifeHub(silent){
         updatedAt:{timestampValue:new Date().toISOString()},
       }})});
     if(!res.ok){const e=await res.json().catch(()=>({}));throw new Error('保存失敗 '+res.status+' '+(e.error&&e.error.message||''));}
-    if(!silent)alert(`🌸 生活改善アプリへ保存しました\n・資産寿命: ${payload.results.assetLife}\n・年収${payload.plan.income}万／生活費${payload.plan.expense}万\nこれ以降は入力を変えるたび自動で反映されます`);
+    if(!silent)alert(`生活改善アプリへ保存しました\n・資産寿命: ${payload.results.assetLife}\n・年収${payload.plan.income}万／生活費${payload.plan.expense}万\nこれ以降は入力を変えるたび自動で反映されます`);
   }catch(e){if(!silent)alert('連携エラー: '+(e.message||e));}
 }
 
