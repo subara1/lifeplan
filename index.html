@@ -2,6 +2,7 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
+<meta name="theme-color" content="#f5f6f8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>ライフプランOS｜家計・資産シミュレーター</title>
 <meta name="description" content="ライフプランOS — 90歳までの家計・資産をシミュレーションする無料ツール。入力データはブラウザ内のみで処理され、外部に送信されません。">
@@ -301,6 +302,13 @@ tbody tr.ret td{background:#f0fdf4}
 }
 .tbl-hint{display:none;font-size:.68rem;color:var(--gray-5);margin:2px 0 4px}
 .tbl-hint::before{content:'← 横にスクロールできます →'}
+
+/* トースト（UIパターン辞典「Toast」・alert代替） */
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(24px + env(safe-area-inset-bottom));background:#2a2d35;color:#fff;font-weight:700;font-size:.8rem;padding:11px 20px;border-radius:999px;box-shadow:0 10px 30px rgba(20,24,38,.35);z-index:500;pointer-events:none;max-width:88vw;text-align:center;animation:toastin .25s ease,toastout .4s ease 2.7s forwards}
+.toast-err{background:#b91c1c;animation:toastin .25s ease,toastout .4s ease 4.5s forwards}
+@keyframes toastin{from{opacity:0;transform:translateX(-50%) translateY(8px)}}
+@keyframes toastout{to{opacity:0;transform:translateX(-50%) translateY(6px)}}
+@media (prefers-reduced-motion:reduce){.toast,.toast-err{animation:none}}
 </style>
 </head>
 <body>
@@ -885,6 +893,17 @@ tbody tr.ret td{background:#f0fdf4}
   </div>
 </div>
 
+<script>
+// UIパターン辞典「Toast」: 成功は消える通知・失敗は赤5秒（alert代替）
+function toast(msg,kind){
+  const t=document.createElement('div')
+  t.className='toast'+(kind==='err'?' toast-err':'')
+  t.setAttribute('role','status')
+  t.textContent=msg
+  document.body.appendChild(t)
+  setTimeout(()=>{try{t.remove()}catch(e){}},kind==='err'?5000:3200)
+}
+</script>
 <script>
 // ══════════════════════════════════════════════════════
 // CONSTANTS
@@ -1574,7 +1593,7 @@ function drawCharts(rows,p){
 function openScenarioModal(){document.getElementById('modal-scenario').classList.add('open');}
 function saveScenario(){
   const name=document.getElementById('sc_name').value.trim();
-  if(!name){alert('シナリオ名を入力してください');return;}
+  if(!name){toast('シナリオ名を入力してください', 'err');return;}
   if(!state.sim) runAndRefresh();
   state.scenarios[name]={metrics:state.sim.metrics};
   closeModal('modal-scenario');document.getElementById('sc_name').value='';
@@ -1594,7 +1613,7 @@ function renderScenarioList(){
 }
 
 function runRetirementCmp(){
-  if(!currentP){alert('先にシミュレーターを実行してください');return;}
+  if(!currentP){toast('先にシミュレーターを実行してください', 'err');return;}
   const ages=[g('ret_a'),g('ret_b'),g('ret_c'),g('ret_d')].filter(a=>a>0);
   const results=ages.map(ra=>{const pp={...currentP,RET:currentP.uBY+ra};return{ra,m:getMetrics(calculate(pp),pp)};});
   const keys=[['asset65','65歳時資産'],['asset85','85歳時資産'],['finalAsset','90歳時資産'],['assetLife','資産寿命'],['totalBalance','生涯収支']];
@@ -1608,7 +1627,7 @@ function openGoalModal(){document.getElementById('modal-goal').classList.add('op
 function saveGoal(){
   const name=document.getElementById('g_name').value.trim();
   const amount=parseFloat(document.getElementById('g_amount').value)||0;
-  if(!name||!amount){alert('目標名と金額を入力してください');return;}
+  if(!name||!amount){toast('目標名と金額を入力してください', 'err');return;}
   state.goals.push({id:Date.now(),name,amount,deadline:parseInt(document.getElementById('g_deadline').value)||0,category:gs('g_category'),priority:gs('g_priority'),note:gs('g_note')});
   closeModal('modal-goal');grantXP(30);checkBadges(state.sim?.rows,state.sim?.p);saveState();renderGoals();
 }
@@ -1775,7 +1794,7 @@ function addCustomEvent(){
   const yr=parseInt(document.getElementById('nev_yr').value);
   const name=document.getElementById('nev_name').value.trim();
   const amt=parseFloat(document.getElementById('nev_amt').value)||0;
-  if(!yr||!name||!amt){alert('年・名前・金額を入力してください');return;}
+  if(!yr||!name||!amt){toast('年・名前・金額を入力してください', 'err');return;}
   state.customEvents.push({id:Date.now(),year:yr,name,amt,type:document.getElementById('nev_type').value,rec:document.getElementById('nev_rec').value==='1',endYear:parseInt(document.getElementById('nev_end').value)||null});
   ['nev_yr','nev_name','nev_amt','nev_end'].forEach(id=>{const e=document.getElementById(id);if(e) e.value='';});
   grantBadge('custom_ev');grantXP(10);saveState();renderCustomEventsList();
@@ -1797,7 +1816,7 @@ function buildLifeArr(rows){const p=currentP;return[['西暦','本人',p.spLabel
 function buildCFArr(rows){return[['西暦','本人','収入合計','うち年金','変動費','固定費','住居費','保育費','教育費','その他','支出合計','年収支','積立投資','投資取崩','現金残','投資残','総資産'],...rows.map(r=>[r.yr,r.ua,w(r.totalInc),w(r.pen),w(r.varExp),w(r.fixExp),w(r.housing),w(r.childcare),w(r.edu),w(r.otherExp),w(r.totalExp),w(r.balance),w(r.contribution||0),w(r.withdrawal||0),w(r.cash),w(r.invest),w(r.totalAsset)])];}
 
 function exportExcel(){
-  if(!state.sim){alert('先に再計算してください');return;}
+  if(!state.sim){toast('先に再計算してください', 'err');return;}
   const wb=XLSX.utils.book_new();
   const ws1=XLSX.utils.aoa_to_sheet(buildLifeArr(state.sim.rows));ws1['!cols']=[{wch:6},{wch:9},{wch:9},{wch:18},{wch:18},{wch:55}];
   XLSX.utils.book_append_sheet(wb,ws1,'ライフイベント');
@@ -1806,7 +1825,7 @@ function exportExcel(){
   const d=new Date();XLSX.writeFile(wb,`ライフプランOS_${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}.xlsx`);
 }
 function exportCSV(){
-  if(!state.sim){alert('先に再計算してください');return;}
+  if(!state.sim){toast('先に再計算してください', 'err');return;}
   const blob=new Blob(['﻿'+buildCFArr(state.sim.rows).map(r=>r.map(c=>String(c).includes(',')?`"${c}"`:c).join(',')).join('\n')],{type:'text/csv;charset=utf-8;'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`lifeplan_${new Date().getFullYear()}.csv`;a.click();
 }
@@ -1871,7 +1890,7 @@ async function lifehubToken(){
 }
 async function syncToLifeHub(silent){
   try{
-    if(!state.sim){if(!silent)alert('まず「▶ 再計算・更新」を実行してください');return;}
+    if(!state.sim){if(!silent)toast('まず「▶ 再計算・更新」を実行してください', 'err');return;}
     // silent（自動送信）時は保存済みトークンのみ使用。無ければ何もしない（プロンプトを出さない）
     const token=silent?await lifehubTokenSilent():await lifehubToken();if(!token)return;
     const {rows,p}=state.sim;const m=getMetrics(rows,p);
@@ -1884,8 +1903,8 @@ async function syncToLifeHub(silent){
         updatedAt:{timestampValue:new Date().toISOString()},
       }})});
     if(!res.ok){const e=await res.json().catch(()=>({}));throw new Error('保存失敗 '+res.status+' '+(e.error&&e.error.message||''));}
-    if(!silent)alert(`生活改善アプリへ保存しました\n・資産寿命: ${payload.results.assetLife}\n・年収${payload.plan.income}万／生活費${payload.plan.expense}万\nこれ以降は入力を変えるたび自動で反映されます`);
-  }catch(e){if(!silent)alert('連携エラー: '+(e.message||e));}
+    if(!silent)toast(`生活改善アプリへ保存しました\n・資産寿命: ${payload.results.assetLife}\n・年収${payload.plan.income}万／生活費${payload.plan.expense}万\nこれ以降は入力を変えるたび自動で反映されます`);
+  }catch(e){if(!silent)toast('連携エラー: '+(e.message||e, 'err'));}
 }
 
 function exportJSON(){
@@ -1899,8 +1918,8 @@ function importJSON(input){
     try{
       const data=JSON.parse(e.target.result);
       if(data.state){state={...DEF_STATE,...data.state,gamification:{...DEF_STATE.gamification,...(data.state.gamification||{})}};}
-      saveState();restoreInputs();renderCustomEventsList();renderScenarioList();renderGoals();updateXPDisplay();live();runAndRefresh(true);alert('データを読み込みました');
-    }catch(ex){alert('読み込みに失敗しました');}
+      saveState();restoreInputs();renderCustomEventsList();renderScenarioList();renderGoals();updateXPDisplay();live();runAndRefresh(true);toast('データを読み込みました');
+    }catch(ex){toast('読み込みに失敗しました', 'err');}
     input.value='';
   };
   reader.readAsText(file);
@@ -2000,11 +2019,11 @@ function importMFCSV(input){
     const isXlsx=bytes[0]===0x50&&bytes[1]===0x4B;           // 'PK' = xlsx
     const isXls=bytes[0]===0xD0&&bytes[1]===0xCF;            // 旧xls
     if(isXlsx||isXls){
-      if(typeof XLSX==='undefined'){alert('Excel読込ライブラリが読み込めていません。通信環境を確認して再読み込みしてください。');input.value='';return;}
+      if(typeof XLSX==='undefined'){toast('Excel読込ライブラリが読み込めていません。通信環境を確認して再読み込みしてください。', 'err');input.value='';return;}
       try{
         const wb=XLSX.read(bytes,{type:'array'});
         text=XLSX.utils.sheet_to_csv(wb.Sheets[wb.SheetNames[0]]);
-      }catch(err){alert('Excelファイルの読み込みに失敗しました: '+err.message);input.value='';return;}
+      }catch(err){toast('Excelファイルの読み込みに失敗しました: '+err.message, 'err');input.value='';return;}
     }else{
       // 文字コード自動判定: UTF-8で読めなければShift_JIS（MFの既定）
       try{text=new TextDecoder('utf-8',{fatal:true}).decode(buf);}
@@ -2014,7 +2033,7 @@ function importMFCSV(input){
       }
     }
     const parsed=parseMFCSV(text);
-    if(parsed.error){alert(parsed.error);input.value='';return;}
+    if(parsed.error){toast(parsed.error);input.value='';return;}
     _mfPending=mfAggregateToFields(parsed);
     _mfPending.months=parsed.months;_mfPending.incomeAvg=parsed.incomeAvg;
     showMFPreview();
