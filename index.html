@@ -1904,7 +1904,7 @@ async function syncToLifeHub(silent){
       }})});
     if(!res.ok){const e=await res.json().catch(()=>({}));throw new Error('保存失敗 '+res.status+' '+(e.error&&e.error.message||''));}
     if(!silent)toast(`生活改善アプリへ保存しました\n・資産寿命: ${payload.results.assetLife}\n・年収${payload.plan.income}万／生活費${payload.plan.expense}万\nこれ以降は入力を変えるたび自動で反映されます`);
-  }catch(e){if(!silent)toast('連携エラー: '+(e.message||e, 'err'));}
+  }catch(e){if(!silent)toast('連携エラー: '+(e.message||e), 'err');}
 }
 
 function exportJSON(){
