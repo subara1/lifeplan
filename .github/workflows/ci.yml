@@ -18,10 +18,15 @@ jobs:
         run: |
           node -e "
             const fs=require('fs');
-            const m=fs.readFileSync('index.html','utf8').match(/<script>([\s\S]*)<\/script>\s*<\/body>/);
-            fs.writeFileSync('/tmp/app.js', m[1]);
+            const html=fs.readFileSync('index.html','utf8');
+            // 素の<script>ブロック（外部src付きは除く）を全て抽出して個別に構文チェックする。
+            // 旧実装は貪欲マッチで複数ブロックを1つに巻き込み</script>混入で誤検知していた。
+            const blocks=[...html.matchAll(/<script>([\s\S]*?)<\/script>/g)];
+            if(!blocks.length){console.error('script block not found');process.exit(1);}
+            blocks.forEach((m,i)=>fs.writeFileSync('/tmp/app'+i+'.js', m[1]));
+            console.log('checked script blocks:', blocks.length);
           "
-          node --check /tmp/app.js
+          for f in /tmp/app*.js; do node --check "$f"; done
 
       - name: 描画スモークテスト（ヘッドレスChrome）
         run: |
