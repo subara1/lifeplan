@@ -448,9 +448,9 @@ tbody tr.ret td{background:#f0fdf4}
         <div class="sl">毎月の変動費（円/月）</div>
         <div class="fg2">
           <div class="field"><label>食費・日用品</label><input type="number" id="e_food" value="70000" oninput="live()"></div>
-          <div class="field"><label>光熱費</label><input type="number" id="e_util" value="15000" oninput="live()"></div>
-          <div class="field"><label>交際費・外食・娯楽</label><input type="number" id="e_ent" value="20000" oninput="live()"></div>
-          <div class="field"><label>衣服・美容</label><input type="number" id="e_cloth" value="10000" oninput="live()"></div>
+          <div class="field"><label>水道光熱費</label><input type="number" id="e_util" value="15000" oninput="live()"></div>
+          <div class="field"><label>交際費・娯楽費（外食含む）</label><input type="number" id="e_ent" value="20000" oninput="live()"></div>
+          <div class="field"><label>美容・衣類</label><input type="number" id="e_cloth" value="10000" oninput="live()"></div>
           <div class="field"><label>小遣い（本人）</label><input type="number" id="e_aself" value="20000" oninput="live()"></div>
           <div class="field"><label>小遣い（<span class="lbl-sp">妻</span>）</label><input type="number" id="e_awife" value="15000" oninput="live()"></div>
           <div class="field"><label>子育て雑費</label><input type="number" id="e_kids" value="10000" oninput="live()"></div>
@@ -777,7 +777,7 @@ tbody tr.ret td{background:#f0fdf4}
           <ul>
             <li><strong>ファイルはブラウザ内だけで処理され、どこにも送信されません</strong></li>
             <li>CSVだけでなく<strong>Excel形式（.xlsx）もOK</strong>。Excelで開いて保存し直したファイル（拡張子が.csvでも中身がExcelのもの）も自動判別します</li>
-            <li>対応付け例: 食費+日用品→「食費・日用品」、趣味・娯楽+交際費→「交際費・外食・娯楽」、住宅→「家賃」など</li>
+            <li>対応付け例: 食費+日用品→「食費・日用品」、趣味・娯楽+交際費+娯楽費→「交際費・娯楽費」、住宅・住居費→「家賃」など（家計元帳の科目名にも対応）</li>
             <li>「税・社会保障」は手取り入力のため、「特別な支出」は一時支出のため対象外です（後者はカスタムイベントで登録できます）</li>
             <li>収入は賞与が混ざるため参考表示のみ（自動入力しません）</li>
             <li>API連携（自動同期）はマネーフォワード側が個人向けAPIを提供していないため、現状はCSV経由のみです</li>
@@ -1933,13 +1933,13 @@ function importJSON(input){
 // MFの大項目 → このアプリの入力欄
 const MF_CAT_MAP={
   '食費':'e_food','日用品':'e_food',
-  '水道・光熱費':'e_util',
-  '趣味・娯楽':'e_ent','交際費':'e_ent',
-  '衣服・美容':'e_cloth',
-  '健康・医療':'e_misc','交通費':'e_misc','その他':'e_misc',
+  '水道・光熱費':'e_util','水道光熱費':'e_util', // 家計元帳の科目名にも対応
+  '趣味・娯楽':'e_ent','交際費':'e_ent','娯楽費':'e_ent',
+  '衣服・美容':'e_cloth','美容・衣類':'e_cloth',
+  '健康・医療':'e_misc','医療費・健康費':'e_misc','医療費':'e_misc','交通費':'e_misc','その他':'e_misc','その他支出':'e_misc',
   '通信費':'f_tel','保険':'f_ins','自動車':'f_car',
-  '教養・教育':'f_sub',
-  '住宅':'h_rent',
+  '教養・教育':'f_sub','教育費':'f_sub',
+  '住宅':'h_rent','住居費':'h_rent',
 };
 // 対応付けしない大項目（理由つきで表示）
 const MF_SKIP_REASON={
