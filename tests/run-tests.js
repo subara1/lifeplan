@@ -238,5 +238,36 @@ section('LifeHub連携ペイロード');
   check('家族ラベル(配偶者なし→null)', pl.labels&&pl.labels.sp===null);
 }
 
+// ══════════════════════════════════════════
+section('転職・独立（careerChanges）');
+{
+  // 手当ゼロにして本人収入を式で検証できるようにする
+  const noAllow = { hAllow: 0, depAllow: 0, otherAllow: 0 };
+  const cc = { id: 1, year: 2030, mon: 300000, bon: 500000, blankM: 2, sevMan: 100 };
+  const ccRows = calculate(baseP({ ...noAllow, careerChanges: [cc] }));
+  const plain = calculate(baseP(noAllow));
+  const rAt = (rs, yr) => rs.find(r => r.yr === yr);
+  check('転職前の年は従来と同一（後方互換）', near(rAt(ccRows, 2029).uInc, rAt(plain, 2029).uInc));
+  check('転職なし（空配列）は全行従来と同一', calculate(baseP({ careerChanges: [] })).every((r, i) => r.totalAsset === calculate(baseP())[i].totalAsset));
+  check('転職年: 新給与×(12-空白2)/12 + 前職退職金100万', (() => {
+    const r = rAt(ccRows, 2030);
+    return near(r.uInc, (300000 * 12 + 500000) * 10 / 12, 2) && near(r.sev, 1000000);
+  })());
+  check('転職翌年: 昇給は転職年からやり直し（^1）・空白なし', near(rAt(ccRows, 2031).uInc, (300000 * 12 + 500000) * 1.01, 2));
+  check('定年年の退職金は転職退職金と別枠で従来どおり', near(rAt(ccRows, 2058).sev, baseP().sev));
+  check('複数転職: 2回目の年以降は2回目の給与基準', (() => {
+    const rows2 = calculate(baseP({ ...noAllow, careerChanges: [cc, { id: 2, year: 2035, mon: 400000, bon: 0, blankM: 0, sevMan: 0 }] }));
+    return near(rAt(rows2, 2035).uInc, 400000 * 12, 2) && near(rAt(rows2, 2037).uInc, 400000 * 12 * 1.01 * 1.01, 2);
+  })());
+  check('定年後の転職登録は収入に影響しない（uInc=0のまま）', (() => {
+    const rows3 = calculate(baseP({ ...noAllow, careerChanges: [{ id: 3, year: 2060, mon: 500000, bon: 0, blankM: 0, sevMan: 0 }] }));
+    return rAt(rows3, 2060).uInc === 0 && near(rAt(rows3, 2060).sev, 0);
+  })());
+  check('空白12ヶ月で転職年の本人収入ゼロ', (() => {
+    const rows4 = calculate(baseP({ ...noAllow, careerChanges: [{ id: 4, year: 2030, mon: 300000, bon: 0, blankM: 12, sevMan: 0 }] }));
+    return rAt(rows4, 2030).uInc === 0;
+  })());
+}
+
 console.log(`\n合計: ✅ ${pass} / ❌ ${fail}`);
 process.exit(fail ? 1 : 0);
