@@ -515,6 +515,18 @@ tbody tr.ret td{background:#f0fdf4}
       </div>
 
       <div id="tc-cev" class="tp">
+        <div class="sl">転職・独立の予定</div>
+        <p style="font-size:.78rem;color:var(--gray-5);margin:0 0 8px">転職する年からの新しい手取りを登録すると、以後の収入がその金額に切り替わります（昇給は転職年からやり直し）。何回でも登録できます。</p>
+        <div class="fg3">
+          <div class="field"><label>転職する年（西暦）</label><input type="number" id="ncc_yr" placeholder="2028"></div>
+          <div class="field"><label>新しい月収（円・手取り）</label><input type="number" id="ncc_mon" placeholder="300000"></div>
+          <div class="field"><label>新しい年間ボーナス（円・手取り）</label><input type="number" id="ncc_bon" placeholder="600000"></div>
+          <div class="field"><label>収入が途切れる期間（ヶ月）</label><input type="number" id="ncc_blank" placeholder="0" min="0" max="12"></div>
+          <div class="field"><label>前職の退職金（万円）</label><input type="number" id="ncc_sev" placeholder="0"></div>
+        </div>
+        <div class="btn-row"><button class="btn sm" onclick="addCareerChange()">＋ 追加</button></div>
+        <div id="cc-list" style="margin-top:12px;margin-bottom:20px"></div>
+
         <div class="sl">カスタムライフイベントを追加</div>
         <div class="fg3">
           <div class="field"><label>発生年（西暦）</label><input type="number" id="nev_yr" placeholder="2035"></div>
@@ -949,7 +961,7 @@ const LEVELS = [
 // STATE
 // ══════════════════════════════════════════════════════
 const DEF_STATE = {
-  name:'', goals:[], customEvents:[], scenarios:{}, sim:null, inputs:null,
+  name:'', goals:[], customEvents:[], careerChanges:[], scenarios:{}, sim:null, inputs:null,
   gamification:{xp:0,level:1,badges:[],lastLogin:''},
 };
 let state = JSON.parse(JSON.stringify(DEF_STATE));
@@ -1151,7 +1163,9 @@ function getP(){
     wPenStart:Math.min(75,Math.max(60,g('pn_w_start')||65)),
     uPenAmt:pensionAnnual(g('pn_u_direct'),g('pn_u_sal'),g('pn_u_kosei'),g('pn_u_kiso'),g('pn_u_start')),
     wPenAmt:pensionAnnual(g('pn_w_direct'),g('pn_w_sal'),g('pn_w_kosei'),g('pn_w_kiso'),g('pn_w_start')),
-    customEvents:[...state.customEvents]
+    customEvents:[...state.customEvents],
+    // 転職・独立の予定（年順に適用。古い保存データにはキーが無いためフォールバック）
+    careerChanges:[...(state.careerChanges||[])].sort((a,b)=>a.year-b.year)
   };
 }
 
@@ -1174,7 +1188,11 @@ function calculate(p){
     // 住居手当は賃貸のあいだのみ（住宅購入後は支給されない）
     const allowTotal=((yr<p.hyr?p.hAllow:0)+p.depAllow*depCh+p.otherAllow)*12;
     let uInc=0,wInc=0,pen=0,sev=0,reemploy=0,custInc=0,custExp=0;
-    if(yr<p.RET) uInc=(p.uMon*12+p.uBon)*Math.pow(1+p.uGrow,dy)+allowTotal;
+    // 本人の給与基準: 転職・独立（careerChanges・年順）の年以降は新しい月収・ボーナスに切替。
+    // 昇給カーブは切替年からやり直す（転職先での昇給として扱う）
+    let uBase={y:p.Y0,mon:p.uMon,bon:p.uBon};
+    for(const cc of (p.careerChanges||[])){ if(yr>=cc.year) uBase={y:cc.year,mon:cc.mon,bon:cc.bon}; }
+    if(yr<p.RET) uInc=(uBase.mon*12+uBase.bon)*Math.pow(1+p.uGrow,yr-uBase.y)+allowTotal;
     if(p.reemployM>0&&yr>=p.RET&&yr<p.RET+p.reemployY) reemploy=p.reemployM*12;
     if(p.hasSp&&yr>=p.wret&&yr<p.WRET) wInc=(p.wMon*12+p.wBon)*Math.pow(1+p.uGrow*0.5,yr-p.wret);
     // 年金は物価スライドで毎年増額（見込額は現在価値なので現在年からスライド）
@@ -1182,6 +1200,12 @@ function calculate(p){
     if(ua>=p.uPenStart) pen+=p.uPenAmt*penInf;   // 本人の年金（受給開始年齢から）
     if(wa>=p.wPenStart) pen+=p.wPenAmt*penInf;   // 妻の年金（受給開始年齢から）
     if(yr===p.RET) sev=p.sev;
+    // 転職の年: 収入が途切れる月数ぶん本人収入を減額し、前職の退職金を一時収入に計上
+    const ccNow=(p.careerChanges||[]).find(c=>c.year===yr);
+    if(ccNow&&yr<p.RET){
+      if(ccNow.blankM>0) uInc*=Math.max(0,12-Math.min(12,ccNow.blankM))/12;
+      sev+=(ccNow.sevMan||0)*10000;
+    }
     for(const ev of p.customEvents){
       const inR=ev.rec?(yr>=ev.year&&yr<=(ev.endYear||p.YEND)):yr===ev.year;
       if(!inR) continue;
@@ -1500,6 +1524,7 @@ function lifeEventsOf(yr,ua,wa,c1a,c2a,p){
   if(c1a===22) a('g',`${p.c1Label}・独立`);if(c2a===22) a('g',`${p.c2Label}・独立`);
   if(yr===p.hyr) a('a',`マンション購入（${p.hprc}万円）`);
   if(yr===p.hyr+p.hper) a('g','住宅ローン完済');
+  for(const cc of (p.careerChanges||[])) if(cc.year===yr) a('a',`本人・転職（月収${w(cc.mon)}万円へ）`);
   if(yr===p.RET) a('g','本人・定年退職');
   if(ua===p.uPenStart) a('g',`本人・年金受給開始（約${w(p.uPenAmt)}万円/年）`);
   if(p.hasSp&&wa===p.wPenStart) a('g',`${p.spLabel}・年金受給開始（約${w(p.wPenAmt)}万円/年）`);
@@ -1800,6 +1825,31 @@ function addCustomEvent(){
   grantBadge('custom_ev');grantXP(10);saveState();renderCustomEventsList();
 }
 function deleteCustomEvent(id){state.customEvents=state.customEvents.filter(e=>e.id!==id);saveState();renderCustomEventsList();}
+
+// ── 転職・独立の予定（careerChanges）──
+function addCareerChange(){
+  const yr=parseInt(document.getElementById('ncc_yr').value);
+  const mon=parseInt(document.getElementById('ncc_mon').value)||0;
+  const bon=parseInt(document.getElementById('ncc_bon').value)||0;
+  const blankM=Math.min(12,Math.max(0,parseInt(document.getElementById('ncc_blank').value)||0));
+  const sevMan=parseFloat(document.getElementById('ncc_sev').value)||0;
+  if(!yr||mon<=0){toast('転職する年と新しい月収を入力してください', 'err');return;}
+  state.careerChanges=state.careerChanges||[];
+  if(state.careerChanges.some(c=>c.year===yr)){toast('同じ年の転職がすでに登録されています（削除してから登録し直してください）', 'err');return;}
+  state.careerChanges.push({id:Date.now(),year:yr,mon,bon,blankM,sevMan});
+  ['ncc_yr','ncc_mon','ncc_bon','ncc_blank','ncc_sev'].forEach(id=>{const e=document.getElementById(id);if(e) e.value='';});
+  saveState();renderCareerList();
+}
+function deleteCareerChange(id){state.careerChanges=(state.careerChanges||[]).filter(c=>c.id!==id);saveState();renderCareerList();}
+function renderCareerList(){
+  const list=document.getElementById('cc-list');if(!list) return;
+  const ccs=[...(state.careerChanges||[])].sort((a,b)=>a.year-b.year);
+  if(!ccs.length){list.innerHTML='<p style="color:var(--gray-5);font-size:.8rem">転職の予定はまだありません。</p>';return;}
+  list.innerHTML=ccs.map(cc=>`
+    <div class="ev-item"><div class="ev-info"><strong>${cc.year}年</strong>　転職 → 月収${fmt(Math.round(cc.mon/10000))}万円・ボーナス${fmt(Math.round(cc.bon/10000))}万円/年
+    ${cc.blankM?`<span class="tag a">空白${cc.blankM}ヶ月</span>`:''}${cc.sevMan?`<span class="tag g">退職金${fmt(cc.sevMan)}万円</span>`:''}</div>
+    <button class="btn r sm" onclick="deleteCareerChange(${cc.id})">削除</button></div>`).join('');
+}
 function renderCustomEventsList(){
   const list=document.getElementById('ev-list');if(!list) return;
   if(!state.customEvents.length){list.innerHTML='<p style="color:var(--gray-5);font-size:.8rem">イベントはまだありません。</p>';return;}
@@ -1918,7 +1968,7 @@ function importJSON(input){
     try{
       const data=JSON.parse(e.target.result);
       if(data.state){state={...DEF_STATE,...data.state,gamification:{...DEF_STATE.gamification,...(data.state.gamification||{})}};}
-      saveState();restoreInputs();renderCustomEventsList();renderScenarioList();renderGoals();updateXPDisplay();live();runAndRefresh(true);toast('データを読み込みました');
+      saveState();restoreInputs();renderCustomEventsList();renderCareerList();renderScenarioList();renderGoals();updateXPDisplay();live();runAndRefresh(true);toast('データを読み込みました');
     }catch(ex){toast('読み込みに失敗しました', 'err');}
     input.value='';
   };
@@ -2319,7 +2369,7 @@ document.addEventListener('DOMContentLoaded',()=>{
       saveInputs();autoRun();
     });
   });
-  updateXPDisplay();renderCustomEventsList();renderGoals();live();
+  updateXPDisplay();renderCustomEventsList();renderCareerList();renderGoals();live();
   // 復元した入力値で常に再計算（古い保存結果との不整合を防ぐ）
   runAndRefresh(true);
   const hash=window.location.hash.replace('#/','');
